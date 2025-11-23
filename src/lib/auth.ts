@@ -13,18 +13,28 @@ export type SessionUser = {
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) return null;
+  if (!user) return null;
 
   const { data: profile } = await supabase
     .from("users")
     .select("id, nickname, role, expires_at")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
-  if (!profile) return null;
+  if (!profile) {
+    // Fallback when profile row is missing or not readable (e.g., RLS not configured yet).
+    return {
+      id: user.id,
+      role: "pending",
+      nickname:
+        (user.user_metadata as Record<string, string | undefined>)?.name ??
+        "멤버",
+      expiresAt: null,
+    };
+  }
 
   return {
     id: profile.id,
