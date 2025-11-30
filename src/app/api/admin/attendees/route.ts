@@ -50,8 +50,6 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  console.log("✅Updates to apply:", updates);
-  console.log("✅Updated attendees:", data);
 
   return NextResponse.redirect(
     new URL(`/admin/attendees/${scheduleId}`, req.url)

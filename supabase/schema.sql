@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
   author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
   title text NOT NULL,
-  content_rich jsonb NOT NULL,
+  content_rich text NOT NULL,
   content_markdown text,
   view_count integer NOT NULL DEFAULT 0,
   created_at timestamptz DEFAULT timezone('utc', now()),

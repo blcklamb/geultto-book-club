@@ -5,6 +5,7 @@ import { ReviewHighlightSidebar } from "@/components/ReviewHighlightSidebar";
 import { CommentThread } from "@/components/CommentThread";
 import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
+import { ReviewViewer } from "@/components/ReviewViewer";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -13,17 +14,18 @@ import { ViewCountPinger } from "./view-count-pinger";
 export default async function ReviewDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
+  const reviewId = (await params).id;
 
   const { data: review } = await supabase
     .from("reviews")
     .select(
       "id, title, content_markdown, content_rich, created_at, author:users!reviews_author_id_fkey(nickname), schedule:schedules!reviews_schedule_id_fkey(book_title)"
     )
-    .eq("id", params.id)
+    .eq("id", reviewId)
     .single();
 
   if (!review) notFound();
@@ -31,7 +33,7 @@ export default async function ReviewDetailPage({
   const { data: highlights } = await supabase
     .from("review_highlights")
     .select("id, highlight_text, reaction, comment")
-    .eq("review_id", params.id)
+    .eq("review_id", reviewId)
     .order("created_at", { ascending: false });
 
   const { data: comments } = await supabase
@@ -39,11 +41,11 @@ export default async function ReviewDetailPage({
     .select(
       "id, body, created_at, author:users!review_comments_author_id_fkey(nickname)"
     )
-    .eq("review_id", params.id)
+    .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] p-8">
       <article className="space-y-6">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold text-slate-900">
@@ -56,12 +58,8 @@ export default async function ReviewDetailPage({
           </p>
         </header>
         <Card>
-          <CardContent className="prose prose-slate max-w-none">
-            {/* 실제 UI에서는 Tiptap JSON을 전용 renderer로 변환 */}
-            <pre className="whitespace-pre-wrap text-sm text-slate-700">
-              {review.content_markdown ??
-                JSON.stringify(review.content_rich, null, 2)}
-            </pre>
+          <CardContent className="prose prose-slate max-w-none p-4">
+            <ReviewViewer content={JSON.parse(review.content_rich)} />
           </CardContent>
         </Card>
         <CommentThread
