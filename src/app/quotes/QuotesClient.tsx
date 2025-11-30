@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { QuoteListToggle, QuoteViewMode } from "@/components/QuoteListToggle";
-import { Button } from "@/components/ui/button";
 import { QuotesFloatingScene3D } from "@/components/QuotesFloatingScene3D";
 import { QuoteCard } from "@/components/QuoteCard";
 import DetailHeader from "@/components/DetailHeader";
+import { QuoteCreateDialog } from "@/components/QuoteCreateDialog";
 
 export type QuotesClientProps = {
   quotes: Array<{
@@ -15,11 +15,16 @@ export type QuotesClientProps = {
     scheduleTitle: string;
     author: string;
   }>;
+  schedules: Array<{
+    id: string;
+    title: string;
+  }>;
   canCreate: boolean;
 };
 
 export const QuotesClient: React.FC<QuotesClientProps> = ({
   quotes,
+  schedules,
   canCreate,
 }) => {
   const [mode, setMode] = useState<QuoteViewMode>("3d");
@@ -31,15 +36,22 @@ export const QuotesClient: React.FC<QuotesClientProps> = ({
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <QuoteListToggle mode={mode} onChange={setMode} />
-            {canCreate ? <Button variant="outline">구절 추가</Button> : null}
+            {canCreate ? (
+              <QuoteCreateDialog schedules={schedules} redirectTo="/quotes" />
+            ) : null}
           </div>
         </div>
         {mode === "3d" ? (
           <QuotesFloatingScene3D quotes={quotes} />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="columns-2 gap-4 sm:columns-3 sm:gap-8">
             {quotes.map((quote) => (
-              <QuoteCard key={quote.id} quote={quote} />
+              <div
+                key={quote.id}
+                className="break-inside-avoid-column -webkit-column-break-inside-avoid mb-4"
+              >
+                <QuoteCard quote={quote} />
+              </div>
             ))}
           </div>
         )}

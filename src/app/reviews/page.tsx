@@ -3,6 +3,7 @@ import { ReviewCard } from "@/components/ReviewCard";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth";
 import Link from "next/link";
+import DetailHeader from "@/components/DetailHeader";
 
 // Reviews index page: lists recent reviews.
 // Queries: reviews joined with schedules + users for display.
@@ -19,34 +20,36 @@ export default async function ReviewsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900">독후감</h1>
-          <p className="text-sm text-slate-500">
-            모임에서 느낀 생각을 함께 나눠요.
-          </p>
+    <>
+      <DetailHeader title="독후감" />
+      <div className="space-y-6 p-8">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          {sessionUser && sessionUser.role !== "pending" ? (
+            <Link href="/reviews/new">
+              <Button>독후감 작성</Button>
+            </Link>
+          ) : null}
         </div>
-        {sessionUser && sessionUser.role !== "pending" ? (
-          <Link href="/reviews/new">
-            <Button>독후감 작성</Button>
-          </Link>
-        ) : null}
+        <div className="grid gap-4 md:grid-cols-2">
+          {reviews && reviews.length === 0 ? (
+            <p className="text-sm text-slate-600">
+              아직 작성된 독후감이 없어요.
+            </p>
+          ) : null}
+          {reviews?.map((review) => (
+            <ReviewCard
+              key={review.id}
+              id={review.id}
+              title={review.title}
+              author={review.author?.nickname ?? "익명"}
+              scheduleTitle={review.schedule?.book_title ?? "모임"}
+              createdAt={new Date(review.created_at || "").toLocaleDateString(
+                "ko-KR"
+              )}
+            />
+          ))}
+        </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {reviews?.map((review) => (
-          <ReviewCard
-            key={review.id}
-            id={review.id}
-            title={review.title}
-            author={review.author?.nickname ?? "익명"}
-            scheduleTitle={review.schedule?.book_title ?? "모임"}
-            createdAt={new Date(review.created_at || "").toLocaleDateString(
-              "ko-KR"
-            )}
-          />
-        ))}
-      </div>
-    </div>
+    </>
   );
 }

@@ -21,19 +21,41 @@ const FloatingQuote: React.FC<{
   index: number;
 }> = ({ quote, index }) => {
   const router = useRouter();
+  const group = useRef<THREE.Group>(null);
   const mesh = useRef<THREE.Mesh>(null);
+  const basePosition = useMemo(() => {
+    // Spread cards further out in a loose ring and stagger heights.
+    const angle = index * 1.6;
+    const radius = 3.5 + (index % 3) * 0.6;
+    const y = 0.6 + (index % 4) * 0.2;
+    return new THREE.Vector3(
+      Math.cos(angle) * radius,
+      y,
+      Math.sin(angle) * radius
+    );
+  }, [index]);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    if (group.current) {
+      const slowOrbit = t / 4 + index * 0.6;
+      const orbitRadius = 0.7;
+      group.current.position.x =
+        basePosition.x + Math.cos(slowOrbit) * orbitRadius;
+      group.current.position.z =
+        basePosition.z + Math.sin(slowOrbit) * orbitRadius;
+      group.current.position.y =
+        basePosition.y + Math.sin(t * 1.2 + index) * 0.4;
+    }
     if (mesh.current) {
       mesh.current.rotation.y = Math.sin(t / 2 + index) / 6;
-      mesh.current.position.y = Math.sin(t + index) * 0.3;
+      mesh.current.position.y = Math.sin(t + index) * 0.25;
     }
   });
   const handleOpenQuote = () => {
     router.push(`/quotes/${quote.id}`);
   };
   return (
-    <group position={[Math.sin(index) * 2, 1, Math.cos(index) * 2]}>
+    <group ref={group} position={basePosition.toArray()}>
       <mesh ref={mesh}>
         <planeGeometry args={[2.2, 1.2]} />
         <meshStandardMaterial

@@ -18,7 +18,7 @@ export const QuoteCard: React.FC<{
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p className="text-slate-500">p.{quote.page}</p>
-          <p className="text-slate-700">“{quote.text}”</p>
+          <p className="text-slate-700 line-clamp-6">“{quote.text}”</p>
           <p className="text-xs text-slate-400">by {quote.author}</p>
         </CardContent>
       </Card>
