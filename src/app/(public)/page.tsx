@@ -10,9 +10,12 @@ export default async function HomePage() {
   const sessionUser = await getSessionUser();
 
   // Fetch next schedule (nearest future date)
+  const nowIso = new Date().toISOString();
+
   const { data: schedules } = await supabase
     .from("schedules")
     .select("id, date, place, book_title")
+    .gte("date", nowIso)
     .order("date", { ascending: true })
     .limit(1);
 

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       schedule_id: scheduleId,
       author_id: sessionUser.id,
       title,
-      content_rich: JSON.parse(contentRich),
+      content_rich: contentRich,
       content_markdown: null,
     },
   ]);

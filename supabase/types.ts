@@ -103,24 +103,24 @@ export interface Database {
           id: string;
           schedule_id: string | null;
           author_id: string | null;
-          title: string;
-          content_rich: Json;
-          content_markdown: string | null;
-          view_count: number;
-          created_at: string | null;
-          updated_at: string | null;
-        };
+      title: string;
+      content_rich: string;
+      content_markdown: string | null;
+      view_count: number;
+      created_at: string | null;
+      updated_at: string | null;
+    };
         Insert: {
           id?: string;
-          schedule_id?: string | null;
-          author_id?: string | null;
-          title: string;
-          content_rich: Json;
-          content_markdown?: string | null;
-          view_count?: number;
-          created_at?: string | null;
-          updated_at?: string | null;
-        };
+      schedule_id?: string | null;
+      author_id?: string | null;
+      title: string;
+      content_rich: string;
+      content_markdown?: string | null;
+      view_count?: number;
+      created_at?: string | null;
+      updated_at?: string | null;
+    };
         Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
         Relationships: [
           {

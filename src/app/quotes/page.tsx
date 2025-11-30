@@ -11,6 +11,10 @@ export default async function QuotesPage() {
       "id, text, page_number, schedule:schedules!quotes_schedule_id_fkey(book_title), author:users!quotes_author_id_fkey(nickname)"
     )
     .order("created_at", { ascending: false });
+  const { data: schedules } = await supabase
+    .from("schedules")
+    .select("id, book_title")
+    .order("date", { ascending: false });
 
   return (
     <QuotesClient
@@ -21,6 +25,12 @@ export default async function QuotesPage() {
           page: quote.page_number ?? "-",
           scheduleTitle: quote.schedule?.book_title ?? "모임",
           author: quote.author?.nickname ?? "익명",
+        })) ?? []
+      }
+      schedules={
+        schedules?.map((schedule) => ({
+          id: schedule.id,
+          title: schedule.book_title,
         })) ?? []
       }
       canCreate={!!sessionUser && sessionUser.role !== "pending"}

@@ -1,42 +1,96 @@
-'use client';
+"use client";
 
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
-import { Suspense, useMemo, useRef } from 'react';
-import * as THREE from 'three';
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
+import { Suspense, useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useRouter } from "next/navigation";
 
 type QuotesFloatingScene3DProps = {
-  quotes: Array<{ id: string; text: string; page: string; scheduleTitle: string }>;
+  quotes: Array<{
+    id: string;
+    text: string;
+    page: string;
+    scheduleTitle: string;
+    author: string;
+  }>;
 };
 
-const FloatingQuote: React.FC<{ quote: QuotesFloatingScene3DProps['quotes'][number]; index: number }> = ({ quote, index }) => {
+const FloatingQuote: React.FC<{
+  quote: QuotesFloatingScene3DProps["quotes"][number];
+  index: number;
+}> = ({ quote, index }) => {
+  const router = useRouter();
+  const group = useRef<THREE.Group>(null);
   const mesh = useRef<THREE.Mesh>(null);
+  const basePosition = useMemo(() => {
+    // Spread cards further out in a loose ring and stagger heights.
+    const angle = index * 1.6;
+    const radius = 3.5 + (index % 3) * 0.6;
+    const y = 0.6 + (index % 4) * 0.2;
+    return new THREE.Vector3(
+      Math.cos(angle) * radius,
+      y,
+      Math.sin(angle) * radius
+    );
+  }, [index]);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    if (group.current) {
+      const slowOrbit = t / 4 + index * 0.6;
+      const orbitRadius = 0.7;
+      group.current.position.x =
+        basePosition.x + Math.cos(slowOrbit) * orbitRadius;
+      group.current.position.z =
+        basePosition.z + Math.sin(slowOrbit) * orbitRadius;
+      group.current.position.y =
+        basePosition.y + Math.sin(t * 1.2 + index) * 0.4;
+    }
     if (mesh.current) {
       mesh.current.rotation.y = Math.sin(t / 2 + index) / 6;
-      mesh.current.position.y = Math.sin(t + index) * 0.3;
+      mesh.current.position.y = Math.sin(t + index) * 0.25;
     }
   });
+  const handleOpenQuote = () => {
+    router.push(`/quotes/${quote.id}`);
+  };
   return (
-    <group position={[Math.sin(index) * 2, 1, Math.cos(index) * 2]}>
+    <group ref={group} position={basePosition.toArray()}>
       <mesh ref={mesh}>
         <planeGeometry args={[2.2, 1.2]} />
-        <meshStandardMaterial color={`hsl(${index * 40}, 70%, 80%)`} transparent opacity={0.85} />
+        <meshStandardMaterial
+          color={`hsl(${index * 40}, 70%, 80%)`}
+          transparent
+          opacity={0.85}
+        />
       </mesh>
       <Html center>
-        <div className="w-40 rounded-lg bg-white/80 p-3 text-xs text-slate-700 shadow">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleOpenQuote}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleOpenQuote();
+            }
+          }}
+          className="flex w-40 cursor-pointer flex-col gap-1 rounded-lg bg-white/80 p-3 text-xs text-slate-700 shadow transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+        >
+          <p className="">{quote.scheduleTitle}</p>
           <p className="font-semibold">p.{quote.page}</p>
-          <p className="mt-1 line-clamp-3">{quote.text}</p>
+          <p className="line-clamp-3">{quote.text}</p>
+          <p className="text-right text-xs text-slate-400">by {quote.author}</p>
         </div>
       </Html>
     </group>
   );
 };
 
-export const QuotesFloatingScene3D: React.FC<QuotesFloatingScene3DProps> = ({ quotes }) => {
+export const QuotesFloatingScene3D: React.FC<QuotesFloatingScene3DProps> = ({
+  quotes,
+}) => {
   const data = useMemo(() => quotes.slice(0, 6), [quotes]);
-
   return (
     <div className="h-[340px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-900/95">
       <Canvas camera={{ position: [0, 1.5, 5], fov: 45 }}>

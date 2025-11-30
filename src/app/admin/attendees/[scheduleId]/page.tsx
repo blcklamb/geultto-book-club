@@ -15,14 +15,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export default async function AdminAttendeesPage({
   params,
 }: {
-  params: { scheduleId: string };
+  params: Promise<{ scheduleId: string }>;
 }) {
   await ensureRole(["admin"]);
+  const scheduleId = (await params).scheduleId;
   const supabase = await createSupabaseServerClient();
   const { data: schedule } = await supabase
     .from("schedules")
     .select("id, book_title, date")
-    .eq("id", params.scheduleId)
+    .eq("id", scheduleId)
     .single();
 
   const { data: attendees } = await supabase
@@ -30,10 +31,10 @@ export default async function AdminAttendeesPage({
     .select(
       "user_id, is_attending, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
     )
-    .eq("schedule_id", params.scheduleId);
+    .eq("schedule_id", scheduleId);
 
   return (
-    <Card>
+    <Card className="m-8">
       <CardHeader>
         <CardTitle>{schedule?.book_title ?? "모임"} 참석자 관리</CardTitle>
         <p className="text-xs text-slate-500">
@@ -43,7 +44,7 @@ export default async function AdminAttendeesPage({
       </CardHeader>
       <CardContent>
         <form action="/api/admin/attendees" method="post" className="space-y-4">
-          <input type="hidden" name="scheduleId" value={params.scheduleId} />
+          <input type="hidden" name="scheduleId" value={scheduleId} />
           <Table>
             <TableHeader>
               <TableRow>
@@ -56,6 +57,11 @@ export default async function AdminAttendeesPage({
               {attendees?.map((attendee) => (
                 <TableRow key={attendee.user_id}>
                   <TableCell>
+                    <input
+                      type="hidden"
+                      name="userIds"
+                      value={attendee.user_id}
+                    />
                     {attendee.user?.nickname ?? attendee.user_id}
                   </TableCell>
                   <TableCell>
