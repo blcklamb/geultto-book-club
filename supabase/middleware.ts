@@ -37,6 +37,32 @@ export async function updateSession(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Ensure profile row exists on first login.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      console.log("🐈 OAuth login for user:", user?.id);
+      if (user) {
+        const name =
+          (user.user_metadata as Record<string, string | undefined>)?.name ??
+          user.email ??
+          "회원";
+        const { data, error } = await supabase
+          .from("users")
+          .upsert(
+            {
+              id: user.id,
+              nickname: name,
+              real_name: name,
+            },
+            { onConflict: "id", ignoreDuplicates: true }
+          )
+          .select("id")
+          .single();
+        console.log("🐈 Upserted user profile for user:", data?.id);
+        console.log(" 🐈 Upsert error:", error);
+      }
+
       const redirectUrl = new URL(
         next ?? requestUrl.pathname,
         requestUrl.origin

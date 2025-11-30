@@ -12,7 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SessionUser } from "@/lib/auth";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@supabase/client";
 
 type SessionContextValue = {
   supabase: SupabaseClient;
