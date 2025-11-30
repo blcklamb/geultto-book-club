@@ -6,6 +6,7 @@ import { CommentThread } from "@/components/CommentThread";
 import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
 import { ReviewViewer } from "@/components/ReviewViewer";
+import DetailHeader from "@/components/DetailHeader";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -45,24 +46,26 @@ export default async function ReviewDetailPage({
     .order("created_at", { ascending: true });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] p-8">
-      <article className="space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold text-slate-900">
-            {review.title}
-          </h1>
-          <p className="text-sm text-slate-500">
-            {review.author?.nickname ?? "익명"} ·{" "}
-            {new Date(review.created_at || "").toLocaleDateString("ko-KR")} ·{" "}
-            {review.schedule?.book_title}
-          </p>
-        </header>
-        <Card>
-          <CardContent className="prose prose-slate max-w-none p-4">
-            <ReviewViewer content={JSON.parse(review.content_rich)} />
-          </CardContent>
-        </Card>
-        <CommentThread
+    <>
+      <DetailHeader title="독후감 상세" />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] p-8">
+        <article className="space-y-6">
+          <header className="space-y-2">
+            <h1 className="text-3xl font-semibold text-slate-900">
+              {review.title}
+            </h1>
+            <p className="text-sm text-slate-500">
+              {review.author?.nickname ?? "익명"} ·{" "}
+              {new Date(review.created_at || "").toLocaleDateString("ko-KR")} ·{" "}
+              {review.schedule?.book_title}
+            </p>
+          </header>
+          <Card>
+            <CardContent className="prose prose-slate max-w-none p-4">
+              <ReviewViewer content={JSON.parse(review.content_rich)} />
+            </CardContent>
+          </Card>
+          {/* <CommentThread
           comments={
             comments?.map((comment) => ({
               id: comment.id,
@@ -74,11 +77,11 @@ export default async function ReviewDetailPage({
             })) ?? []
           }
           disabled={!sessionUser || sessionUser.role === "pending"}
-        />
-      </article>
-      {/* Client-side component ensures view count increments after hydration */}
-      <ViewCountPinger reviewId={review.id} />
-      <ReviewHighlightSidebar
+        /> */}
+        </article>
+        {/* Client-side component ensures view count increments after hydration */}
+        <ViewCountPinger reviewId={review.id} />
+        {/* <ReviewHighlightSidebar
         highlights={
           highlights?.map((highlight) => ({
             id: highlight.id,
@@ -87,7 +90,8 @@ export default async function ReviewDetailPage({
             comment: highlight.comment ?? undefined,
           })) ?? []
         }
-      />
-    </div>
+      /> */}
+      </div>
+    </>
   );
 }
