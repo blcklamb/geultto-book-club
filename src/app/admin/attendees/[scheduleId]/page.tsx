@@ -55,19 +55,21 @@ export default async function AdminAttendeesPage({
             <TableBody>
               {attendees?.map((attendee) => (
                 <TableRow key={attendee.user_id}>
-                  <TableCell>{attendee.user?.nickname ?? attendee.user_id}</TableCell>
+                  <TableCell>
+                    {attendee.user?.nickname ?? attendee.user_id}
+                  </TableCell>
                   <TableCell>
                     <input
                       type="checkbox"
                       name={`attending_${attendee.user_id}`}
-                      defaultChecked={attendee.is_attending}
+                      defaultChecked={!!attendee.is_attending}
                     />
                   </TableCell>
                   <TableCell>
                     <input
                       type="checkbox"
                       name={`fee_${attendee.user_id}`}
-                      defaultChecked={attendee.fee_paid}
+                      defaultChecked={!!attendee.fee_paid}
                     />
                   </TableCell>
                 </TableRow>

@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
   }
   const formData = await req.formData();
   const userId = formData.get("userId")?.toString();
-  const role = formData.get("role")?.toString();
+  const role = formData.get("role")?.toString() as
+    | "pending"
+    | "member"
+    | "admin";
   if (!userId || !role) {
     return NextResponse.json(
       { message: "userId/role이 필요합니다." },

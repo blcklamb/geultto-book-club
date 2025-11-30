@@ -51,7 +51,9 @@ export default async function TopicDetailPage({
             id: comment.id,
             body: comment.body,
             author: comment.author?.nickname ?? "익명",
-            createdAt: new Date(comment.created_at).toLocaleString("ko-KR"),
+            createdAt: new Date(comment.created_at || "").toLocaleString(
+              "ko-KR"
+            ),
           })) ?? []
         }
         disabled={!sessionUser || sessionUser.role === "pending"}

@@ -51,7 +51,7 @@ export default async function ReviewDetailPage({
           </h1>
           <p className="text-sm text-slate-500">
             {review.author?.nickname ?? "익명"} ·{" "}
-            {new Date(review.created_at).toLocaleDateString("ko-KR")} ·{" "}
+            {new Date(review.created_at || "").toLocaleDateString("ko-KR")} ·{" "}
             {review.schedule?.book_title}
           </p>
         </header>
@@ -70,7 +70,9 @@ export default async function ReviewDetailPage({
               id: comment.id,
               body: comment.body,
               author: comment.author?.nickname ?? "익명",
-              createdAt: new Date(comment.created_at).toLocaleString("ko-KR"),
+              createdAt: new Date(comment.created_at || "").toLocaleString(
+                "ko-KR"
+              ),
             })) ?? []
           }
           disabled={!sessionUser || sessionUser.role === "pending"}

@@ -39,8 +39,8 @@ export default async function TopicsPage() {
                 <p>{topic.schedule?.book_title}</p>
                 <p className="text-xs text-slate-400">
                   {topic.author?.nickname ?? "익명"} ·{" "}
-                  {new Date(topic.created_at).toLocaleDateString("ko-KR")} ·
-                  댓글 {topic.topic_comments?.[0]?.count ?? 0}
+                  {new Date(topic.created_at || "").toLocaleDateString("ko-KR")}{" "}
+                  · 댓글 {topic.topic_comments?.[0]?.count ?? 0}
                 </p>
               </CardContent>
             </Card>

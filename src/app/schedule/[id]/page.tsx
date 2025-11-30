@@ -101,7 +101,7 @@ export default async function ScheduleDetailPage({
                     type="radio"
                     name="isAttending"
                     value="true"
-                    defaultChecked={myAttendance?.is_attending}
+                    defaultChecked={!!myAttendance?.is_attending}
                   />
                   참석합니다
                 </label>
@@ -218,14 +218,14 @@ export default async function ScheduleDetailPage({
                         <input
                           type="checkbox"
                           name={`attending_${attendee.user_id}`}
-                          defaultChecked={attendee.is_attending}
+                          defaultChecked={!!attendee.is_attending}
                         />
                       </TableCell>
                       <TableCell>
                         <input
                           type="checkbox"
                           name={`fee_${attendee.user_id}`}
-                          defaultChecked={attendee.fee_paid}
+                          defaultChecked={!!attendee.fee_paid}
                         />
                       </TableCell>
                     </TableRow>
