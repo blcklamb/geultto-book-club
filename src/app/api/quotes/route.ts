@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
   const scheduleId = formData.get("scheduleId")?.toString();
   const text = formData.get("text")?.toString();
   const pageNumber = formData.get("pageNumber")?.toString();
+  const redirectTo = formData.get("redirectTo")?.toString();
 
   if (!scheduleId || !text) {
     return NextResponse.json(
@@ -40,5 +41,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.redirect(new URL(`/schedule/${scheduleId}`, req.url));
+  const fallbackUrl = `/schedule/${scheduleId}`;
+  const target =
+    redirectTo && redirectTo.startsWith("/")
+      ? redirectTo
+      : fallbackUrl;
+
+  return NextResponse.redirect(new URL(target, req.url));
 }

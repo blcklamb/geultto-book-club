@@ -16,30 +16,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const userIds = formData.getAll("userIds").map((id) => id?.toString() || "");
+
   const updates: Array<{
     schedule_id: string;
     user_id: string;
     is_attending: boolean;
     fee_paid: boolean;
   }> = [];
-  for (const [key, value] of formData.entries()) {
-    if (key.startsWith("attending_")) {
-      const userId = key.replace("attending_", "");
-      const isAttending = value === "on" || value === "true";
-      const feePaid =
-        formData.get(`fee_${userId}`) === "on" ||
-        formData.get(`fee_${userId}`) === "true";
-      updates.push({
-        schedule_id: scheduleId,
-        user_id: userId,
-        is_attending: isAttending,
-        fee_paid: feePaid,
-      });
-    }
+  for (const userId of userIds) {
+    if (!userId) continue;
+    const isAttending =
+      formData.get(`attending_${userId}`) === "on" ||
+      formData.get(`attending_${userId}`) === "true";
+    const feePaid =
+      formData.get(`fee_${userId}`) === "on" ||
+      formData.get(`fee_${userId}`) === "true";
+    updates.push({
+      schedule_id: scheduleId,
+      user_id: userId,
+      is_attending: isAttending,
+      fee_paid: feePaid,
+    });
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("schedule_attendees")
     .upsert(updates, { onConflict: "schedule_id,user_id" });
   if (error) {
@@ -48,6 +50,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  console.log("✅Updates to apply:", updates);
+  console.log("✅Updated attendees:", data);
 
   return NextResponse.redirect(
     new URL(`/admin/attendees/${scheduleId}`, req.url)
