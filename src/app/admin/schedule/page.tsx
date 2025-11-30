@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export default async function AdminSchedulePage() {
   await ensureRole(["admin"]);
   const supabase = await createSupabaseServerClient();
-  const { data: schedules } = await supabase
+  const { data: schedules, error } = await supabase
     .from("schedules")
     .select("id, date, place, book_title, book_link, genre_tag")
     .order("date", { ascending: false });

@@ -41,7 +41,6 @@ export async function updateSession(request: NextRequest) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      console.log("🐈 OAuth login for user:", user?.id);
       if (user) {
         const name =
           (user.user_metadata as Record<string, string | undefined>)?.name ??
@@ -59,8 +58,6 @@ export async function updateSession(request: NextRequest) {
           )
           .select("id")
           .single();
-        console.log("🐈 Upserted user profile for user:", data?.id);
-        console.log(" 🐈 Upsert error:", error);
       }
 
       const redirectUrl = new URL(
