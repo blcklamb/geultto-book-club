@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "kakao",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `${process.env.VERCEL_URL}/auth/callback`,
     },
   });
 
