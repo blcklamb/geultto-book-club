@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth";
@@ -13,7 +13,9 @@ export default async function ReviewsPage() {
 
   const { data: reviews } = await supabase
     .from("reviews")
-    .select("id, title, schedules(book_title), users(nickname), created_at")
+    .select(
+      "id, title, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at"
+    )
     .order("created_at", { ascending: false });
 
   return (
@@ -37,8 +39,8 @@ export default async function ReviewsPage() {
             key={review.id}
             id={review.id}
             title={review.title}
-            author={review.users[0].nickname ?? "익명"}
-            scheduleTitle={review.schedules[0].book_title ?? "모임"}
+            author={review.author?.nickname ?? "익명"}
+            scheduleTitle={review.schedule?.book_title ?? "모임"}
             createdAt={new Date(review.created_at).toLocaleDateString("ko-KR")}
           />
         ))}

@@ -1,5 +1,5 @@
 import { ensureRole } from "@/lib/auth";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

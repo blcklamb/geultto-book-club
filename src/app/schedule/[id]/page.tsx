@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,12 +41,16 @@ export default async function ScheduleDetailPage({
 
   const { data: attendees } = await supabase
     .from("schedule_attendees")
-    .select("user_id, is_attending, fee_paid, users(nickname)")
+    .select(
+      "user_id, is_attending, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
+    )
     .eq("schedule_id", params.id);
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id, text, page_number, author_id, users(nickname)")
+    .select(
+      "id, text, page_number, author_id, author:users!quotes_author_id_fkey(nickname)"
+    )
     .eq("schedule_id", params.id)
     .order("created_at", { ascending: false });
 
@@ -178,8 +182,7 @@ export default async function ScheduleDetailPage({
                 <p className="text-xs text-slate-400">p.{quote.page_number}</p>
                 <p>“{quote.text}”</p>
                 <p className="text-xs text-slate-400">
-                  {/* // TODO: 뭔가 이상해요 */}
-                  {quote.users[0].nickname}
+                  {quote.author?.nickname}
                 </p>
               </CardContent>
             </Card>
@@ -198,19 +201,18 @@ export default async function ScheduleDetailPage({
             <form action="/api/admin/attendees" method="post">
               <input type="hidden" name="scheduleId" value={schedule.id} />
               <Table>
-                <TableHead>
+                <TableHeader>
                   <TableRow>
-                    <TableHeader>닉네임</TableHeader>
-                    <TableHeader>참석</TableHeader>
-                    <TableHeader>회비 납부</TableHeader>
+                    <TableHead>닉네임</TableHead>
+                    <TableHead>참석</TableHead>
+                    <TableHead>회비 납부</TableHead>
                   </TableRow>
-                </TableHead>
+                </TableHeader>
                 <TableBody>
                   {attendees?.map((attendee) => (
                     <TableRow key={attendee.user_id}>
                       <TableCell>
-                        {/* // TODO: 뭔가 이상해요 */}
-                        {attendee.users[0]?.nickname ?? attendee.user_id}
+                        {attendee.user?.nickname ?? attendee.user_id}
                       </TableCell>
                       <TableCell>
                         <input

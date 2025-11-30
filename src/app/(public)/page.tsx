@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { HomeScene3D } from "@/components/HomeScene3D";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +55,7 @@ export default async function HomePage() {
         <div className="space-y-6">
           <div className="space-y-3">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-              책을 좋아하는 사람들의 따뜻한 모임, 글또 북클럽
+              어쩌다 4기, 글또 북클럽
             </h1>
             <p className="text-base text-slate-600">
               다음 모임 일정을 확인하고, 독후감과 토론으로 풍성한 대화를

@@ -1,5 +1,5 @@
 import { ensureRole } from "@/lib/auth";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -27,7 +27,9 @@ export default async function AdminAttendeesPage({
 
   const { data: attendees } = await supabase
     .from("schedule_attendees")
-    .select("user_id, is_attending, fee_paid, users(nickname)")
+    .select(
+      "user_id, is_attending, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
+    )
     .eq("schedule_id", params.scheduleId);
 
   return (
@@ -43,19 +45,17 @@ export default async function AdminAttendeesPage({
         <form action="/api/admin/attendees" method="post" className="space-y-4">
           <input type="hidden" name="scheduleId" value={params.scheduleId} />
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableHeader>닉네임</TableHeader>
-                <TableHeader>참석</TableHeader>
-                <TableHeader>회비 납부</TableHeader>
+                <TableHead>닉네임</TableHead>
+                <TableHead>참석</TableHead>
+                <TableHead>회비 납부</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {attendees?.map((attendee) => (
                 <TableRow key={attendee.user_id}>
-                  <TableCell>
-                    {attendee.users[0].nickname ?? attendee.user_id}
-                  </TableCell>
+                  <TableCell>{attendee.user?.nickname ?? attendee.user_id}</TableCell>
                   <TableCell>
                     <input
                       type="checkbox"

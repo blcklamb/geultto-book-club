@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export default async function TopicsPage() {
   const { data: topics } = await supabase
     .from("topics")
     .select(
-      "id, title, created_at, schedules(book_title), users(nickname), topic_comments(count)"
+      "id, title, created_at, schedule:schedules!topics_schedule_id_fkey(book_title), author:users!topics_author_id_fkey(nickname), topic_comments(count)"
     )
     .order("created_at", { ascending: false });
 
@@ -36,9 +36,9 @@ export default async function TopicsPage() {
                 <CardTitle className="text-lg">{topic.title}</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-slate-600">
-                <p>{topic.schedules[0].book_title}</p>
+                <p>{topic.schedule?.book_title}</p>
                 <p className="text-xs text-slate-400">
-                  {topic.users[0].nickname ?? "익명"} ·{" "}
+                  {topic.author?.nickname ?? "익명"} ·{" "}
                   {new Date(topic.created_at).toLocaleDateString("ko-KR")} ·
                   댓글 {topic.topic_comments?.[0]?.count ?? 0}
                 </p>

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { ReviewHighlightSidebar } from "@/components/ReviewHighlightSidebar";
 import { CommentThread } from "@/components/CommentThread";
@@ -21,7 +21,7 @@ export default async function ReviewDetailPage({
   const { data: review } = await supabase
     .from("reviews")
     .select(
-      "id, title, content_markdown, content_rich, created_at, users(nickname), schedules(book_title)"
+      "id, title, content_markdown, content_rich, created_at, author:users!reviews_author_id_fkey(nickname), schedule:schedules!reviews_schedule_id_fkey(book_title)"
     )
     .eq("id", params.id)
     .single();
@@ -36,7 +36,9 @@ export default async function ReviewDetailPage({
 
   const { data: comments } = await supabase
     .from("review_comments")
-    .select("id, body, created_at, users(nickname)")
+    .select(
+      "id, body, created_at, author:users!review_comments_author_id_fkey(nickname)"
+    )
     .eq("review_id", params.id)
     .order("created_at", { ascending: true });
 
@@ -48,9 +50,9 @@ export default async function ReviewDetailPage({
             {review.title}
           </h1>
           <p className="text-sm text-slate-500">
-            {review.users[0].nickname ?? "익명"} ·{" "}
+            {review.author?.nickname ?? "익명"} ·{" "}
             {new Date(review.created_at).toLocaleDateString("ko-KR")} ·{" "}
-            {review.schedules[0].book_title}
+            {review.schedule?.book_title}
           </p>
         </header>
         <Card>
@@ -67,7 +69,7 @@ export default async function ReviewDetailPage({
             comments?.map((comment) => ({
               id: comment.id,
               body: comment.body,
-              author: comment.users[0].nickname ?? "익명",
+              author: comment.author?.nickname ?? "익명",
               createdAt: new Date(comment.created_at).toLocaleString("ko-KR"),
             })) ?? []
           }
