@@ -211,6 +211,39 @@ export interface Database {
           }
         ];
       };
+      review_reactions: {
+        Row: {
+          id: string;
+          review_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          review_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["review_reactions"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "review_reactions_review_id_fkey";
+            columns: ["review_id"];
+            referencedRelation: "reviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       quotes: {
         Row: {
           id: string;
@@ -240,6 +273,39 @@ export interface Database {
             foreignKeyName: "quotes_schedule_id_fkey";
             columns: ["schedule_id"];
             referencedRelation: "schedules";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      quote_reactions: {
+        Row: {
+          id: string;
+          quote_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          quote_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["quote_reactions"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "quote_reactions_quote_id_fkey";
+            columns: ["quote_id"];
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quote_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
             referencedColumns: ["id"];
           }
         ];

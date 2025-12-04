@@ -29,7 +29,13 @@ export function ReviewEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        horizontalRule: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        strike: false,
+      }),
       HorizontalRule,
       Image,
       ListItem,

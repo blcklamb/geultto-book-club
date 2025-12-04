@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { UserAvatar } from "./UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useSession } from "./SessionProvider";
+import { useProfileEmoji } from "./DetailHeader";
 
 const navItems = [
   { href: "/schedule", label: "일정" },
@@ -17,6 +18,7 @@ const navItems = [
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
+  const profileEmoji = useProfileEmoji("");
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -25,8 +27,8 @@ export const Navbar: React.FC = () => {
           href="/"
           className="flex items-center gap-2 text-lg font-semibold"
         >
-          <span className="inline-block h-8 w-8 rounded-lg bg-slate-900 text-center text-white">
-            📘
+          <span className="inline-block h-8 w-8 rounded-lg bg-slate-900 text-center text-white py-1">
+            📚
           </span>
           <span>글또 북클럽</span>
         </Link>
@@ -65,7 +67,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2">
               <UserAvatar
-                emoji={session.user.role === "admin" ? "🧠" : "📚"}
+                emoji={session.user.role === "admin" ? "🧠" : profileEmoji}
                 bgColor="#E2E8F0"
                 size="sm"
               />
