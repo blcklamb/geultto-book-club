@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
 import { ReviewViewer } from "@/components/ReviewViewer";
 import DetailHeader from "@/components/DetailHeader";
+import { revalidatePath } from "next/cache";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -43,7 +44,33 @@ export default async function ReviewDetailPage({
       "id, body, created_at, author:users!review_comments_author_id_fkey(nickname)"
     )
     .eq("review_id", reviewId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
+
+  async function handleCommentSubmit(body: string) {
+    "use server";
+    if (!body) throw new Error("댓글 내용을 입력해주세요.");
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const { error } = await supabase.from("review_comments").insert([
+      {
+        review_id: reviewId,
+        author_id: user.id,
+        body,
+      },
+    ]);
+    if (error) {
+      throw new Error("댓글 작성 실패: " + error.message);
+    }
+    // TODO: refetch or revalidate logic can be added here if needed
+    revalidatePath(`/reviews/${reviewId}`);
+  }
 
   return (
     <>
@@ -65,19 +92,20 @@ export default async function ReviewDetailPage({
               <ReviewViewer content={JSON.parse(review.content_rich)} />
             </CardContent>
           </Card>
-          {/* <CommentThread
-          comments={
-            comments?.map((comment) => ({
-              id: comment.id,
-              body: comment.body,
-              author: comment.author?.nickname ?? "익명",
-              createdAt: new Date(comment.created_at || "").toLocaleString(
-                "ko-KR"
-              ),
-            })) ?? []
-          }
-          disabled={!sessionUser || sessionUser.role === "pending"}
-        /> */}
+          <CommentThread
+            comments={
+              comments?.map((comment) => ({
+                id: comment.id,
+                body: comment.body,
+                author: comment.author?.nickname ?? "익명",
+                createdAt: new Date(comment.created_at || "").toLocaleString(
+                  "ko-KR"
+                ),
+              })) ?? []
+            }
+            disabled={!sessionUser || sessionUser.role === "pending"}
+            onSubmit={handleCommentSubmit}
+          />
         </article>
         {/* Client-side component ensures view count increments after hydration */}
         <ViewCountPinger reviewId={review.id} />

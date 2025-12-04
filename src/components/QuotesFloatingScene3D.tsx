@@ -79,7 +79,7 @@ const FloatingQuote: React.FC<{
         >
           <p className="">{quote.scheduleTitle}</p>
           <p className="font-semibold">p.{quote.page}</p>
-          <p className="line-clamp-3">{quote.text}</p>
+          <p className="line-clamp-3 italic">{quote.text}</p>
           <p className="text-right text-xs text-slate-400">by {quote.author}</p>
         </div>
       </Html>

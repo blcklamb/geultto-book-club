@@ -91,6 +91,7 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
                 <Textarea
                   name="text"
                   required
+                  className="h-24 resize-none"
                   placeholder="책에서 인상 깊었던 문장을 입력하세요"
                 />
               </label>
