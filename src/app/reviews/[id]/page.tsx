@@ -9,6 +9,8 @@ import { ReviewViewer } from "@/components/ReviewViewer";
 import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
 import { ReviewDetailActions } from "@/components/ReviewDetailActions";
+import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { fetchReactionSummary, toggleReaction } from "@/lib/reactions";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -60,6 +62,13 @@ export default async function ReviewDetailPage({
       : review.content_rich ?? defaultContent;
 
   const canEdit = !!sessionUser && review.author_id === sessionUser.id;
+  const reviewReactions = await fetchReactionSummary(
+    supabase,
+    "review_reactions",
+    "review_id",
+    reviewId,
+    sessionUser?.id
+  );
 
   async function handleCommentSubmit(body: string) {
     "use server";
@@ -164,6 +173,37 @@ export default async function ReviewDetailPage({
     redirect("/reviews");
   }
 
+  async function handleToggleReviewReaction(emoji: string) {
+    "use server";
+    const supabase = await createSupabaseServerClient();
+    const sessionUser = await getSessionUser();
+
+    if (!sessionUser) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const reviewId = (await params).id;
+    await toggleReaction({
+      supabase,
+      table: "review_reactions",
+      contentColumn: "review_id",
+      contentId: reviewId,
+      userId: sessionUser.id,
+      emoji,
+    });
+
+    const summary = await fetchReactionSummary(
+      supabase,
+      "review_reactions",
+      "review_id",
+      reviewId,
+      sessionUser.id
+    );
+
+    revalidatePath(`/reviews/${reviewId}`);
+    return summary;
+  }
+
   return (
     <>
       <DetailHeader title="독후감 상세" />
@@ -195,6 +235,12 @@ export default async function ReviewDetailPage({
               <ReviewViewer content={reviewContent} />
             </CardContent>
           </Card>
+          <EmojiReactionBar
+            initialReactions={reviewReactions}
+            onToggle={handleToggleReviewReaction}
+            disabled={!sessionUser}
+            currentUserNickname={sessionUser?.nickname}
+          />
           <CommentThread
             comments={
               comments?.map((comment) => ({

@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
         .map((v) => v.trim())
         .filter(Boolean) ?? [],
     recommended_book: formData.get("recommendedBook")?.toString(),
+    profile_emoji: formData.get("profileEmoji")?.toString(),
   };
 
   if (!payload.nickname || !payload.real_name) {

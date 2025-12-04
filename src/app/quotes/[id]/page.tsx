@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth";
 import { QuoteDetailActions } from "@/components/QuoteDetailActions";
 import { QuoteImageExporter } from "@/components/QuoteImageExporter";
+import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { fetchReactionSummary, toggleReaction } from "@/lib/reactions";
 
 // Quote detail page: shows a single quote with related schedule context.
 export default async function QuoteDetailPage({
@@ -28,6 +30,13 @@ export default async function QuoteDetailPage({
   if (!quote) notFound();
 
   const canEdit = !!sessionUser && quote.author_id === sessionUser.id;
+  const quoteReactions = await fetchReactionSummary(
+    supabase,
+    "quote_reactions",
+    "quote_id",
+    quoteId,
+    sessionUser?.id
+  );
 
   async function handleUpdateQuote(formData: FormData) {
     "use server";
@@ -91,6 +100,37 @@ export default async function QuoteDetailPage({
     redirect("/quotes");
   }
 
+  async function handleToggleQuoteReaction(emoji: string) {
+    "use server";
+    const supabase = await createSupabaseServerClient();
+    const sessionUser = await getSessionUser();
+
+    if (!sessionUser) {
+      throw new Error("로그인 후 반응을 남길 수 있습니다.");
+    }
+
+    const quoteId = (await params).id;
+    await toggleReaction({
+      supabase,
+      table: "quote_reactions",
+      contentColumn: "quote_id",
+      contentId: quoteId,
+      userId: sessionUser.id,
+      emoji,
+    });
+
+    const summary = await fetchReactionSummary(
+      supabase,
+      "quote_reactions",
+      "quote_id",
+      quoteId,
+      sessionUser.id
+    );
+
+    revalidatePath(`/quotes/${quoteId}`);
+    return summary;
+  }
+
   return (
     <>
       <DetailHeader title="인상 깊은 구절" />
@@ -134,6 +174,12 @@ export default async function QuoteDetailPage({
                 author={quote.author?.nickname}
               />
             </div>
+            <EmojiReactionBar
+              initialReactions={quoteReactions}
+              onToggle={handleToggleQuoteReaction}
+              disabled={!sessionUser}
+              currentUserNickname={sessionUser?.nickname}
+            />
           </CardContent>
         </Card>
       </div>
