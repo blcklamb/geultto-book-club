@@ -6,6 +6,7 @@ import DetailHeader from "@/components/DetailHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessionUser } from "@/lib/auth";
 import { QuoteDetailActions } from "@/components/QuoteDetailActions";
+import { QuoteImageExporter } from "@/components/QuoteImageExporter";
 
 // Quote detail page: shows a single quote with related schedule context.
 export default async function QuoteDetailPage({
@@ -93,7 +94,7 @@ export default async function QuoteDetailPage({
   return (
     <>
       <DetailHeader title="인상 깊은 구절" />
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-8 max-w-3xl mx-auto">
         <Card>
           <CardHeader className="flex flex-row items-start justify-between">
             <CardTitle className="text-xl font-semibold text-slate-900">
@@ -117,14 +118,22 @@ export default async function QuoteDetailPage({
             <p className="text-sm text-slate-500">
               by {quote.author?.nickname ?? "익명"}
             </p>
-            {quote.schedule_id ? (
-              <Link
-                href={`/schedule/${quote.schedule_id}`}
-                className="text-sm text-indigo-600 underline underline-offset-4 hover:text-indigo-700"
-              >
-                관련 모임 상세 보기
-              </Link>
-            ) : null}
+            <div className="flex flex-row items-center gap-4 text-xs text-slate-400">
+              {quote.schedule_id ? (
+                <Link
+                  href={`/schedule/${quote.schedule_id}`}
+                  className="text-sm text-indigo-600 underline underline-offset-4 hover:text-indigo-700"
+                >
+                  관련 모임 상세 보기
+                </Link>
+              ) : null}
+              <QuoteImageExporter
+                quoteText={quote.text}
+                bookTitle={quote.schedule?.book_title}
+                pageNumber={quote.page_number}
+                author={quote.author?.nickname}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
