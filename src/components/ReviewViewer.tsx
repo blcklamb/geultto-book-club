@@ -17,7 +17,13 @@ export const ReviewViewer = ({ content }: ReviewViewerProps) => {
       {renderTiptapContent({
         content,
         extensions: [
-          StarterKit,
+          StarterKit.configure({
+            horizontalRule: false,
+            bulletList: false,
+            orderedList: false,
+            listItem: false,
+            strike: false,
+          }),
           HorizontalRule,
           Image,
           ListItem,
