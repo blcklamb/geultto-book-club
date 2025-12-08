@@ -6,6 +6,10 @@ export const Image = BaseImage.extend({
 
   addOptions() {
     return {
+      inline: false,
+      allowBase64: false,
+      resize: false,
+      ...this.parent?.(),
       HTMLAttributes: {
         class: "tiptap-image",
       },

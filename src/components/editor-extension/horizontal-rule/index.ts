@@ -8,9 +8,11 @@ export { type HorizontalRuleOptions };
 export const HorizontalRule = TiptapHorizontalRule.extend({
   addOptions() {
     return {
+      ...this.parent?.(),
       HTMLAttributes: {
         class: "tiptap-horizontal-rule",
       },
+      nextNodeType: this.parent?.().nextNodeType || "paragraph",
     };
   },
 });
