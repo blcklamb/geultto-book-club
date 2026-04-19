@@ -33,8 +33,15 @@ export async function updateSession(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next");
 
-  // Handle OAuth callback codes wherever they arrive (e.g., / or /auth/callback).
-  if (code) {
+  // Dedicated OAuth routes have their own handlers that exchange the code.
+  // If we exchange here first, the handler re-runs with no `code` and falls
+  // through to its error branch.
+  const hasDedicatedHandler =
+    requestUrl.pathname === "/auth/callback" ||
+    requestUrl.pathname === "/auth/confirm";
+
+  // Handle OAuth callback codes when they arrive at paths without a dedicated handler.
+  if (code && !hasDedicatedHandler) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       // Ensure profile row exists on first login.
