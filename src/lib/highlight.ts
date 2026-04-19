@@ -24,3 +24,15 @@ export type HighlightWithComments = {
   endPos: number;
   comments: HighlightComment[];
 };
+
+// Deterministic pastel color per highlight id.
+// Semi-transparent so overlapping highlights stack visibly in the DOM
+// (TipTap renders overlaps as nested <mark> elements).
+export function highlightColorFor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsla(${hue}, 85%, 72%, 0.4)`;
+}

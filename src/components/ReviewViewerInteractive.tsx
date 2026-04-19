@@ -13,7 +13,7 @@ import type { JSONContent } from "@tiptap/core";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
-import type { HighlightWithComments } from "@/lib/highlight";
+import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
 
 type SelectionPopup = {
   x: number;
@@ -70,7 +70,7 @@ export function ReviewViewerInteractive({
       ReviewHighlightMark.configure({
         multicolor: true,
         HTMLAttributes: {
-          class: "bg-yellow-200 cursor-pointer rounded-sm",
+          class: "cursor-pointer rounded-sm",
         },
       }),
     ],
@@ -96,7 +96,7 @@ export function ReviewViewerInteractive({
         newTr.addMark(
           h.startPos,
           h.endPos,
-          markType.create({ highlightId: h.id, color: "#fef3c7" })
+          markType.create({ highlightId: h.id, color: highlightColorFor(h.id) })
         );
       } catch {
         // Skip highlights with invalid positions (e.g., after content edit)
@@ -220,7 +220,10 @@ export function ReviewViewerInteractive({
         newTr.addMark(
           selectionPopup.from,
           selectionPopup.to,
-          markType.create({ highlightId: newHighlight.id, color: "#fef3c7" })
+          markType.create({
+            highlightId: newHighlight.id,
+            color: highlightColorFor(newHighlight.id),
+          })
         );
         editor.view.dispatch(newTr);
       }
@@ -242,11 +245,17 @@ export function ReviewViewerInteractive({
         const markType = schema.marks.highlight;
         if (markType) {
           try {
+            // Remove only the mark instance whose attrs match this highlight.
+            // Passing markType would strip every overlapping highlight in the range.
+            const specificMark = markType.create({
+              highlightId: highlight.id,
+              color: highlightColorFor(highlight.id),
+            });
             const newTr = editor.state.tr;
             newTr.removeMark(
               highlight.startPos,
               highlight.endPos,
-              markType
+              specificMark
             );
             editor.view.dispatch(newTr);
           } catch {

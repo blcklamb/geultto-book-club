@@ -7,6 +7,11 @@ import Highlight from "@tiptap/extension-highlight";
  * `data-highlight-id`.
  */
 export const ReviewHighlightMark = Highlight.extend({
+  // Allow multiple highlight marks (with different ids) to coexist on the
+  // same range. Default excludes is "_" which makes same-type marks replace
+  // each other — that would break subset overlaps on delete.
+  excludes: "",
+
   addAttributes() {
     return {
       ...this.parent?.(),
