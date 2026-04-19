@@ -211,6 +211,99 @@ export interface Database {
           }
         ];
       };
+      highlight_comments: {
+        Row: {
+          id: string;
+          highlight_id: string | null;
+          author_id: string | null;
+          body: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          highlight_id?: string | null;
+          author_id?: string | null;
+          body: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["highlight_comments"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "highlight_comments_highlight_id_fkey";
+            columns: ["highlight_id"];
+            referencedRelation: "review_highlights";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "highlight_comments_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      highlight_comment_replies: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          author_id: string | null;
+          body: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          author_id?: string | null;
+          body: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["highlight_comment_replies"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "highlight_comment_replies_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "highlight_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "highlight_comment_replies_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      highlight_comment_reactions: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["highlight_comment_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "highlight_comment_reactions_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "highlight_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "highlight_comment_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       review_reactions: {
         Row: {
           id: string;

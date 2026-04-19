@@ -69,6 +69,34 @@ CREATE TABLE IF NOT EXISTS public.review_highlights (
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 
+-- Comments on a highlight (threaded, notion-style)
+CREATE TABLE IF NOT EXISTS public.highlight_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  highlight_id uuid REFERENCES public.review_highlights(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+-- Replies to a highlight comment (1-level deep)
+CREATE TABLE IF NOT EXISTS public.highlight_comment_replies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.highlight_comments(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+-- Per-user emoji reactions on highlight comments
+CREATE TABLE IF NOT EXISTS public.highlight_comment_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.highlight_comments(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (comment_id, user_id, emoji)
+);
+
 CREATE TABLE IF NOT EXISTS public.quotes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -122,6 +150,9 @@ ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_highlights ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.highlight_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.highlight_comment_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.highlight_comment_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quote_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_reactions ENABLE ROW LEVEL SECURITY;
