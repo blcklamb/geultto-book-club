@@ -103,9 +103,7 @@ export default async function ReviewsPage({
                   : undefined
               }
               scheduleTitle={review.schedule?.book_title ?? "모임"}
-              createdAt={new Date(review.created_at || "").toLocaleDateString(
-                "ko-KR"
-              )}
+              createdAt={review.created_at}
             />
           ))}
         </div>

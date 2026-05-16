@@ -31,7 +31,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={[]}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
       />
     );
     expect(screen.getByText("첫 반응을 남겨보세요.")).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
         currentUserNickname="나"
       />
     );
@@ -62,7 +62,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
         disabled={true}
       />
     );
@@ -76,7 +76,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={[]}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
         disabled={true}
       />
     );
@@ -89,7 +89,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={[]}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
         disabled={false}
       />
     );
@@ -98,9 +98,9 @@ describe("EmojiReactionBar", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("반응 버튼 클릭 시 onToggle을 해당 이모지로 호출한다", async () => {
+  it("반응 버튼 클릭 시 toggleAction을 해당 이모지로 호출한다", async () => {
     const user = userEvent.setup();
-    const onToggle = vi.fn().mockResolvedValue([]);
+    const toggleAction = vi.fn().mockResolvedValue([]);
     const reactions = makeReactions([
       { emoji: "👍", count: 1, reactedByUser: false, nicknames: [] },
     ]);
@@ -108,20 +108,20 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={onToggle}
+        toggleAction={toggleAction}
       />
     );
 
     await user.click(screen.getByText("👍").closest("button")!);
 
     await waitFor(() => {
-      expect(onToggle).toHaveBeenCalledWith("👍");
+      expect(toggleAction).toHaveBeenCalledWith("👍");
     });
   });
 
-  it("onToggle이 에러를 던지면 에러 메시지를 표시한다", async () => {
+  it("toggleAction이 에러를 던지면 에러 메시지를 표시한다", async () => {
     const user = userEvent.setup();
-    const onToggle = vi.fn().mockRejectedValue(new Error("서버 오류"));
+    const toggleAction = vi.fn().mockRejectedValue(new Error("서버 오류"));
     const reactions = makeReactions([
       { emoji: "👍", count: 1, reactedByUser: false, nicknames: [] },
     ]);
@@ -129,7 +129,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={onToggle}
+        toggleAction={toggleAction}
       />
     );
 
@@ -140,12 +140,12 @@ describe("EmojiReactionBar", () => {
     });
   });
 
-  it("onToggle이 에러 없이 성공하면 에러 메시지가 없다", async () => {
+  it("toggleAction이 에러 없이 성공하면 에러 메시지가 없다", async () => {
     const user = userEvent.setup();
     const updatedReactions: ReactionSummary[] = [
       { emoji: "👍", count: 2, reactedByUser: true, nicknames: ["홍길동", "나"] },
     ];
-    const onToggle = vi.fn().mockResolvedValue(updatedReactions);
+    const toggleAction = vi.fn().mockResolvedValue(updatedReactions);
     const reactions = makeReactions([
       { emoji: "👍", count: 1, reactedByUser: false, nicknames: ["홍길동"] },
     ]);
@@ -153,7 +153,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={onToggle}
+        toggleAction={toggleAction}
         currentUserNickname="나"
       />
     );
@@ -173,7 +173,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
       />
     );
 
@@ -189,7 +189,7 @@ describe("EmojiReactionBar", () => {
     render(
       <EmojiReactionBar
         initialReactions={reactions}
-        onToggle={vi.fn()}
+        toggleAction={vi.fn()}
       />
     );
 

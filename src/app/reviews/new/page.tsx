@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import DetailHeader from "@/components/DetailHeader";
+import { LocalizedDate } from "@/components/LocalizedDate";
 
 // Review creation page (member/admin only)
 // Props: none
@@ -41,7 +42,10 @@ export default async function ReviewCreatePage() {
                 {schedules?.map((schedule) => (
                   <SelectItem key={schedule.id} value={schedule.id}>
                     {schedule.book_title} ·{" "}
-                    {new Date(schedule.date).toLocaleDateString("ko-KR")}
+                    <LocalizedDate
+                      value={schedule.date}
+                      options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                    />
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 
 export type CommentThreadProps = {
@@ -15,15 +16,15 @@ export type CommentThreadProps = {
     authorImageUrl?: string | null;
     authorDecoration?: string | null;
     body: string;
-    createdAt: string;
+    createdAt: string | null | undefined;
   }>;
-  onSubmit?: (body: string) => Promise<void>;
+  submitAction?: (body: string) => Promise<void>;
   disabled?: boolean;
 };
 
 export const CommentThread: React.FC<CommentThreadProps> = ({
   comments,
-  onSubmit,
+  submitAction,
   disabled,
 }) => {
   const [value, setValue] = useState("");
@@ -38,7 +39,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
     setIsSubmitting(true);
     setFeedback(null);
     try {
-      await onSubmit?.(value);
+      await submitAction?.(value);
       setValue("");
       setFeedback({ type: "success", message: "댓글이 등록되었습니다." });
     } catch (error) {
@@ -95,7 +96,12 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
                 <span>{comment.author}</span>
               </div>
               <p className="text-slate-600">{comment.body}</p>
-              <p className="text-xs text-slate-400">{comment.createdAt}</p>
+              <p className="text-xs text-slate-400">
+                <LocalizedDate
+                  value={comment.createdAt}
+                  options={{ dateStyle: "medium", timeStyle: "short" }}
+                />
+              </p>
             </CardContent>
           </Card>
         ))}

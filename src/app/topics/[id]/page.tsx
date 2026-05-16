@@ -225,8 +225,8 @@ export default async function TopicDetailPage({
               topicId={topic.id}
               initialTitle={topic.title}
               initialContent={topicContent}
-              onUpdate={handleUpdateTopic}
-              onDelete={handleDeleteTopic}
+              updateAction={handleUpdateTopic}
+              deleteAction={handleDeleteTopic}
             />
           ) : null}
         </header>
@@ -247,15 +247,13 @@ export default async function TopicDetailPage({
               authorDecoration: comment.author_id
                 ? profileImageMap.get(comment.author_id)?.profileDecoration
                 : undefined,
-              createdAt: new Date(comment.created_at || "").toLocaleString(
-                "ko-KR"
-              ),
+                createdAt: comment.created_at,
             })) ?? []
           }
           disabled={
             !sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated
           }
-          onSubmit={handleCommentSubmit}
+          submitAction={handleCommentSubmit}
         />
       </div>
     </>

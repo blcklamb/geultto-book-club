@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
+import { LocalizedDate } from "@/components/LocalizedDate";
 
 // Schedules list page accessible to everyone including pending users.
 export default async function SchedulePage({
@@ -56,7 +57,12 @@ export default async function SchedulePage({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-slate-600">
-                  <p>{new Date(schedule.date).toLocaleString("ko-KR")}</p>
+                  <p>
+                    <LocalizedDate
+                      value={schedule.date}
+                      options={{ dateStyle: "medium", timeStyle: "short" }}
+                    />
+                  </p>
                   <p>{schedule.place}</p>
                   <div className="flex gap-2">
                     {schedule.genre_tag ? (

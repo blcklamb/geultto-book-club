@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DetailHeader from "@/components/DetailHeader";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
 import { syncAttendancePoints } from "@/lib/points";
@@ -88,7 +89,12 @@ export default async function ScheduleDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-600">
-            <p>{new Date(schedule.date).toLocaleString("ko-KR")}</p>
+            <p>
+              <LocalizedDate
+                value={schedule.date}
+                options={{ dateStyle: "medium", timeStyle: "short" }}
+              />
+            </p>
             <p>{schedule.place}</p>
             {schedule.book_link ? (
               <a

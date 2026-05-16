@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { toast } from "sonner";
 import type {
@@ -253,7 +254,12 @@ function CommentItem({
             <span>{comment.author}</span>
           </div>
           <p className="text-sm text-slate-600">{comment.body}</p>
-          <p className="text-xs text-slate-400">{comment.createdAt}</p>
+          <p className="text-xs text-slate-400">
+            <LocalizedDate
+              value={comment.createdAt}
+              options={{ dateStyle: "medium", timeStyle: "short" }}
+            />
+          </p>
         </div>
 
         <EmojiReactionBar
@@ -276,7 +282,12 @@ function CommentItem({
                   <span>{reply.author}</span>
                 </div>
                 <p className="text-xs text-slate-600">{reply.body}</p>
-                <p className="text-xs text-slate-400">{reply.createdAt}</p>
+                <p className="text-xs text-slate-400">
+                  <LocalizedDate
+                    value={reply.createdAt}
+                    options={{ dateStyle: "medium", timeStyle: "short" }}
+                  />
+                </p>
               </div>
             ))}
           </div>

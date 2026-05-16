@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
 
@@ -108,9 +109,10 @@ export default async function TopicsPage({
                     />
                     <span>
                       {topic.author?.nickname ?? "익명"} ·{" "}
-                      {new Date(topic.created_at || "").toLocaleDateString(
-                        "ko-KR"
-                      )}{" "}
+                      <LocalizedDate
+                        value={topic.created_at}
+                        options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                      />{" "}
                       · 댓글 {topic.topic_comments?.[0]?.count ?? 0}
                     </span>
                   </div>

@@ -25,16 +25,16 @@ type ReviewDetailActionsProps = {
   reviewId: string;
   initialTitle: string;
   initialContent: JSONContent | string;
-  onUpdate: (formData: FormData) => Promise<void>;
-  onDelete: (formData: FormData) => Promise<void>;
+  updateAction: (formData: FormData) => Promise<void>;
+  deleteAction: (formData: FormData) => Promise<void>;
 };
 
 export function ReviewDetailActions({
   reviewId,
   initialTitle,
   initialContent,
-  onUpdate,
-  onDelete,
+  updateAction,
+  deleteAction,
 }: ReviewDetailActionsProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -73,7 +73,7 @@ export function ReviewDetailActions({
               제목과 본문을 수정한 후 저장을 눌러주세요.
             </DialogDescription>
           </DialogHeader>
-          <form action={onUpdate} className="space-y-4">
+          <form action={updateAction} className="space-y-4">
             <input type="hidden" name="reviewId" value={reviewId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1 block">
@@ -119,7 +119,7 @@ export function ReviewDetailActions({
               이 독후감을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </DialogDescription>
           </DialogHeader>
-          <form action={onDelete}>
+          <form action={deleteAction}>
             <input type="hidden" name="reviewId" value={reviewId} />
             <DialogFooter className="mt-4">
               <Button

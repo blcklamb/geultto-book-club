@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import {
   CURRENT_POINT_COHORT,
   MANUAL_POINT_OPTIONS,
@@ -298,7 +299,10 @@ export default async function AdminPointsPage({
               {transactions?.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell className="text-xs text-slate-500">
-                    {new Date(transaction.created_at).toLocaleString("ko-KR")}
+                    <LocalizedDate
+                      value={transaction.created_at}
+                      options={{ dateStyle: "medium", timeStyle: "short" }}
+                    />
                   </TableCell>
                   <TableCell>
                     {transaction.user?.nickname ?? transaction.user_id}

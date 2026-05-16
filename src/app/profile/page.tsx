@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileImageField } from "@/components/ProfileImageField";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { ProfileHeader } from "./ProfileHeader";
 import { PointLogDialog } from "./PointLogDialog";
 import { CURRENT_POINT_COHORT, getPointSourceLabel } from "@/lib/points";
@@ -83,7 +84,10 @@ export default async function ProfilePage() {
                       {getPointSourceLabel(log.sourceType)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {new Date(log.createdAt).toLocaleDateString("ko-KR")}
+                      <LocalizedDate
+                        value={log.createdAt}
+                        options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                      />
                       {log.scheduleTitle ? ` · ${log.scheduleTitle}` : ""}
                     </p>
                   </div>

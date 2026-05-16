@@ -70,7 +70,7 @@ export async function POST(
     body: data.body,
     author:
       (data.author as { nickname: string } | null)?.nickname ?? "익명",
-    createdAt: new Date(data.created_at || "").toLocaleString("ko-KR"),
+    createdAt: data.created_at,
     reactions: [],
     replies: [],
   });

@@ -176,8 +176,8 @@ export default async function QuoteDetailPage({
                 quoteId={quote.id}
                 initialText={quote.text}
                 initialPageNumber={quote.page_number ?? ""}
-                onUpdate={handleUpdateQuote}
-                onDelete={handleDeleteQuote}
+                updateAction={handleUpdateQuote}
+                deleteAction={handleDeleteQuote}
               />
             ) : null}
           </CardHeader>
@@ -212,7 +212,7 @@ export default async function QuoteDetailPage({
             </div>
             <EmojiReactionBar
               initialReactions={quoteReactions}
-              onToggle={handleToggleQuoteReaction}
+              toggleAction={handleToggleQuoteReaction}
               disabled={!sessionUser || sessionUser.isDeactivated}
               currentUserNickname={sessionUser?.nickname}
             />
