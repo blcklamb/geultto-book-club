@@ -59,7 +59,7 @@ export default async function TopicDetailPage({
     authorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", [...new Set(authorIds)])
       : { data: [] };
   const profileImageMap = profileImagesByUserId(avatarRows);
@@ -176,6 +176,11 @@ export default async function TopicDetailPage({
                     ? profileImageMap.get(topic.author_id)?.profileImageUrl
                     : undefined
                 }
+                decoration={
+                  topic.author_id
+                    ? profileImageMap.get(topic.author_id)?.profileDecoration
+                    : undefined
+                }
                 size="sm"
               />
               <span>
@@ -206,6 +211,9 @@ export default async function TopicDetailPage({
               author: comment.author?.nickname ?? "익명",
               authorImageUrl: comment.author_id
                 ? profileImageMap.get(comment.author_id)?.profileImageUrl
+                : undefined,
+              authorDecoration: comment.author_id
+                ? profileImageMap.get(comment.author_id)?.profileDecoration
                 : undefined,
               createdAt: new Date(comment.created_at || "").toLocaleString(
                 "ko-KR"

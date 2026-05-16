@@ -15,6 +15,7 @@ type QuotesFloatingScene3DProps = {
     scheduleTitle: string;
     author: string;
     authorImageUrl?: string | null;
+    authorDecoration?: string | null;
   }>;
 };
 
@@ -83,7 +84,11 @@ const FloatingQuote: React.FC<{
           <p className="font-semibold">p.{quote.page}</p>
           <p className="line-clamp-3 italic">{quote.text}</p>
           <div className="flex items-center justify-end gap-1 text-xs text-slate-400">
-            <UserAvatar imageUrl={quote.authorImageUrl} size="sm" />
+            <UserAvatar
+              imageUrl={quote.authorImageUrl}
+              decoration={quote.authorDecoration}
+              size="sm"
+            />
             <span>by {quote.author}</span>
           </div>
         </div>

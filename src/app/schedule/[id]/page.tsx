@@ -64,7 +64,7 @@ export default async function ScheduleDetailPage({
     quoteAuthorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", quoteAuthorIds)
       : { data: [] };
   const quoteProfileImageMap = profileImagesByUserId(quoteAvatarRows);
@@ -212,6 +212,12 @@ export default async function ScheduleDetailPage({
                         quote.author_id
                           ? quoteProfileImageMap.get(quote.author_id)
                               ?.profileImageUrl
+                          : undefined
+                      }
+                      decoration={
+                        quote.author_id
+                          ? quoteProfileImageMap.get(quote.author_id)
+                              ?.profileDecoration
                           : undefined
                       }
                       size="sm"

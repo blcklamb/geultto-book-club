@@ -10,6 +10,7 @@ export const QuoteCard: React.FC<{
     text: string;
     author: string;
     authorImageUrl?: string | null;
+    authorDecoration?: string | null;
   };
 }> = ({ quote }) => {
   return (
@@ -22,7 +23,11 @@ export const QuoteCard: React.FC<{
           <p className="text-slate-500">p.{quote.page}</p>
           <p className="text-slate-700 line-clamp-6 italic">“{quote.text}”</p>
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <UserAvatar imageUrl={quote.authorImageUrl} size="sm" />
+            <UserAvatar
+              imageUrl={quote.authorImageUrl}
+              decoration={quote.authorDecoration}
+              size="sm"
+            />
             <span>by {quote.author}</span>
           </div>
         </CardContent>

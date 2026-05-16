@@ -149,7 +149,11 @@ export function HighlightCommentPanel({
             &ldquo;{highlight.highlightText}&rdquo;
           </blockquote>
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <UserAvatar imageUrl={highlight.authorImageUrl} size="sm" />
+            <UserAvatar
+              imageUrl={highlight.authorImageUrl}
+              decoration={highlight.authorDecoration}
+              size="sm"
+            />
             <span>{highlight.authorNickname} 님이 하이라이트함</span>
           </div>
           {isHighlightAuthor && (
@@ -254,7 +258,11 @@ function CommentItem({
       <CardContent className="space-y-2 p-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-            <UserAvatar imageUrl={comment.authorImageUrl} size="sm" />
+            <UserAvatar
+              imageUrl={comment.authorImageUrl}
+              decoration={comment.authorDecoration}
+              size="sm"
+            />
             <span>{comment.author}</span>
           </div>
           <p className="text-sm text-slate-600">{comment.body}</p>
@@ -273,7 +281,11 @@ function CommentItem({
             {comment.replies.map((reply) => (
               <div key={reply.id} className="space-y-0.5">
                 <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                  <UserAvatar imageUrl={reply.authorImageUrl} size="sm" />
+                  <UserAvatar
+                    imageUrl={reply.authorImageUrl}
+                    decoration={reply.authorDecoration}
+                    size="sm"
+                  />
                   <span>{reply.author}</span>
                 </div>
                 <p className="text-xs text-slate-600">{reply.body}</p>

@@ -22,7 +22,7 @@ export default async function ProfilePage() {
     .single();
   const { data: userProfile } = await supabase
     .from("user_profiles")
-    .select("profile_image_url")
+    .select("profile_image_url, profile_decoration")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -81,6 +81,7 @@ export default async function ProfilePage() {
               </div>
               <ProfileImageField
                 initialImageUrl={userProfile?.profile_image_url}
+                initialDecoration={userProfile?.profile_decoration}
               />
               <Button type="submit">저장</Button>
             </form>

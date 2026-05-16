@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.users (
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   profile_image_url text,
+  profile_decoration text NOT NULL DEFAULT 'none',
   created_at timestamptz DEFAULT timezone('utc', now()),
   updated_at timestamptz DEFAULT timezone('utc', now())
 );

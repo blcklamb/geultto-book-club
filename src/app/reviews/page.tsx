@@ -58,7 +58,7 @@ export default async function ReviewsPage({
     authorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", authorIds)
       : { data: [] };
   const profileImageMap = profileImagesByUserId(avatarRows);
@@ -94,6 +94,11 @@ export default async function ReviewsPage({
               authorImageUrl={
                 review.author_id
                   ? profileImageMap.get(review.author_id)?.profileImageUrl
+                  : undefined
+              }
+              authorDecoration={
+                review.author_id
+                  ? profileImageMap.get(review.author_id)?.profileDecoration
                   : undefined
               }
               scheduleTitle={review.schedule?.book_title ?? "모임"}

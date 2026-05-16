@@ -16,6 +16,7 @@ export type QuotesClientProps = {
     scheduleTitle: string;
     author: string;
     authorImageUrl?: string | null;
+    authorDecoration?: string | null;
   }>;
   schedules: Array<{
     id: string;

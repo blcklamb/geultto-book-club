@@ -1,6 +1,7 @@
 create table if not exists public.user_profiles (
   user_id uuid primary key references public.users(id) on delete cascade,
   profile_image_url text,
+  profile_decoration text not null default 'none',
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );

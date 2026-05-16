@@ -27,7 +27,7 @@ const navItems = [
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
-  const profileImageUrl = useProfileImage();
+  const profileImage = useProfileImage();
 
   const isAdmin = session.user?.role === "admin";
 
@@ -83,7 +83,8 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center gap-2">
               <UserAvatar
                 emoji={isAdmin ? "🔧" : undefined}
-                imageUrl={isAdmin ? undefined : profileImageUrl}
+                imageUrl={isAdmin ? undefined : profileImage.imageUrl}
+                decoration={isAdmin ? "none" : profileImage.decoration}
                 bgColor="#E2E8F0"
                 size="sm"
               />
@@ -120,7 +121,8 @@ export const Navbar: React.FC = () => {
                 <div className="mb-6 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-3">
                   <UserAvatar
                     emoji={isAdmin ? "🔧" : undefined}
-                    imageUrl={isAdmin ? undefined : profileImageUrl}
+                    imageUrl={isAdmin ? undefined : profileImage.imageUrl}
+                    decoration={isAdmin ? "none" : profileImage.decoration}
                     bgColor="#E2E8F0"
                     size="sm"
                   />

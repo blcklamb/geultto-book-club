@@ -32,11 +32,12 @@ export default async function QuoteDetailPage({
   const { data: authorProfileRow } = quote.author_id
     ? await supabase
         .from("user_profiles")
-        .select("profile_image_url")
+        .select("profile_image_url, profile_decoration")
         .eq("user_id", quote.author_id)
         .maybeSingle()
     : { data: null };
   const authorImageUrl = authorProfileRow?.profile_image_url ?? null;
+  const authorDecoration = authorProfileRow?.profile_decoration ?? "none";
 
   const canEdit = !!sessionUser && quote.author_id === sessionUser.id;
   const quoteReactions = await fetchReactionSummary(
@@ -165,7 +166,11 @@ export default async function QuoteDetailPage({
             </p>
             <p className="text-lg leading-relaxed italic">“{quote.text}”</p>
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <UserAvatar imageUrl={authorImageUrl} size="sm" />
+              <UserAvatar
+                imageUrl={authorImageUrl}
+                decoration={authorDecoration}
+                size="sm"
+              />
               <span>by {quote.author?.nickname ?? "익명"}</span>
             </div>
             <div className="flex flex-row items-center gap-4 text-xs text-slate-400">

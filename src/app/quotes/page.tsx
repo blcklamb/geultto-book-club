@@ -51,7 +51,7 @@ export default async function QuotesPage({
     authorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", authorIds)
       : { data: [] };
   const profileImageMap = profileImagesByUserId(avatarRows);
@@ -72,6 +72,9 @@ export default async function QuotesPage({
           author: quote.author?.nickname ?? "익명",
           authorImageUrl: quote.author_id
             ? profileImageMap.get(quote.author_id)?.profileImageUrl
+            : undefined,
+          authorDecoration: quote.author_id
+            ? profileImageMap.get(quote.author_id)?.profileDecoration
             : undefined,
         })) ?? []
       }

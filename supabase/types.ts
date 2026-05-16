@@ -45,12 +45,14 @@ export interface Database {
         Row: {
           user_id: string;
           profile_image_url: string | null;
+          profile_decoration: string;
           created_at: string | null;
           updated_at: string | null;
         };
         Insert: {
           user_id: string;
           profile_image_url?: string | null;
+          profile_decoration?: string;
           created_at?: string | null;
           updated_at?: string | null;
         };

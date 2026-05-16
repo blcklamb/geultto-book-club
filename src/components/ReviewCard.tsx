@@ -7,6 +7,7 @@ export type ReviewCardProps = {
   title: string;
   author: string;
   authorImageUrl?: string | null;
+  authorDecoration?: string | null;
   scheduleTitle: string;
   createdAt: string;
 };
@@ -16,6 +17,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   title,
   author,
   authorImageUrl,
+  authorDecoration,
   scheduleTitle,
   createdAt,
 }) => {
@@ -28,7 +30,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-sm text-slate-600">
-            <UserAvatar imageUrl={authorImageUrl} size="sm" />
+            <UserAvatar
+              imageUrl={authorImageUrl}
+              decoration={authorDecoration}
+              size="sm"
+            />
             <span>{author}</span>
           </div>
           <p className="text-xs text-slate-400">{createdAt}</p>

@@ -11,6 +11,7 @@ export type CommentThreadProps = {
     id: string;
     author: string;
     authorImageUrl?: string | null;
+    authorDecoration?: string | null;
     body: string;
     createdAt: string;
   }>;
@@ -53,7 +54,11 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           <Card key={comment.id}>
             <CardContent className="space-y-1 text-sm p-4">
               <div className="flex items-center gap-2 font-medium text-slate-700">
-                <UserAvatar imageUrl={comment.authorImageUrl} size="sm" />
+                <UserAvatar
+                  imageUrl={comment.authorImageUrl}
+                  decoration={comment.authorDecoration}
+                  size="sm"
+                />
                 <span>{comment.author}</span>
               </div>
               <p className="text-slate-600">{comment.body}</p>

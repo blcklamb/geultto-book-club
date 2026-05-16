@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { normalizeProfileDecoration } from "@/lib/profile-decoration";
 
 const PROFILE_IMAGE_BUCKET = "profile-images";
 const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -62,6 +63,9 @@ export async function POST(req: NextRequest) {
   }
 
   const profileImage = formData.get("profileImage");
+  const profileDecoration = normalizeProfileDecoration(
+    formData.get("profileDecoration")?.toString()
+  );
   let profileImageUrl: string | null | undefined;
 
   if (profileImage instanceof File && profileImage.size > 0) {
@@ -109,6 +113,7 @@ export async function POST(req: NextRequest) {
         {
           user_id: userId,
           profile_image_url: profileImageUrl,
+          profile_decoration: profileDecoration,
         },
         { onConflict: "user_id" },
       );
@@ -122,7 +127,10 @@ export async function POST(req: NextRequest) {
   } else {
     await supabase
       .from("user_profiles")
-      .upsert({ user_id: userId }, { onConflict: "user_id" });
+      .upsert(
+        { user_id: userId, profile_decoration: profileDecoration },
+        { onConflict: "user_id" }
+      );
   }
 
   return NextResponse.redirect(new URL("/profile", req.url));

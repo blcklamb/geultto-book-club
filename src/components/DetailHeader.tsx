@@ -8,13 +8,20 @@ import { UserAvatar } from "@/components/UserAvatar";
 interface DetailHeaderProps {
   title: string;
   profileImageUrl?: string | null;
+  profileDecoration?: string | null;
   onClickBack?: () => void;
 }
 
 // TODO: 커스텀훅으로 분리
-export function useProfileImage(initialImageUrl: string | null = null) {
+export function useProfileImage(
+  initialImageUrl: string | null = null,
+  initialDecoration = "none"
+) {
   const { supabase, session } = useSession();
-  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl);
+  const [profileImage, setProfileImage] = useState<{
+    imageUrl: string | null;
+    decoration: string;
+  }>({ imageUrl: initialImageUrl, decoration: initialDecoration });
   const userId = session.user?.id;
 
   useEffect(() => {
@@ -25,12 +32,15 @@ export function useProfileImage(initialImageUrl: string | null = null) {
     const loadProfileImage = async () => {
       const { data: profile } = await supabase
         .from("user_profiles")
-        .select("profile_image_url")
+        .select("profile_image_url, profile_decoration")
         .eq("user_id", userId)
         .maybeSingle();
 
       if (isMounted) {
-        setImageUrl(profile?.profile_image_url ?? null);
+        setProfileImage({
+          imageUrl: profile?.profile_image_url ?? null,
+          decoration: profile?.profile_decoration ?? "none",
+        });
       }
     };
 
@@ -41,16 +51,17 @@ export function useProfileImage(initialImageUrl: string | null = null) {
     };
   }, [supabase, userId]);
 
-  return imageUrl;
+  return profileImage;
 }
 
 export default function DetailHeader({
   title,
   profileImageUrl = null,
+  profileDecoration = "none",
   onClickBack,
 }: DetailHeaderProps) {
   const router = useRouter();
-  const dynamicImageUrl = useProfileImage(profileImageUrl);
+  const dynamicProfileImage = useProfileImage(profileImageUrl, profileDecoration ?? "none");
   const pathname = usePathname();
 
   const handleBack = () => {
@@ -79,7 +90,11 @@ export default function DetailHeader({
         aria-label="프로필로 이동"
         disabled={pathname === "/profile"}
       >
-        <UserAvatar imageUrl={dynamicImageUrl} size="sm" />
+        <UserAvatar
+          imageUrl={dynamicProfileImage.imageUrl}
+          decoration={dynamicProfileImage.decoration}
+          size="sm"
+        />
       </button>
     </header>
   );

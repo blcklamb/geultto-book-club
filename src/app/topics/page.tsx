@@ -57,7 +57,7 @@ export default async function TopicsPage({
     authorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", authorIds)
       : { data: [] };
   const profileImageMap = profileImagesByUserId(avatarRows);
@@ -95,6 +95,12 @@ export default async function TopicsPage({
                       imageUrl={
                         topic.author_id
                           ? profileImageMap.get(topic.author_id)?.profileImageUrl
+                          : undefined
+                      }
+                      decoration={
+                        topic.author_id
+                          ? profileImageMap.get(topic.author_id)
+                              ?.profileDecoration
                           : undefined
                       }
                       size="sm"

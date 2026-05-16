@@ -99,7 +99,7 @@ export default async function ReviewDetailPage({
     authorIds.length > 0
       ? await supabase
           .from("user_profiles")
-          .select("user_id, profile_image_url")
+          .select("user_id, profile_image_url, profile_decoration")
           .in("user_id", [...new Set(authorIds)])
       : { data: [] };
   const profileImageMap = profileImagesByUserId(avatarRows);
@@ -118,6 +118,9 @@ export default async function ReviewDetailPage({
         (h.author as { nickname: string } | null)?.nickname ?? "익명",
       authorImageUrl: h.author_id
         ? profileImageMap.get(h.author_id)?.profileImageUrl
+        : undefined,
+      authorDecoration: h.author_id
+        ? profileImageMap.get(h.author_id)?.profileDecoration
         : undefined,
       comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
         const comment = c as {
@@ -146,6 +149,9 @@ export default async function ReviewDetailPage({
           authorImageUrl: comment.author_id
             ? profileImageMap.get(comment.author_id)?.profileImageUrl
             : undefined,
+          authorDecoration: comment.author_id
+            ? profileImageMap.get(comment.author_id)?.profileDecoration
+            : undefined,
           createdAt: comment.created_at
             ? new Date(comment.created_at).toLocaleString("ko-KR")
             : "-",
@@ -165,6 +171,9 @@ export default async function ReviewDetailPage({
               author: author?.nickname ?? "익명",
               authorImageUrl: r.author_id
                 ? profileImageMap.get(r.author_id)?.profileImageUrl
+                : undefined,
+              authorDecoration: r.author_id
+                ? profileImageMap.get(r.author_id)?.profileDecoration
                 : undefined,
               createdAt: r.created_at
                 ? new Date(r.created_at).toLocaleString("ko-KR")
@@ -333,6 +342,11 @@ export default async function ReviewDetailPage({
                       ? profileImageMap.get(review.author_id)?.profileImageUrl
                       : undefined
                   }
+                  decoration={
+                    review.author_id
+                      ? profileImageMap.get(review.author_id)?.profileDecoration
+                      : undefined
+                  }
                   size="sm"
                 />
                 <span>
@@ -378,6 +392,9 @@ export default async function ReviewDetailPage({
                 author: comment.author?.nickname ?? "익명",
                 authorImageUrl: comment.author_id
                   ? profileImageMap.get(comment.author_id)?.profileImageUrl
+                  : undefined,
+                authorDecoration: comment.author_id
+                  ? profileImageMap.get(comment.author_id)?.profileDecoration
                   : undefined,
                 createdAt: new Date(comment.created_at || "").toLocaleString(
                   "ko-KR"
