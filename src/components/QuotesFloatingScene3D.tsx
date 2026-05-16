@@ -5,6 +5,7 @@ import { Html } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useRouter } from "next/navigation";
+import { UserAvatar } from "@/components/UserAvatar";
 
 type QuotesFloatingScene3DProps = {
   quotes: Array<{
@@ -13,6 +14,7 @@ type QuotesFloatingScene3DProps = {
     page: string;
     scheduleTitle: string;
     author: string;
+    authorImageUrl?: string | null;
   }>;
 };
 
@@ -80,7 +82,10 @@ const FloatingQuote: React.FC<{
           <p className="">{quote.scheduleTitle}</p>
           <p className="font-semibold">p.{quote.page}</p>
           <p className="line-clamp-3 italic">{quote.text}</p>
-          <p className="text-right text-xs text-slate-400">by {quote.author}</p>
+          <div className="flex items-center justify-end gap-1 text-xs text-slate-400">
+            <UserAvatar imageUrl={quote.authorImageUrl} size="sm" />
+            <span>by {quote.author}</span>
+          </div>
         </div>
       </Html>
     </group>

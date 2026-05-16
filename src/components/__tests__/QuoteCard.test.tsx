@@ -50,6 +50,11 @@ describe("QuoteCard", () => {
     expect(screen.getByText("by 김철수")).toBeInTheDocument();
   });
 
+  it("작성자 왼쪽에 아바타를 렌더링한다", () => {
+    render(<QuoteCard quote={defaultQuote} />);
+    expect(screen.getByLabelText("프로필 이미지")).toBeInTheDocument();
+  });
+
   it("인용구 상세 페이지로 연결되는 링크를 가진다", () => {
     render(<QuoteCard quote={defaultQuote} />);
     const link = screen.getByRole("link");

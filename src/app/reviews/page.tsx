@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 import Link from "next/link";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
+import { profileImagesByUserId } from "@/lib/profile-image";
 
 // Reviews index page: lists recent reviews.
 // Queries: reviews joined with schedules + users for display.
@@ -41,7 +42,7 @@ export default async function ReviewsPage({
   let reviewsQuery = supabase
     .from("reviews")
     .select(
-      "id, title, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at"
+      "id, title, author_id, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at"
     )
     .order("created_at", { ascending: false });
 
@@ -50,6 +51,17 @@ export default async function ReviewsPage({
   }
 
   const { data: reviews } = await reviewsQuery;
+  const authorIds = [
+    ...new Set((reviews ?? []).map((review) => review.author_id).filter(Boolean)),
+  ] as string[];
+  const { data: avatarRows } =
+    authorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url")
+          .in("user_id", authorIds)
+      : { data: [] };
+  const profileImageMap = profileImagesByUserId(avatarRows);
 
   return (
     <>
@@ -79,6 +91,11 @@ export default async function ReviewsPage({
               id={review.id}
               title={review.title}
               author={review.author?.nickname ?? "익명"}
+              authorImageUrl={
+                review.author_id
+                  ? profileImageMap.get(review.author_id)?.profileImageUrl
+                  : undefined
+              }
               scheduleTitle={review.schedule?.book_title ?? "모임"}
               createdAt={new Date(review.created_at || "").toLocaleDateString(
                 "ko-KR"

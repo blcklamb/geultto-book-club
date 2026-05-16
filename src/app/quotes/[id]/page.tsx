@@ -9,6 +9,7 @@ import { QuoteDetailActions } from "@/components/QuoteDetailActions";
 import { QuoteImageExporter } from "@/components/QuoteImageExporter";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { fetchReactionSummary, toggleReaction } from "@/lib/reactions";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // Quote detail page: shows a single quote with related schedule context.
 export default async function QuoteDetailPage({
@@ -28,6 +29,14 @@ export default async function QuoteDetailPage({
     .single();
 
   if (!quote) notFound();
+  const { data: authorProfileRow } = quote.author_id
+    ? await supabase
+        .from("user_profiles")
+        .select("profile_image_url")
+        .eq("user_id", quote.author_id)
+        .maybeSingle()
+    : { data: null };
+  const authorImageUrl = authorProfileRow?.profile_image_url ?? null;
 
   const canEdit = !!sessionUser && quote.author_id === sessionUser.id;
   const quoteReactions = await fetchReactionSummary(
@@ -155,9 +164,10 @@ export default async function QuoteDetailPage({
               p.{quote.page_number ?? "-"}
             </p>
             <p className="text-lg leading-relaxed italic">“{quote.text}”</p>
-            <p className="text-sm text-slate-500">
-              by {quote.author?.nickname ?? "익명"}
-            </p>
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <UserAvatar imageUrl={authorImageUrl} size="sm" />
+              <span>by {quote.author?.nickname ?? "익명"}</span>
+            </div>
             <div className="flex flex-row items-center gap-4 text-xs text-slate-400">
               {quote.schedule_id ? (
                 <Link

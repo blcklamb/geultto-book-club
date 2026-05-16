@@ -11,6 +11,8 @@ import { ReviewDetailActions } from "@/components/ReviewDetailActions";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { fetchReactionSummary, toggleReaction, summarizeReactions } from "@/lib/reactions";
 import type { HighlightWithComments } from "@/lib/highlight";
+import { UserAvatar } from "@/components/UserAvatar";
+import { profileImagesByUserId } from "@/lib/profile-image";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -41,11 +43,11 @@ export default async function ReviewDetailPage({
       `id, author_id, highlight_text, start_pos, end_pos,
        author:users!review_highlights_author_id_fkey(nickname),
        highlight_comments(
-         id, body, created_at,
+         id, body, author_id, created_at,
          author:users!highlight_comments_author_id_fkey(nickname),
          highlight_comment_reactions(emoji, user_id, user:users(nickname)),
          highlight_comment_replies(
-           id, body, created_at,
+           id, body, author_id, created_at,
            author:users!highlight_comment_replies_author_id_fkey(nickname)
          )
        )`
@@ -56,7 +58,7 @@ export default async function ReviewDetailPage({
   const { data: comments } = await supabase
     .from("review_comments")
     .select(
-      "id, body, created_at, author:users!review_comments_author_id_fkey(nickname)"
+      "id, body, author_id, created_at, author:users!review_comments_author_id_fkey(nickname)"
     )
     .eq("review_id", reviewId)
     .order("created_at", { ascending: false });
@@ -74,6 +76,33 @@ export default async function ReviewDetailPage({
       : review.content_rich ?? defaultContent;
 
   const canEdit = !!sessionUser && review.author_id === sessionUser.id;
+  const authorIds = [
+    review.author_id,
+    ...(comments ?? []).map((comment) => comment.author_id),
+    ...(highlightRows ?? []).map((highlight) => highlight.author_id),
+    ...(highlightRows ?? []).flatMap((highlight) =>
+      ((highlight.highlight_comments as unknown[]) ?? []).flatMap((item) => {
+        const comment = item as {
+          author_id?: string | null;
+          highlight_comment_replies?: Array<{ author_id?: string | null }>;
+        };
+        return [
+          comment.author_id,
+          ...(comment.highlight_comment_replies ?? []).map(
+            (reply) => reply.author_id
+          ),
+        ];
+      })
+    ),
+  ].filter(Boolean) as string[];
+  const { data: avatarRows } =
+    authorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url")
+          .in("user_id", [...new Set(authorIds)])
+      : { data: [] };
+  const profileImageMap = profileImagesByUserId(avatarRows);
 
   // Transform nested highlight rows into typed HighlightWithComments[].
   // Rows with null positions are skipped — 0 is not a valid ProseMirror position.
@@ -87,10 +116,14 @@ export default async function ReviewDetailPage({
       endPos: h.end_pos!,
       authorNickname:
         (h.author as { nickname: string } | null)?.nickname ?? "익명",
+      authorImageUrl: h.author_id
+        ? profileImageMap.get(h.author_id)?.profileImageUrl
+        : undefined,
       comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
         const comment = c as {
           id: string;
           body: string;
+          author_id: string | null;
           created_at: string | null;
           author: { nickname: string } | null;
           highlight_comment_reactions: Array<{
@@ -101,6 +134,7 @@ export default async function ReviewDetailPage({
           highlight_comment_replies: Array<{
             id: string;
             body: string;
+            author_id: string | null;
             created_at: string | null;
             author: { nickname: string } | Array<{ nickname: string }> | null;
           }>;
@@ -109,6 +143,9 @@ export default async function ReviewDetailPage({
           id: comment.id,
           body: comment.body,
           author: comment.author?.nickname ?? "익명",
+          authorImageUrl: comment.author_id
+            ? profileImageMap.get(comment.author_id)?.profileImageUrl
+            : undefined,
           createdAt: comment.created_at
             ? new Date(comment.created_at).toLocaleString("ko-KR")
             : "-",
@@ -126,6 +163,9 @@ export default async function ReviewDetailPage({
               id: r.id,
               body: r.body,
               author: author?.nickname ?? "익명",
+              authorImageUrl: r.author_id
+                ? profileImageMap.get(r.author_id)?.profileImageUrl
+                : undefined,
               createdAt: r.created_at
                 ? new Date(r.created_at).toLocaleString("ko-KR")
                 : "-",
@@ -286,11 +326,21 @@ export default async function ReviewDetailPage({
               <h1 className="text-3xl font-semibold text-slate-900">
                 {review.title}
               </h1>
-              <p className="text-sm text-slate-500">
-                {review.author?.nickname ?? "익명"} ·{" "}
-                {new Date(review.created_at || "").toLocaleDateString("ko-KR")}{" "}
-                · {review.schedule?.book_title}
-              </p>
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <UserAvatar
+                  imageUrl={
+                    review.author_id
+                      ? profileImageMap.get(review.author_id)?.profileImageUrl
+                      : undefined
+                  }
+                  size="sm"
+                />
+                <span>
+                  {review.author?.nickname ?? "익명"} ·{" "}
+                  {new Date(review.created_at || "").toLocaleDateString("ko-KR")}{" "}
+                  · {review.schedule?.book_title}
+                </span>
+              </div>
             </div>
             {canEdit ? (
               <ReviewDetailActions
@@ -326,6 +376,9 @@ export default async function ReviewDetailPage({
                 id: comment.id,
                 body: comment.body,
                 author: comment.author?.nickname ?? "익명",
+                authorImageUrl: comment.author_id
+                  ? profileImageMap.get(comment.author_id)?.profileImageUrl
+                  : undefined,
                 createdAt: new Date(comment.created_at || "").toLocaleString(
                   "ko-KR"
                 ),

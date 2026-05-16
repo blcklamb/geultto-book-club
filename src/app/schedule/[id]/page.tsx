@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DetailHeader from "@/components/DetailHeader";
+import { UserAvatar } from "@/components/UserAvatar";
+import { profileImagesByUserId } from "@/lib/profile-image";
 
 // Schedule detail page: shows event info, attendee state and quote submission.
 // Params: { params: { id: string } }
@@ -55,6 +57,17 @@ export default async function ScheduleDetailPage({
     )
     .eq("schedule_id", scheduleId)
     .order("created_at", { ascending: false });
+  const quoteAuthorIds = [
+    ...new Set((quotes ?? []).map((quote) => quote.author_id).filter(Boolean)),
+  ] as string[];
+  const { data: quoteAvatarRows } =
+    quoteAuthorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url")
+          .in("user_id", quoteAuthorIds)
+      : { data: [] };
+  const quoteProfileImageMap = profileImagesByUserId(quoteAvatarRows);
 
   const myAttendance = attendees?.find(
     (att) => att.user_id === sessionUser?.id
@@ -193,9 +206,18 @@ export default async function ScheduleDetailPage({
                     p.{quote.page_number}
                   </p>
                   <p>“{quote.text}”</p>
-                  <p className="text-xs text-slate-400">
-                    {quote.author?.nickname}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <UserAvatar
+                      imageUrl={
+                        quote.author_id
+                          ? quoteProfileImageMap.get(quote.author_id)
+                              ?.profileImageUrl
+                          : undefined
+                      }
+                      size="sm"
+                    />
+                    <span>{quote.author?.nickname}</span>
+                  </div>
                 </CardContent>
               </Card>
             )) ?? (

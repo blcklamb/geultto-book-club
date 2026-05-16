@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { UserAvatar } from "@/components/UserAvatar";
 import type {
   HighlightWithComments,
   HighlightComment,
@@ -147,9 +148,10 @@ export function HighlightCommentPanel({
           <blockquote className="mt-2 border-l-4 border-yellow-400 bg-yellow-50 py-2 pl-3 pr-2 text-sm text-slate-700 italic">
             &ldquo;{highlight.highlightText}&rdquo;
           </blockquote>
-          <p className="text-xs text-slate-500">
-            {highlight.authorNickname} 님이 하이라이트함
-          </p>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <UserAvatar imageUrl={highlight.authorImageUrl} size="sm" />
+            <span>{highlight.authorNickname} 님이 하이라이트함</span>
+          </div>
           {isHighlightAuthor && (
             <Button
               size="sm"
@@ -251,7 +253,10 @@ function CommentItem({
     <Card>
       <CardContent className="space-y-2 p-3">
         <div className="space-y-0.5">
-          <p className="text-xs font-medium text-slate-700">{comment.author}</p>
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+            <UserAvatar imageUrl={comment.authorImageUrl} size="sm" />
+            <span>{comment.author}</span>
+          </div>
           <p className="text-sm text-slate-600">{comment.body}</p>
           <p className="text-xs text-slate-400">{comment.createdAt}</p>
         </div>
@@ -267,9 +272,10 @@ function CommentItem({
           <div className="ml-3 space-y-2 border-l-2 border-slate-100 pl-3">
             {comment.replies.map((reply) => (
               <div key={reply.id} className="space-y-0.5">
-                <p className="text-xs font-medium text-slate-700">
-                  {reply.author}
-                </p>
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                  <UserAvatar imageUrl={reply.authorImageUrl} size="sm" />
+                  <span>{reply.author}</span>
+                </div>
                 <p className="text-xs text-slate-600">{reply.body}</p>
                 <p className="text-xs text-slate-400">{reply.createdAt}</p>
               </div>

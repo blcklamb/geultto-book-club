@@ -41,6 +41,29 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>;
         Relationships: [];
       };
+      user_profiles: {
+        Row: {
+          user_id: string;
+          profile_image_url: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          profile_image_url?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_profiles"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       schedules: {
         Row: {
           id: string;

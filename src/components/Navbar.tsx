@@ -14,7 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSession } from "./SessionProvider";
-import { useProfileEmoji } from "./DetailHeader";
+import { useProfileImage } from "./DetailHeader";
 
 const navItems = [
   { href: "/schedule", label: "일정" },
@@ -27,7 +27,7 @@ const navItems = [
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
-  const profileEmoji = useProfileEmoji("");
+  const profileImageUrl = useProfileImage();
 
   const isAdmin = session.user?.role === "admin";
 
@@ -82,7 +82,8 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2">
               <UserAvatar
-                emoji={isAdmin ? "🔧" : profileEmoji}
+                emoji={isAdmin ? "🔧" : undefined}
+                imageUrl={isAdmin ? undefined : profileImageUrl}
                 bgColor="#E2E8F0"
                 size="sm"
               />
@@ -118,7 +119,8 @@ export const Navbar: React.FC = () => {
               {session.user && (
                 <div className="mb-6 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-3">
                   <UserAvatar
-                    emoji={isAdmin ? "🔧" : profileEmoji}
+                    emoji={isAdmin ? "🔧" : undefined}
+                    imageUrl={isAdmin ? undefined : profileImageUrl}
                     bgColor="#E2E8F0"
                     size="sm"
                   />

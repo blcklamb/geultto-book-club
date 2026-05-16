@@ -46,4 +46,12 @@ describe("UserAvatar", () => {
     const avatar = container.firstChild as HTMLElement;
     expect(avatar.className).toContain("rounded-full");
   });
+
+  it("이미지 URL을 렌더링한다", () => {
+    const { container } = render(
+      <UserAvatar imageUrl="https://example.com/profile.png" />
+    );
+    const image = container.querySelector("img");
+    expect(image).toHaveAttribute("src", "https://example.com/profile.png");
+  });
 });

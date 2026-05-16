@@ -4,11 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export type CommentThreadProps = {
   comments: Array<{
     id: string;
     author: string;
+    authorImageUrl?: string | null;
     body: string;
     createdAt: string;
   }>;
@@ -50,7 +52,10 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
         {comments.map((comment) => (
           <Card key={comment.id}>
             <CardContent className="space-y-1 text-sm p-4">
-              <p className="font-medium text-slate-700">{comment.author}</p>
+              <div className="flex items-center gap-2 font-medium text-slate-700">
+                <UserAvatar imageUrl={comment.authorImageUrl} size="sm" />
+                <span>{comment.author}</span>
+              </div>
               <p className="text-slate-600">{comment.body}</p>
               <p className="text-xs text-slate-400">{comment.createdAt}</p>
             </CardContent>

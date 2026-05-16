@@ -17,6 +17,13 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at timestamptz DEFAULT timezone('utc', now())
 );
 
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  profile_image_url text,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  updated_at timestamptz DEFAULT timezone('utc', now())
+);
+
 CREATE TABLE IF NOT EXISTS public.schedules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date timestamptz NOT NULL,
@@ -146,6 +153,7 @@ CREATE TABLE IF NOT EXISTS public.topic_comments (
 
 -- Row Level Security policies (conceptual)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;

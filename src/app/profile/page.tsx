@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProfileEmojiField } from "@/components/ProfileEmojiField";
+import { ProfileImageField } from "@/components/ProfileImageField";
 import { ProfileHeader } from "./ProfileHeader";
 
 // Profile page for members: edit nickname, real name, favorite genres, recommended book.
@@ -16,10 +16,15 @@ export default async function ProfilePage() {
   const { data: profile } = await supabase
     .from("users")
     .select(
-      "nickname, real_name, favorite_genres, recommended_book, profile_emoji, profile_bg_color"
+      "nickname, real_name, favorite_genres, recommended_book"
     )
     .eq("id", user.id)
     .single();
+  const { data: userProfile } = await supabase
+    .from("user_profiles")
+    .select("profile_image_url")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
   return (
     <>
@@ -30,7 +35,12 @@ export default async function ProfilePage() {
             <CardTitle>내 프로필</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action="/api/profile" method="post" className="space-y-4">
+            <form
+              action="/api/profile"
+              method="post"
+              encType="multipart/form-data"
+              className="space-y-4"
+            >
               <input type="hidden" name="userId" value={user.id} />
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -69,8 +79,8 @@ export default async function ProfilePage() {
                   defaultValue={profile?.recommended_book ?? ""}
                 />
               </div>
-              <ProfileEmojiField
-                initialEmoji={profile?.profile_emoji ?? "📚"}
+              <ProfileImageField
+                initialImageUrl={userProfile?.profile_image_url}
               />
               <Button type="submit">저장</Button>
             </form>

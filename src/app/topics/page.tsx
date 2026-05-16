@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
+import { UserAvatar } from "@/components/UserAvatar";
+import { profileImagesByUserId } from "@/lib/profile-image";
 
 // Topics index page listing discussion prompts.
 export default async function TopicsPage({
@@ -39,7 +41,7 @@ export default async function TopicsPage({
   let topicsQuery = supabase
     .from("topics")
     .select(
-      "id, title, created_at, schedule:schedules!topics_schedule_id_fkey(book_title), author:users!topics_author_id_fkey(nickname), topic_comments(count)"
+      "id, title, author_id, created_at, schedule:schedules!topics_schedule_id_fkey(book_title), author:users!topics_author_id_fkey(nickname), topic_comments(count)"
     )
     .order("created_at", { ascending: false });
 
@@ -48,6 +50,17 @@ export default async function TopicsPage({
   }
 
   const { data: topics } = await topicsQuery;
+  const authorIds = [
+    ...new Set((topics ?? []).map((topic) => topic.author_id).filter(Boolean)),
+  ] as string[];
+  const { data: avatarRows } =
+    authorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url")
+          .in("user_id", authorIds)
+      : { data: [] };
+  const profileImageMap = profileImagesByUserId(avatarRows);
 
   return (
     <>
@@ -77,13 +90,23 @@ export default async function TopicsPage({
                 </CardHeader>
                 <CardContent className="text-sm text-slate-600">
                   <p>{topic.schedule?.book_title}</p>
-                  <p className="text-xs text-slate-400">
-                    {topic.author?.nickname ?? "익명"} ·{" "}
-                    {new Date(topic.created_at || "").toLocaleDateString(
-                      "ko-KR"
-                    )}{" "}
-                    · 댓글 {topic.topic_comments?.[0]?.count ?? 0}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <UserAvatar
+                      imageUrl={
+                        topic.author_id
+                          ? profileImageMap.get(topic.author_id)?.profileImageUrl
+                          : undefined
+                      }
+                      size="sm"
+                    />
+                    <span>
+                      {topic.author?.nickname ?? "익명"} ·{" "}
+                      {new Date(topic.created_at || "").toLocaleDateString(
+                        "ko-KR"
+                      )}{" "}
+                      · 댓글 {topic.topic_comments?.[0]?.count ?? 0}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </Link>
