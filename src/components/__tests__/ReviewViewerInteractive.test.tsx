@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { HighlightWithComments } from "@/lib/highlight";
@@ -58,7 +58,6 @@ vi.mock("next/dynamic", () => ({
 
 // fetch mock
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const { ReviewViewerInteractive } = await import("../ReviewViewerInteractive");
@@ -75,6 +74,7 @@ const makeHighlight = (
 ): HighlightWithComments => ({
   id: "h1",
   highlightText: "선택된 텍스트",
+  authorId: "author-1",
   authorNickname: "홍길동",
   startPos: 1,
   endPos: 10,
@@ -117,12 +117,17 @@ describe("ReviewViewerInteractive", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockReset();
+    vi.stubGlobal("fetch", mockFetch);
     mockDispatch.mockReset();
     // restore addEventListener mock after restoreAllMocks
     editorDom.addEventListener = mockAddEventListener;
     mockAddEventListener.mockReset();
     // clean up editorDom children
     while (editorDom.firstChild) editorDom.removeChild(editorDom.firstChild);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("TipTap EditorContent를 렌더링한다", () => {

@@ -28,13 +28,20 @@ export async function POST(
   const supabase = await createSupabaseServerClient();
 
   // Toggle: remove if already reacted, add if not
-  const { data: existing } = await supabase
+  const { data: existing, error: loadError } = await supabase
     .from("highlight_comment_reactions")
     .select("id")
     .eq("comment_id", commentId)
     .eq("user_id", sessionUser.id)
     .eq("emoji", emoji)
     .maybeSingle();
+
+  if (loadError) {
+    return NextResponse.json(
+      { message: "반응 조회 실패", error: loadError.message },
+      { status: 500 }
+    );
+  }
 
   if (existing) {
     const { error } = await supabase
@@ -60,10 +67,17 @@ export async function POST(
   }
 
   // Return updated reaction summary
-  const { data: reactions } = await supabase
+  const { data: reactions, error: reactionsError } = await supabase
     .from("highlight_comment_reactions")
     .select("emoji, user_id, user:users(nickname)")
     .eq("comment_id", commentId);
+
+  if (reactionsError) {
+    return NextResponse.json(
+      { message: "반응 목록 조회 실패", error: reactionsError.message },
+      { status: 400 }
+    );
+  }
 
   const summary = summarizeReactions(
     (reactions ?? []).map((r) => ({

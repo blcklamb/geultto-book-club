@@ -38,7 +38,7 @@ export default async function ReviewDetailPage({
   const { data: highlightRows } = await supabase
     .from("review_highlights")
     .select(
-      `id, highlight_text, start_pos, end_pos,
+      `id, author_id, highlight_text, start_pos, end_pos,
        author:users!review_highlights_author_id_fkey(nickname),
        highlight_comments(
          id, body, created_at,
@@ -75,57 +75,65 @@ export default async function ReviewDetailPage({
 
   const canEdit = !!sessionUser && review.author_id === sessionUser.id;
 
-  // Transform nested highlight rows into typed HighlightWithComments[]
-  const highlights: HighlightWithComments[] = (highlightRows ?? []).map((h) => ({
-    id: h.id,
-    highlightText: h.highlight_text,
-    startPos: h.start_pos ?? 0,
-    endPos: h.end_pos ?? 0,
-    authorNickname:
-      (h.author as { nickname: string } | null)?.nickname ?? "익명",
-    comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
-      const comment = c as {
-        id: string;
-        body: string;
-        created_at: string | null;
-        author: { nickname: string } | null;
-        highlight_comment_reactions: Array<{
-          emoji: string;
-          user_id: string | null;
-          user: { nickname: string | null } | Array<{ nickname: string | null }> | null;
-        }>;
-        highlight_comment_replies: Array<{
+  // Transform nested highlight rows into typed HighlightWithComments[].
+  // Rows with null positions are skipped — 0 is not a valid ProseMirror position.
+  const highlights: HighlightWithComments[] = (highlightRows ?? [])
+    .filter((h) => h.start_pos != null && h.end_pos != null)
+    .map((h) => ({
+      id: h.id,
+      authorId: h.author_id ?? "",
+      highlightText: h.highlight_text,
+      startPos: h.start_pos!,
+      endPos: h.end_pos!,
+      authorNickname:
+        (h.author as { nickname: string } | null)?.nickname ?? "익명",
+      comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
+        const comment = c as {
           id: string;
           body: string;
           created_at: string | null;
-          author: { nickname: string } | Array<{ nickname: string }> | null;
-        }>;
-      };
-      return {
-        id: comment.id,
-        body: comment.body,
-        author: comment.author?.nickname ?? "익명",
-        createdAt: new Date(comment.created_at || "").toLocaleString("ko-KR"),
-        reactions: summarizeReactions(
-          (comment.highlight_comment_reactions ?? []).map((r) => ({
-            emoji: r.emoji,
-            user_id: r.user_id,
-            user: Array.isArray(r.user) ? r.user[0] : r.user,
-          })),
-          sessionUser?.id
-        ),
-        replies: (comment.highlight_comment_replies ?? []).map((r) => {
-          const author = Array.isArray(r.author) ? r.author[0] : r.author;
-          return {
-            id: r.id,
-            body: r.body,
-            author: author?.nickname ?? "익명",
-            createdAt: new Date(r.created_at || "").toLocaleString("ko-KR"),
-          };
-        }),
-      };
-    }),
-  }));
+          author: { nickname: string } | null;
+          highlight_comment_reactions: Array<{
+            emoji: string;
+            user_id: string | null;
+            user: { nickname: string | null } | Array<{ nickname: string | null }> | null;
+          }>;
+          highlight_comment_replies: Array<{
+            id: string;
+            body: string;
+            created_at: string | null;
+            author: { nickname: string } | Array<{ nickname: string }> | null;
+          }>;
+        };
+        return {
+          id: comment.id,
+          body: comment.body,
+          author: comment.author?.nickname ?? "익명",
+          createdAt: comment.created_at
+            ? new Date(comment.created_at).toLocaleString("ko-KR")
+            : "-",
+          reactions: summarizeReactions(
+            (comment.highlight_comment_reactions ?? []).map((r) => ({
+              emoji: r.emoji,
+              user_id: r.user_id,
+              user: Array.isArray(r.user) ? r.user[0] : r.user,
+            })),
+            sessionUser?.id
+          ),
+          replies: (comment.highlight_comment_replies ?? []).map((r) => {
+            const author = Array.isArray(r.author) ? r.author[0] : r.author;
+            return {
+              id: r.id,
+              body: r.body,
+              author: author?.nickname ?? "익명",
+              createdAt: r.created_at
+                ? new Date(r.created_at).toLocaleString("ko-KR")
+                : "-",
+            };
+          }),
+        };
+      }),
+    }));
   const reviewReactions = await fetchReactionSummary(
     supabase,
     "review_reactions",

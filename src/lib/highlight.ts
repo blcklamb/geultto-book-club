@@ -19,6 +19,7 @@ export type HighlightComment = {
 export type HighlightWithComments = {
   id: string;
   highlightText: string;
+  authorId: string;
   authorNickname: string;
   startPos: number;
   endPos: number;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HighlightCommentPanel } from "../HighlightCommentPanel";
@@ -15,13 +15,13 @@ vi.mock("next/dynamic", () => ({
 
 // fetch mock
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
 const makeHighlight = (
   overrides?: Partial<HighlightWithComments>
 ): HighlightWithComments => ({
   id: "h1",
   highlightText: "인상 깊은 구절입니다",
+  authorId: "author-1",
   authorNickname: "홍길동",
   startPos: 10,
   endPos: 25,
@@ -43,6 +43,11 @@ describe("HighlightCommentPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockReset();
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("하이라이트된 텍스트를 인용구로 표시한다", () => {
@@ -204,8 +209,8 @@ describe("HighlightCommentPanel", () => {
   it("현재 사용자가 하이라이트 작성자이면 삭제 버튼이 표시된다", () => {
     render(
       <HighlightCommentPanel
-        highlight={makeHighlight({ authorNickname: "나" })}
-        currentUserNickname="나"
+        highlight={makeHighlight({ authorId: "user-1" })}
+        currentUserId="user-1"
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
@@ -219,8 +224,8 @@ describe("HighlightCommentPanel", () => {
   it("현재 사용자가 하이라이트 작성자가 아니면 삭제 버튼이 없다", () => {
     render(
       <HighlightCommentPanel
-        highlight={makeHighlight({ authorNickname: "홍길동" })}
-        currentUserNickname="김철수"
+        highlight={makeHighlight({ authorId: "user-1" })}
+        currentUserId="user-2"
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
@@ -241,8 +246,8 @@ describe("HighlightCommentPanel", () => {
 
     render(
       <HighlightCommentPanel
-        highlight={makeHighlight({ id: "h1", authorNickname: "나" })}
-        currentUserNickname="나"
+        highlight={makeHighlight({ id: "h1", authorId: "user-1" })}
+        currentUserId="user-1"
         onClose={vi.fn()}
         onHighlightDeleted={onHighlightDeleted}
         onCommentsUpdated={vi.fn()}
@@ -265,8 +270,8 @@ describe("HighlightCommentPanel", () => {
 
     render(
       <HighlightCommentPanel
-        highlight={makeHighlight({ authorNickname: "나" })}
-        currentUserNickname="나"
+        highlight={makeHighlight({ authorId: "user-1" })}
+        currentUserId="user-1"
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}

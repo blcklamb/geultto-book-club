@@ -22,9 +22,28 @@ export async function POST(
     endPos: number;
   };
 
-  if (!highlightText || startPos == null || endPos == null) {
+  const MAX_HIGHLIGHT_TEXT_LENGTH = 500;
+  const trimmedHighlightText =
+    typeof highlightText === "string" ? highlightText.trim() : "";
+
+  if (highlightText == null || startPos == null || endPos == null) {
     return NextResponse.json(
       { message: "필수 값이 누락되었습니다." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    !trimmedHighlightText ||
+    trimmedHighlightText.length > MAX_HIGHLIGHT_TEXT_LENGTH ||
+    !Number.isInteger(startPos) ||
+    !Number.isInteger(endPos) ||
+    startPos <= 0 ||
+    endPos <= 0 ||
+    startPos >= endPos
+  ) {
+    return NextResponse.json(
+      { message: "하이라이트 입력값이 올바르지 않습니다." },
       { status: 400 }
     );
   }
@@ -35,7 +54,7 @@ export async function POST(
     .insert({
       review_id: reviewId,
       author_id: sessionUser.id,
-      highlight_text: highlightText,
+      highlight_text: trimmedHighlightText,
       start_pos: startPos,
       end_pos: endPos,
     })
@@ -53,6 +72,7 @@ export async function POST(
 
   return NextResponse.json({
     id: data.id,
+    authorId: sessionUser.id,
     highlightText: data.highlight_text,
     startPos: data.start_pos,
     endPos: data.end_pos,

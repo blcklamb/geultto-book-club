@@ -34,6 +34,7 @@ export function HighlightCommentPanel({
   highlight,
   disabled,
   currentUserNickname,
+  currentUserId,
   onClose,
   onHighlightDeleted,
   onCommentsUpdated,
@@ -131,7 +132,7 @@ export function HighlightCommentPanel({
   };
 
   const isHighlightAuthor =
-    highlight.authorNickname === currentUserNickname;
+    !!currentUserId && highlight.authorId === currentUserId;
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
