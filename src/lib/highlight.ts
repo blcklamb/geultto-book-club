@@ -4,6 +4,8 @@ export type HighlightReply = {
   id: string;
   body: string;
   author: string;
+  authorImageUrl?: string | null;
+  authorDecoration?: string | null;
   createdAt: string;
 };
 
@@ -11,6 +13,8 @@ export type HighlightComment = {
   id: string;
   body: string;
   author: string;
+  authorImageUrl?: string | null;
+  authorDecoration?: string | null;
   createdAt: string;
   reactions: ReactionSummary[];
   replies: HighlightReply[];
@@ -21,6 +25,8 @@ export type HighlightWithComments = {
   highlightText: string;
   authorId: string;
   authorNickname: string;
+  authorImageUrl?: string | null;
+  authorDecoration?: string | null;
   startPos: number;
   endPos: number;
   comments: HighlightComment[];

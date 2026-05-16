@@ -31,6 +31,11 @@ describe("ReviewCard", () => {
     expect(screen.getByText("홍길동")).toBeInTheDocument();
   });
 
+  it("작성자 왼쪽에 아바타를 렌더링한다", () => {
+    render(<ReviewCard {...defaultProps} />);
+    expect(screen.getByLabelText("프로필 이미지")).toBeInTheDocument();
+  });
+
   it("일정 제목을 렌더링한다", () => {
     render(<ReviewCard {...defaultProps} />);
     expect(screen.getByText("2024년 1월 독서모임")).toBeInTheDocument();

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { awardReviewCommentPoints } from "@/lib/points";
 
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending") {
+  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
     return NextResponse.json(
       { message: "승인된 회원만 작성할 수 있습니다." },
       { status: 403 }
@@ -42,6 +43,26 @@ export async function POST(
       { message: "댓글 작성 실패", error: error.message },
       { status: 400 }
     );
+  }
+
+  const { data: highlight } = await supabase
+    .from("review_highlights")
+    .select("review_id, review:reviews!review_highlights_review_id_fkey(id, schedule_id, author_id)")
+    .eq("id", highlightId)
+    .single();
+
+  const review = Array.isArray(highlight?.review)
+    ? highlight?.review[0]
+    : highlight?.review;
+
+  if (review?.schedule_id && review.id) {
+    await awardReviewCommentPoints(supabase, {
+      userId: sessionUser.id,
+      scheduleId: review.schedule_id,
+      reviewId: review.id,
+      reviewAuthorId: review.author_id,
+      commentId: data.id,
+    });
   }
 
   return NextResponse.json({

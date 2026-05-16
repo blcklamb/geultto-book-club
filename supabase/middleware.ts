@@ -65,6 +65,11 @@ export async function updateSession(request: NextRequest) {
           )
           .select("id")
           .single();
+        if (!error && data) {
+          await supabase
+            .from("user_profiles")
+            .upsert({ user_id: data.id }, { onConflict: "user_id" });
+        }
       }
 
       const redirectUrl = new URL(

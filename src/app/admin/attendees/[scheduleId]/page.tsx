@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { syncAutomaticPoints } from "@/lib/points";
 
 // Admin attendee management page for a specific schedule.
 export default async function AdminAttendeesPage({
@@ -20,6 +21,7 @@ export default async function AdminAttendeesPage({
   await ensureRole(["admin"]);
   const scheduleId = (await params).scheduleId;
   const supabase = await createSupabaseServerClient();
+  await syncAutomaticPoints(supabase);
   const { data: schedule } = await supabase
     .from("schedules")
     .select("id, book_title, date")
@@ -29,7 +31,7 @@ export default async function AdminAttendeesPage({
   const { data: attendees } = await supabase
     .from("schedule_attendees")
     .select(
-      "user_id, is_attending, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
+      "user_id, is_attending, requested_attending, actual_attended, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
     )
     .eq("schedule_id", scheduleId);
 
@@ -49,7 +51,8 @@ export default async function AdminAttendeesPage({
             <TableHeader>
               <TableRow>
                 <TableHead>닉네임</TableHead>
-                <TableHead>참석</TableHead>
+                <TableHead>참석 신청</TableHead>
+                <TableHead>실제 참석</TableHead>
                 <TableHead>회비 납부</TableHead>
               </TableRow>
             </TableHeader>
@@ -68,7 +71,18 @@ export default async function AdminAttendeesPage({
                     <input
                       type="checkbox"
                       name={`attending_${attendee.user_id}`}
-                      defaultChecked={!!attendee.is_attending}
+                      defaultChecked={
+                        attendee.requested_attending ??
+                        attendee.is_attending ??
+                        false
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      name={`actual_${attendee.user_id}`}
+                      defaultChecked={!!attendee.actual_attended}
                     />
                   </TableCell>
                   <TableCell>

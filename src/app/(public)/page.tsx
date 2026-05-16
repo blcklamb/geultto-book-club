@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { HomeScene3D } from "@/components/HomeScene3D";
+import { NaverMapCopyButton } from "@/components/NaverMapCopyButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +15,7 @@ export default async function HomePage() {
 
   const { data: schedules } = await supabase
     .from("schedules")
-    .select("id, date, place, book_title")
+    .select("id, date, place, book_title, book_link")
     .gte("date", nowIso)
     .order("date", { ascending: true })
     .limit(1);
@@ -33,12 +34,29 @@ export default async function HomePage() {
     ? await supabase
         .from("topics")
         .select(
-          "id, title, schedules(book_title), created_at, topic_comments(count)"
+          "id, title, schedules(book_title), created_at, topic_comments(count)",
         )
         .eq("author_id", sessionUser.id)
         .order("created_at", { ascending: false })
         .limit(3)
     : { data: [] };
+
+  let bookCoverUrl: string | undefined;
+  if (schedules?.[0]?.book_link) {
+    try {
+      const res = await fetch(schedules[0].book_link, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        next: { revalidate: 3600 },
+      });
+      const html = await res.text();
+      const match = html.match(
+        /property="og:image"[^>]*content="([^"]+)"|content="([^"]+)"[^>]*property="og:image"/,
+      );
+      bookCoverUrl = match?.[1] ?? match?.[2];
+    } catch {
+      // og:image 파싱 실패 시 기본 표지 사용
+    }
+  }
 
   const nextSchedule = schedules?.[0]
     ? {
@@ -58,14 +76,17 @@ export default async function HomePage() {
         <div className="space-y-6">
           <div className="space-y-3">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-              어쩌다 4기, 글또 북클럽
+              글또 5기 독서모임
             </h1>
             <p className="text-base text-slate-600">
               다음 모임 일정을 확인하고, 독후감과 토론으로 풍성한 대화를
               이어가요.
             </p>
           </div>
-          <HomeScene3D nextSchedule={nextSchedule} />
+          <HomeScene3D
+            nextSchedule={nextSchedule}
+            bookCoverUrl={bookCoverUrl}
+          />
         </div>
         <div className="space-y-4">
           <Card>
@@ -83,7 +104,10 @@ export default async function HomePage() {
               {nextSchedule ? (
                 <>
                   <p>{nextSchedule.date}</p>
-                  <p>{nextSchedule.place}</p>
+                  <div className="flex items-center gap-2">
+                    <p>{nextSchedule.place}</p>
+                    <NaverMapCopyButton searchValue={schedules?.[0]?.place} />
+                  </div>
                   <p className="font-medium">📘 {nextSchedule.book}</p>
                 </>
               ) : (
@@ -126,7 +150,7 @@ export default async function HomePage() {
                           <p className="text-xs text-slate-500">
                             {review.schedules?.book_title} ·{" "}
                             {new Date(
-                              review.created_at as string
+                              review.created_at as string,
                             ).toLocaleDateString("ko-KR")}
                           </p>
                         </div>

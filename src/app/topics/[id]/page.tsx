@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ReviewViewer } from "@/components/ReviewViewer";
 import { TopicDetailActions } from "@/components/TopicDetailActions";
 import DetailHeader from "@/components/DetailHeader";
+import { UserAvatar } from "@/components/UserAvatar";
+import { profileImagesByUserId } from "@/lib/profile-image";
+import { deletePointTransactionsForSource } from "@/lib/points";
 
 // Topic detail page: renders tiptap content and comment thread.
 export default async function TopicDetailPage({
@@ -31,7 +34,7 @@ export default async function TopicDetailPage({
   const { data: comments } = await supabase
     .from("topic_comments")
     .select(
-      "id, body, created_at, author:users!topic_comments_author_id_fkey(nickname)"
+      "id, body, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)"
     )
     .eq("topic_id", topicId)
     .order("created_at", { ascending: true });
@@ -48,12 +51,25 @@ export default async function TopicDetailPage({
         })()
       : topic.body_rich ?? defaultContent;
 
-  const canEdit = !!sessionUser && topic.author_id === sessionUser.id;
+  const canEdit =
+    !!sessionUser && !sessionUser.isDeactivated && topic.author_id === sessionUser.id;
+  const authorIds = [
+    topic.author_id,
+    ...(comments ?? []).map((comment) => comment.author_id),
+  ].filter(Boolean) as string[];
+  const { data: avatarRows } =
+    authorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url, profile_decoration")
+          .in("user_id", [...new Set(authorIds)])
+      : { data: [] };
+  const profileImageMap = profileImagesByUserId(avatarRows);
 
   async function handleCommentSubmit(body: string) {
     "use server";
     const sessionUser = await getSessionUser();
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 회원만 댓글을 작성할 수 있습니다.");
     }
     if (!body.trim()) {
@@ -80,7 +96,7 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 수정할 수 있습니다.");
     }
 
@@ -122,7 +138,7 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 삭제할 수 있습니다.");
     }
 
@@ -131,6 +147,12 @@ export default async function TopicDetailPage({
     if (!topicId) {
       throw new Error("잘못된 요청입니다.");
     }
+
+    await deletePointTransactionsForSource(
+      supabase,
+      "topic_submission",
+      topicId
+    );
 
     const { error } = await supabase
       .from("topics")
@@ -155,9 +177,24 @@ export default async function TopicDetailPage({
             <h1 className="text-3xl font-semibold text-slate-900">
               {topic.title}
             </h1>
-            <p className="text-sm text-slate-500">
-              {topic.author?.nickname ?? "익명"} · {topic.schedule?.book_title}
-            </p>
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <UserAvatar
+                imageUrl={
+                  topic.author_id
+                    ? profileImageMap.get(topic.author_id)?.profileImageUrl
+                    : undefined
+                }
+                decoration={
+                  topic.author_id
+                    ? profileImageMap.get(topic.author_id)?.profileDecoration
+                    : undefined
+                }
+                size="sm"
+              />
+              <span>
+                {topic.author?.nickname ?? "익명"} · {topic.schedule?.book_title}
+              </span>
+            </div>
           </div>
           {canEdit ? (
             <TopicDetailActions
@@ -180,12 +217,20 @@ export default async function TopicDetailPage({
               id: comment.id,
               body: comment.body,
               author: comment.author?.nickname ?? "익명",
+              authorImageUrl: comment.author_id
+                ? profileImageMap.get(comment.author_id)?.profileImageUrl
+                : undefined,
+              authorDecoration: comment.author_id
+                ? profileImageMap.get(comment.author_id)?.profileDecoration
+                : undefined,
               createdAt: new Date(comment.created_at || "").toLocaleString(
                 "ko-KR"
               ),
             })) ?? []
           }
-          disabled={!sessionUser || sessionUser.role === "pending"}
+          disabled={
+            !sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated
+          }
           onSubmit={handleCommentSubmit}
         />
       </div>

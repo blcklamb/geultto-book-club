@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { awardTopicSubmissionPoints } from "@/lib/points";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending") {
+  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
     return NextResponse.json(
       { message: "승인된 회원만 작성할 수 있습니다." },
       { status: 403 }
@@ -22,20 +23,29 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("topics").insert([
-    {
-      schedule_id: scheduleId,
-      author_id: sessionUser.id,
-      title,
-      body_rich: JSON.parse(bodyRich),
-      body_markdown: null,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("topics")
+    .insert([
+      {
+        schedule_id: scheduleId,
+        author_id: sessionUser.id,
+        title,
+        body_rich: JSON.parse(bodyRich),
+        body_markdown: null,
+      },
+    ])
+    .select("id")
+    .single();
   if (error) {
     return NextResponse.json(
       { message: "등록 실패", error: error.message },
       { status: 400 }
     );
   }
+  await awardTopicSubmissionPoints(supabase, {
+    userId: sessionUser.id,
+    scheduleId,
+    topicId: data.id,
+  });
   return NextResponse.redirect(new URL("/topics", req.url));
 }

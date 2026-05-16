@@ -12,6 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DetailHeader from "@/components/DetailHeader";
+import { UserAvatar } from "@/components/UserAvatar";
+import { profileImagesByUserId } from "@/lib/profile-image";
+import { syncAttendancePoints } from "@/lib/points";
 
 // Schedule detail page: shows event info, attendee state and quote submission.
 // Params: { params: { id: string } }
@@ -30,6 +33,9 @@ export default async function ScheduleDetailPage({
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
   const scheduleId = (await params).id;
+  if (sessionUser && !sessionUser.isDeactivated) {
+    await syncAttendancePoints(supabase);
+  }
 
   const { data: schedule } = await supabase
     .from("schedules")
@@ -44,7 +50,7 @@ export default async function ScheduleDetailPage({
   const { data: attendees } = await supabase
     .from("schedule_attendees")
     .select(
-      "user_id, is_attending, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
+      "user_id, is_attending, requested_attending, actual_attended, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
     )
     .eq("schedule_id", scheduleId);
 
@@ -55,6 +61,17 @@ export default async function ScheduleDetailPage({
     )
     .eq("schedule_id", scheduleId)
     .order("created_at", { ascending: false });
+  const quoteAuthorIds = [
+    ...new Set((quotes ?? []).map((quote) => quote.author_id).filter(Boolean)),
+  ] as string[];
+  const { data: quoteAvatarRows } =
+    quoteAuthorIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("user_id, profile_image_url, profile_decoration")
+          .in("user_id", quoteAuthorIds)
+      : { data: [] };
+  const quoteProfileImageMap = profileImagesByUserId(quoteAvatarRows);
 
   const myAttendance = attendees?.find(
     (att) => att.user_id === sessionUser?.id
@@ -86,7 +103,7 @@ export default async function ScheduleDetailPage({
           </CardContent>
         </Card>
 
-        {sessionUser && sessionUser.role !== "pending" ? (
+        {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">참석 여부</CardTitle>
@@ -105,7 +122,11 @@ export default async function ScheduleDetailPage({
                       type="radio"
                       name="isAttending"
                       value="true"
-                      defaultChecked={!!myAttendance?.is_attending}
+                      defaultChecked={
+                        myAttendance?.requested_attending ??
+                        myAttendance?.is_attending ??
+                        false
+                      }
                     />
                     참석합니다
                   </label>
@@ -114,7 +135,13 @@ export default async function ScheduleDetailPage({
                       type="radio"
                       name="isAttending"
                       value="false"
-                      defaultChecked={!myAttendance?.is_attending}
+                      defaultChecked={
+                        !(
+                          myAttendance?.requested_attending ??
+                          myAttendance?.is_attending ??
+                          false
+                        )
+                      }
                     />
                     참석이 어려워요
                   </label>
@@ -153,7 +180,7 @@ export default async function ScheduleDetailPage({
               인상 깊은 구절
             </h2>
           </div>
-          {sessionUser && sessionUser.role !== "pending" ? (
+          {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
             <form
               action="/api/quotes"
               method="post"
@@ -193,9 +220,24 @@ export default async function ScheduleDetailPage({
                     p.{quote.page_number}
                   </p>
                   <p>“{quote.text}”</p>
-                  <p className="text-xs text-slate-400">
-                    {quote.author?.nickname}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <UserAvatar
+                      imageUrl={
+                        quote.author_id
+                          ? quoteProfileImageMap.get(quote.author_id)
+                              ?.profileImageUrl
+                          : undefined
+                      }
+                      decoration={
+                        quote.author_id
+                          ? quoteProfileImageMap.get(quote.author_id)
+                              ?.profileDecoration
+                          : undefined
+                      }
+                      size="sm"
+                    />
+                    <span>{quote.author?.nickname}</span>
+                  </div>
                 </CardContent>
               </Card>
             )) ?? (
@@ -216,7 +258,8 @@ export default async function ScheduleDetailPage({
                   <TableHeader>
                     <TableRow>
                       <TableHead>닉네임</TableHead>
-                      <TableHead>참석</TableHead>
+                      <TableHead>참석 신청</TableHead>
+                      <TableHead>실제 참석</TableHead>
                       <TableHead>회비 납부</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -224,13 +267,29 @@ export default async function ScheduleDetailPage({
                     {attendees?.map((attendee) => (
                       <TableRow key={attendee.user_id}>
                         <TableCell>
+                          <input
+                            type="hidden"
+                            name="userIds"
+                            value={attendee.user_id}
+                          />
                           {attendee.user?.nickname ?? attendee.user_id}
                         </TableCell>
                         <TableCell>
                           <input
                             type="checkbox"
                             name={`attending_${attendee.user_id}`}
-                            defaultChecked={!!attendee.is_attending}
+                            defaultChecked={
+                              attendee.requested_attending ??
+                              attendee.is_attending ??
+                              false
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            name={`actual_${attendee.user_id}`}
+                            defaultChecked={!!attendee.actual_attended}
                           />
                         </TableCell>
                         <TableCell>

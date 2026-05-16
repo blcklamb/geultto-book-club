@@ -9,14 +9,14 @@ describe("UserAvatar", () => {
   });
 
   it("기본 배경색이 #F1F5F9이다", () => {
-    const { container } = render(<UserAvatar emoji="📚" />);
-    const avatar = container.firstChild as HTMLElement;
+    render(<UserAvatar emoji="📚" />);
+    const avatar = screen.getByTestId("profile-avatar-circle");
     expect(avatar).toHaveStyle({ backgroundColor: "#F1F5F9" });
   });
 
   it("bgColor prop으로 배경색을 지정할 수 있다", () => {
-    const { container } = render(<UserAvatar emoji="📚" bgColor="#FEF3C7" />);
-    const avatar = container.firstChild as HTMLElement;
+    render(<UserAvatar emoji="📚" bgColor="#FEF3C7" />);
+    const avatar = screen.getByTestId("profile-avatar-circle");
     expect(avatar).toHaveStyle({ backgroundColor: "#FEF3C7" });
   });
 
@@ -42,8 +42,48 @@ describe("UserAvatar", () => {
   });
 
   it("원형 테두리 스타일 클래스가 적용된다", () => {
-    const { container } = render(<UserAvatar emoji="📚" />);
-    const avatar = container.firstChild as HTMLElement;
+    render(<UserAvatar emoji="📚" />);
+    const avatar = screen.getByTestId("profile-avatar-circle");
     expect(avatar.className).toContain("rounded-full");
   });
+
+  it("이미지 URL을 렌더링한다", () => {
+    const { container } = render(
+      <UserAvatar imageUrl="https://example.com/profile.png" />,
+    );
+    const image = container.querySelector("img");
+    expect(image).toHaveAttribute("src", "https://example.com/profile.png");
+  });
+
+  it("상단 장식 아이템을 렌더링한다", () => {
+    const { container } = render(<UserAvatar decoration="dog" />);
+    expect(
+      container.querySelector('[data-profile-decoration="dog"]'),
+    ).toBeInTheDocument();
+  });
+
+  it("얼굴 겹침 장식 아이템을 렌더링한다", () => {
+    const { container } = render(<UserAvatar decoration="sun-glasses" />);
+    expect(
+      container.querySelector('[data-profile-decoration="sun-glasses"]'),
+    ).toBeInTheDocument();
+  });
+
+  it.each(["dog", "mic", "beard", "glasses", "sun-glasses", "star", "sprout"])(
+    "추가 장식 옵션 %s를 렌더링한다",
+    (decoration) => {
+      const { container } = render(<UserAvatar decoration={decoration} />);
+      expect(
+        container.querySelector(`[data-profile-decoration="${decoration}"]`),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it.each(["unknown", "pencil", "eye-patch"])(
+    "지원하지 않는 장식값 %s 는 렌더링하지 않는다",
+    (decoration) => {
+      const { container } = render(<UserAvatar decoration={decoration} />);
+      expect(container.querySelector("[data-profile-decoration]")).toBeNull();
+    },
+  );
 });

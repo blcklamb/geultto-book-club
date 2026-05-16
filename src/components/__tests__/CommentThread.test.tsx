@@ -27,6 +27,11 @@ describe("CommentThread", () => {
     expect(screen.getByText("저도 이 책 읽었는데 공감해요.")).toBeInTheDocument();
   });
 
+  it("댓글 작성자 왼쪽에 아바타를 렌더링한다", () => {
+    render(<CommentThread comments={sampleComments} />);
+    expect(screen.getAllByLabelText("프로필 이미지")).toHaveLength(2);
+  });
+
   it("댓글이 없으면 댓글 섹션이 비어 있다", () => {
     render(<CommentThread comments={[]} />);
     expect(screen.queryByRole("article")).not.toBeInTheDocument();

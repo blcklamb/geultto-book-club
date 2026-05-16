@@ -7,7 +7,7 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending") {
+  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
     return NextResponse.json(
       { message: "승인된 회원만 작성할 수 있습니다." },
       { status: 403 }

@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
     schedule_id: string;
     user_id: string;
     is_attending: boolean;
+    requested_attending: boolean;
+    actual_attended: boolean;
     fee_paid: boolean;
   }> = [];
   for (const userId of userIds) {
@@ -36,6 +38,10 @@ export async function POST(req: NextRequest) {
       schedule_id: scheduleId,
       user_id: userId,
       is_attending: isAttending,
+      requested_attending: isAttending,
+      actual_attended:
+        formData.get(`actual_${userId}`) === "on" ||
+        formData.get(`actual_${userId}`) === "true",
       fee_paid: feePaid,
     });
   }
