@@ -1,9 +1,25 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileImageField } from "../ProfileImageField";
 
 describe("ProfileImageField", () => {
+  beforeAll(() => {
+    Object.defineProperty(URL, "createObjectURL", {
+      value: vi.fn().mockReturnValue("blob:preview"),
+      configurable: true,
+      writable: true,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      value: vi.fn(),
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
   it("파일 입력을 렌더링한다", () => {
     render(<ProfileImageField />);
     expect(screen.getByLabelText("이미지 선택")).toHaveAttribute(
@@ -22,12 +38,6 @@ describe("ProfileImageField", () => {
 
   it("이미지를 선택하면 미리보기 URL을 갱신한다", async () => {
     const user = userEvent.setup();
-    const createObjectURL = vi
-      .spyOn(URL, "createObjectURL")
-      .mockReturnValue("blob:preview");
-    const revokeObjectURL = vi
-      .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => undefined);
 
     const { container } = render(<ProfileImageField />);
     const file = new File(["image"], "profile.png", { type: "image/png" });
@@ -35,9 +45,6 @@ describe("ProfileImageField", () => {
 
     const image = container.querySelector("img");
     expect(image).toHaveAttribute("src", "blob:preview");
-
-    createObjectURL.mockRestore();
-    revokeObjectURL.mockRestore();
   });
 
   it("초기 장식값을 hidden input에 렌더링한다", () => {

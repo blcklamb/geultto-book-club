@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+  if (sessionUser.isDeactivated) {
+    return NextResponse.json(
+      { message: "비활성화된 계정입니다." },
+      { status: 403 },
+    );
+  }
 
   const formData = await req.formData();
   const userId = formData.get("userId")?.toString();
@@ -125,12 +131,18 @@ export async function POST(req: NextRequest) {
       );
     }
   } else {
-    await supabase
+    const { error: profileError } = await supabase
       .from("user_profiles")
       .upsert(
         { user_id: userId, profile_decoration: profileDecoration },
         { onConflict: "user_id" }
       );
+    if (profileError) {
+      return NextResponse.json(
+        { message: "프로필 저장 실패", error: profileError.message },
+        { status: 400 },
+      );
+    }
   }
 
   return NextResponse.redirect(new URL("/profile", req.url));

@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role !== "admin") {
+  if (!sessionUser || sessionUser.role !== "admin" || sessionUser.isDeactivated) {
     return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
   }
   const { id } = await params;

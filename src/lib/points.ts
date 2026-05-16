@@ -260,7 +260,7 @@ export async function syncAttendancePoints(supabase: Client) {
 
   const { data: attendees, error } = await supabase
     .from("schedule_attendees")
-    .select("schedule_id, user_id, requested_attending, is_attending")
+    .select("schedule_id, user_id, requested_attending, is_attending, actual_attended")
     .in("schedule_id", scheduleIds);
 
   if (error) {
@@ -268,9 +268,11 @@ export async function syncAttendancePoints(supabase: Client) {
   }
 
   for (const attendee of attendees ?? []) {
-    const requested =
-      attendee.requested_attending ?? attendee.is_attending ?? false;
-    if (!requested || !attendee.schedule_id || !attendee.user_id) continue;
+    const attended =
+      attendee.actual_attended !== null && attendee.actual_attended !== undefined
+        ? attendee.actual_attended
+        : (attendee.requested_attending ?? attendee.is_attending ?? false);
+    if (!attended || !attendee.schedule_id || !attendee.user_id) continue;
 
     await awardPointTransaction(supabase, {
       userId: attendee.user_id,
@@ -318,7 +320,7 @@ export async function syncPerfectAttendancePoints(supabase: Client) {
   for (const user of users ?? []) {
     const { data: rows, error: attendanceError } = await supabase
       .from("schedule_attendees")
-      .select("schedule_id, requested_attending, is_attending")
+      .select("schedule_id, requested_attending, is_attending, actual_attended")
       .eq("user_id", user.id)
       .in("schedule_id", scheduleIds);
 
@@ -328,7 +330,13 @@ export async function syncPerfectAttendancePoints(supabase: Client) {
 
     const attendedScheduleIds = new Set(
       (rows ?? [])
-        .filter((row) => row.requested_attending ?? row.is_attending ?? false)
+        .filter((row) => {
+          const attended =
+            row.actual_attended !== null && row.actual_attended !== undefined
+              ? row.actual_attended
+              : (row.requested_attending ?? row.is_attending ?? false);
+          return attended;
+        })
         .map((row) => row.schedule_id)
     );
 

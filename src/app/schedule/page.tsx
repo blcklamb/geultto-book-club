@@ -13,7 +13,8 @@ export default async function SchedulePage({
   searchParams: Promise<{ cohort?: string }>;
 }) {
   const { cohort: cohortParam } = await searchParams;
-  const cohortValue = cohortParam ? Number(cohortParam) : null;
+  const parsed = cohortParam ? Number(cohortParam) : NaN;
+  const cohortValue = Number.isFinite(parsed) ? parsed : null;
 
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
