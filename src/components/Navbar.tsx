@@ -24,6 +24,12 @@ const navItems = [
   { href: "/profile", label: "내 프로필" },
 ];
 
+const adminItems = [
+  { href: "/admin/points", label: "포인트" },
+  { href: "/admin/schedule", label: "일정 관리" },
+  { href: "/admin/users", label: "회원 승인" },
+];
+
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
@@ -59,18 +65,21 @@ export const Navbar: React.FC = () => {
               {item.label}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              href="/admin/schedule"
-              className={
-                pathname.startsWith("/admin")
-                  ? "text-slate-900"
-                  : "transition hover:text-slate-900"
-              }
-            >
-              Admin
-            </Link>
-          )}
+          {isAdmin
+            ? adminItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={
+                    pathname.startsWith(item.href)
+                      ? "text-slate-900"
+                      : "transition hover:text-slate-900"
+                  }
+                >
+                  {item.label}
+                </Link>
+              ))
+            : null}
         </nav>
 
         {/* 데스크톱 유저 영역 */}
@@ -148,20 +157,22 @@ export const Navbar: React.FC = () => {
                     </Link>
                   </SheetClose>
                 ))}
-                {isAdmin && (
-                  <SheetClose asChild>
-                    <Link
-                      href="/admin/schedule"
-                      className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                        pathname.startsWith("/admin")
-                          ? "bg-slate-100 text-slate-900"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      }`}
-                    >
-                      Admin
-                    </Link>
-                  </SheetClose>
-                )}
+                {isAdmin
+                  ? adminItems.map((item) => (
+                      <SheetClose asChild key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                            pathname.startsWith(item.href)
+                              ? "bg-slate-100 text-slate-900"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      </SheetClose>
+                    ))
+                  : null}
               </nav>
 
               {/* 로그인/로그아웃 */}

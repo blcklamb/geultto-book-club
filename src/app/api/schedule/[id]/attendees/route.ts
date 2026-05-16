@@ -7,7 +7,7 @@ export async function POST(
   ctx: RouteContext<"/api/schedule/[id]/attendees">
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending") {
+  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
     return NextResponse.json(
       { message: "승인된 회원만 참석 상태를 변경할 수 있습니다." },
       { status: 403 }
@@ -31,6 +31,7 @@ export async function POST(
       schedule_id: scheduleId,
       user_id: userId,
       is_attending: isAttending,
+      requested_attending: isAttending,
     },
     { onConflict: "schedule_id,user_id" }
   );

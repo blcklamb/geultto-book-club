@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { awardQuoteSubmissionPoints } from "@/lib/points";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending") {
+  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
     return NextResponse.json(
       { message: "구절은 승인된 멤버만 추가할 수 있습니다." },
       { status: 403 }
@@ -25,14 +26,18 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("quotes").insert([
-    {
-      schedule_id: scheduleId,
-      author_id: sessionUser.id,
-      text,
-      page_number: pageNumber,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("quotes")
+    .insert([
+      {
+        schedule_id: scheduleId,
+        author_id: sessionUser.id,
+        text,
+        page_number: pageNumber,
+      },
+    ])
+    .select("id")
+    .single();
 
   if (error) {
     return NextResponse.json(
@@ -40,6 +45,11 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  await awardQuoteSubmissionPoints(supabase, {
+    userId: sessionUser.id,
+    scheduleId,
+    quoteId: data.id,
+  });
 
   const fallbackUrl = `/schedule/${scheduleId}`;
   const target =

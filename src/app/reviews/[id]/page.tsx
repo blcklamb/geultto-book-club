@@ -13,6 +13,11 @@ import { fetchReactionSummary, toggleReaction, summarizeReactions } from "@/lib/
 import type { HighlightWithComments } from "@/lib/highlight";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
+import {
+  awardReviewCommentPoints,
+  deletePointTransactionsForSource,
+  recomputeReviewRankBonusPoints,
+} from "@/lib/points";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -75,7 +80,8 @@ export default async function ReviewDetailPage({
         })()
       : review.content_rich ?? defaultContent;
 
-  const canEdit = !!sessionUser && review.author_id === sessionUser.id;
+  const canEdit =
+    !!sessionUser && !sessionUser.isDeactivated && review.author_id === sessionUser.id;
   const authorIds = [
     review.author_id,
     ...(comments ?? []).map((comment) => comment.author_id),
@@ -195,23 +201,40 @@ export default async function ReviewDetailPage({
     "use server";
     if (!body) throw new Error("댓글 내용을 입력해주세요.");
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const sessionUser = await getSessionUser();
 
-    if (!user) {
-      throw new Error("로그인이 필요합니다.");
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
+      throw new Error("승인된 멤버만 댓글을 작성할 수 있습니다.");
     }
 
-    const { error } = await supabase.from("review_comments").insert([
-      {
-        review_id: reviewId,
-        author_id: user.id,
-        body,
-      },
-    ]);
+    const { data, error } = await supabase
+      .from("review_comments")
+      .insert([
+        {
+          review_id: reviewId,
+          author_id: sessionUser.id,
+          body,
+        },
+      ])
+      .select("id")
+      .single();
     if (error) {
       throw new Error("댓글 작성 실패: " + error.message);
+    }
+    const { data: review } = await supabase
+      .from("reviews")
+      .select("schedule_id, author_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (review?.schedule_id) {
+      await awardReviewCommentPoints(supabase, {
+        userId: sessionUser.id,
+        scheduleId: review.schedule_id,
+        reviewId,
+        reviewAuthorId: review.author_id,
+        commentId: data.id,
+      });
     }
     revalidatePath(`/reviews/${reviewId}`);
   }
@@ -221,7 +244,7 @@ export default async function ReviewDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 수정할 수 있습니다.");
     }
 
@@ -270,7 +293,7 @@ export default async function ReviewDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 삭제할 수 있습니다.");
     }
 
@@ -280,6 +303,36 @@ export default async function ReviewDetailPage({
       throw new Error("잘못된 요청입니다.");
     }
 
+    const { data: commentRows } = await supabase
+      .from("review_comments")
+      .select("id")
+      .eq("review_id", reviewId);
+    const { data: highlightRowsForDelete } = await supabase
+      .from("review_highlights")
+      .select("id")
+      .eq("review_id", reviewId);
+    const highlightIds = (highlightRowsForDelete ?? []).map((row) => row.id);
+    const { data: highlightCommentRows } =
+      highlightIds.length > 0
+        ? await supabase
+            .from("highlight_comments")
+            .select("id")
+            .in("highlight_id", highlightIds)
+        : { data: [] };
+    const { data: reviewForDelete } = await supabase
+      .from("reviews")
+      .select("schedule_id")
+      .eq("id", reviewId)
+      .eq("author_id", sessionUser.id)
+      .maybeSingle();
+
+    await deletePointTransactionsForSource(supabase, "review_submission", reviewId);
+    await deletePointTransactionsForSource(supabase, "late_review", reviewId);
+    await deletePointTransactionsForSource(supabase, "review_comment", [
+      ...(commentRows ?? []).map((row) => row.id),
+      ...(highlightCommentRows ?? []).map((row) => row.id),
+    ]);
+
     const { error } = await supabase
       .from("reviews")
       .delete()
@@ -288,6 +341,10 @@ export default async function ReviewDetailPage({
 
     if (error) {
       throw new Error("독후감 삭제 실패: " + error.message);
+    }
+
+    if (reviewForDelete?.schedule_id) {
+      await recomputeReviewRankBonusPoints(supabase, reviewForDelete.schedule_id);
     }
 
     revalidatePath("/reviews");
@@ -372,7 +429,11 @@ export default async function ReviewDetailPage({
                 content={reviewContent}
                 reviewId={review.id}
                 initialHighlights={highlights}
-                disabled={!sessionUser || sessionUser.role === "pending"}
+                disabled={
+                  !sessionUser ||
+                  sessionUser.role === "pending" ||
+                  sessionUser.isDeactivated
+                }
                 currentUserNickname={sessionUser?.nickname}
                 currentUserId={sessionUser?.id}
               />
@@ -401,7 +462,11 @@ export default async function ReviewDetailPage({
                 ),
               })) ?? []
             }
-            disabled={!sessionUser || sessionUser.role === "pending"}
+            disabled={
+              !sessionUser ||
+              sessionUser.role === "pending" ||
+              sessionUser.isDeactivated
+            }
             onSubmit={handleCommentSubmit}
           />
         </article>

@@ -9,6 +9,7 @@ import { TopicDetailActions } from "@/components/TopicDetailActions";
 import DetailHeader from "@/components/DetailHeader";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
+import { deletePointTransactionsForSource } from "@/lib/points";
 
 // Topic detail page: renders tiptap content and comment thread.
 export default async function TopicDetailPage({
@@ -50,7 +51,8 @@ export default async function TopicDetailPage({
         })()
       : topic.body_rich ?? defaultContent;
 
-  const canEdit = !!sessionUser && topic.author_id === sessionUser.id;
+  const canEdit =
+    !!sessionUser && !sessionUser.isDeactivated && topic.author_id === sessionUser.id;
   const authorIds = [
     topic.author_id,
     ...(comments ?? []).map((comment) => comment.author_id),
@@ -67,7 +69,7 @@ export default async function TopicDetailPage({
   async function handleCommentSubmit(body: string) {
     "use server";
     const sessionUser = await getSessionUser();
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 회원만 댓글을 작성할 수 있습니다.");
     }
     if (!body.trim()) {
@@ -94,7 +96,7 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 수정할 수 있습니다.");
     }
 
@@ -136,7 +138,7 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending") {
+    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
       throw new Error("승인된 멤버만 삭제할 수 있습니다.");
     }
 
@@ -145,6 +147,12 @@ export default async function TopicDetailPage({
     if (!topicId) {
       throw new Error("잘못된 요청입니다.");
     }
+
+    await deletePointTransactionsForSource(
+      supabase,
+      "topic_submission",
+      topicId
+    );
 
     const { error } = await supabase
       .from("topics")
@@ -220,7 +228,9 @@ export default async function TopicDetailPage({
               ),
             })) ?? []
           }
-          disabled={!sessionUser || sessionUser.role === "pending"}
+          disabled={
+            !sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated
+          }
           onSubmit={handleCommentSubmit}
         />
       </div>

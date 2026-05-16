@@ -21,6 +21,7 @@ export interface Database {
           profile_emoji: string | null;
           profile_bg_color: string | null;
           role: "pending" | "member" | "admin";
+          is_deactivated: boolean;
           expires_at: string | null;
           created_at: string | null;
           updated_at: string | null;
@@ -34,6 +35,7 @@ export interface Database {
           profile_emoji?: string | null;
           profile_bg_color?: string | null;
           role?: "pending" | "member" | "admin";
+          is_deactivated?: boolean;
           expires_at?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -95,6 +97,8 @@ export interface Database {
           schedule_id: string;
           user_id: string;
           is_attending: boolean | null;
+          requested_attending: boolean | null;
+          actual_attended: boolean | null;
           fee_paid: boolean | null;
           created_at: string | null;
           updated_at: string | null;
@@ -103,6 +107,8 @@ export interface Database {
           schedule_id: string;
           user_id: string;
           is_attending?: boolean | null;
+          requested_attending?: boolean | null;
+          actual_attended?: boolean | null;
           fee_paid?: boolean | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -500,9 +506,76 @@ export interface Database {
           }
         ];
       };
+      point_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          schedule_id: string | null;
+          source_type: string;
+          source_id: string | null;
+          points: number;
+          memo: string | null;
+          created_by: string | null;
+          created_at: string;
+          cohort: number;
+          idempotency_key: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          schedule_id?: string | null;
+          source_type: string;
+          source_id?: string | null;
+          points: number;
+          memo?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          cohort?: number;
+          idempotency_key: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["point_transactions"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "point_transactions_schedule_id_fkey";
+            columns: ["schedule_id"];
+            referencedRelation: "schedules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "point_transactions_created_by_fkey";
+            columns: ["created_by"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      delete_point_transactions_for_source: {
+        Args: {
+          p_source_type: string;
+          p_source_ids: string[];
+          p_cohort?: number;
+        };
+        Returns: void;
+      };
+      recompute_review_rank_bonus_points: {
+        Args: {
+          p_schedule_id: string;
+          p_cohort?: number;
+        };
+        Returns: void;
+      };
+    };
     Enums: {
       user_role: "pending" | "member" | "admin";
     };

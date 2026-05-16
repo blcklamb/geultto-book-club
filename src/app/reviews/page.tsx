@@ -72,7 +72,7 @@ export default async function ReviewsPage({
             {cohorts.length > 0 ? (
               <CohortFilter cohorts={cohorts} selected={cohortValue} />
             ) : null}
-            {sessionUser && sessionUser.role !== "pending" ? (
+            {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
               <Link href="/reviews/new">
                 <Button>독후감 작성</Button>
               </Link>

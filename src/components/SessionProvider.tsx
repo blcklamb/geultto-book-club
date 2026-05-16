@@ -51,7 +51,7 @@ export function SessionProvider({
 
     const { data: profile } = await supabase
       .from("users")
-      .select("id, nickname, role, expires_at")
+      .select("id, nickname, role, expires_at, is_deactivated")
       .eq("id", session.user.id)
       .single();
 
@@ -62,6 +62,7 @@ export function SessionProvider({
             nickname: profile.nickname,
             role: profile.role,
             expiresAt: profile.expires_at,
+            isDeactivated: !!profile.is_deactivated,
           }
         : null
     );

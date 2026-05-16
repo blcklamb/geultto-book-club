@@ -72,7 +72,7 @@ export default async function TopicsPage({
             <h1 className="text-3xl font-semibold text-slate-900">토론 발제</h1>
             <p className="text-sm text-slate-500">토론 주제를 공유해요.</p>
           </div>
-          {sessionUser && sessionUser.role !== "pending" ? (
+          {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
             <Link href="/topics/new">
               <Button>발제 등록</Button>
             </Link>

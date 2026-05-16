@@ -84,7 +84,9 @@ export default async function QuotesPage({
           title: schedule.book_title,
         })) ?? []
       }
-      canCreate={!!sessionUser && sessionUser.role !== "pending"}
+      canCreate={
+        !!sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated
+      }
       cohorts={cohorts}
       selectedCohort={cohortValue}
     />
