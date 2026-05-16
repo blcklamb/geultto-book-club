@@ -15,7 +15,7 @@ import { deletePointTransactionsForSource } from "@/lib/points";
 function redirectQuoteWithMessage(
   quoteId: string,
   type: "error" | "success",
-  message: string
+  message: string,
 ): never {
   const params = new URLSearchParams({ [type]: message });
   redirect(`/quotes/${quoteId}?${params.toString()}`);
@@ -33,7 +33,7 @@ export default async function QuoteDetailPage({
   const { data: quote } = await supabase
     .from("quotes")
     .select(
-      "id, text, page_number, created_at, schedule_id, author_id, schedule:schedules!quotes_schedule_id_fkey(book_title), author:users!quotes_author_id_fkey(nickname)"
+      "id, text, page_number, created_at, schedule_id, author_id, schedule:schedules!quotes_schedule_id_fkey(book_title), author:users!quotes_author_id_fkey(nickname)",
     )
     .eq("id", quoteId)
     .single();
@@ -50,13 +50,15 @@ export default async function QuoteDetailPage({
   const authorDecoration = authorProfileRow?.profile_decoration ?? "none";
 
   const canEdit =
-    !!sessionUser && !sessionUser.isDeactivated && quote.author_id === sessionUser.id;
+    !!sessionUser &&
+    !sessionUser.isDeactivated &&
+    quote.author_id === sessionUser.id;
   const quoteReactions = await fetchReactionSummary(
     supabase,
     "quote_reactions",
     "quote_id",
     quoteId,
-    sessionUser?.id
+    sessionUser?.id,
   );
 
   async function handleUpdateQuote(formData: FormData) {
@@ -64,8 +66,16 @@ export default async function QuoteDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      redirectQuoteWithMessage(quoteId, "error", "승인된 멤버만 수정할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectQuoteWithMessage(
+        quoteId,
+        "error",
+        "승인된 멤버만 수정할 수 있습니다.",
+      );
     }
 
     const submittedQuoteId = formData.get("quoteId")?.toString();
@@ -73,7 +83,11 @@ export default async function QuoteDetailPage({
     const pageNumber = formData.get("pageNumber")?.toString() ?? null;
 
     if (!submittedQuoteId || !text) {
-      redirectQuoteWithMessage((await params).id, "error", "필수 값이 누락되었습니다.");
+      redirectQuoteWithMessage(
+        (await params).id,
+        "error",
+        "필수 값이 누락되었습니다.",
+      );
     }
 
     const { error } = await supabase
@@ -86,11 +100,14 @@ export default async function QuoteDetailPage({
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      redirectQuoteWithMessage(submittedQuoteId, "error", "구절 수정 실패: " + error.message);
+      redirectQuoteWithMessage(
+        submittedQuoteId,
+        "error",
+        "구절 수정 실패: " + error.message,
+      );
     }
 
     revalidatePath(`/quotes/${submittedQuoteId}`);
-    redirectQuoteWithMessage(submittedQuoteId, "success", "구절이 수정되었습니다.");
   }
 
   async function handleDeleteQuote(formData: FormData) {
@@ -98,20 +115,32 @@ export default async function QuoteDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      redirectQuoteWithMessage((await params).id, "error", "승인된 멤버만 삭제할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectQuoteWithMessage(
+        (await params).id,
+        "error",
+        "승인된 멤버만 삭제할 수 있습니다.",
+      );
     }
 
     const submittedQuoteId = formData.get("quoteId")?.toString();
 
     if (!submittedQuoteId) {
-      redirectQuoteWithMessage((await params).id, "error", "잘못된 요청입니다.");
+      redirectQuoteWithMessage(
+        (await params).id,
+        "error",
+        "잘못된 요청입니다.",
+      );
     }
 
     await deletePointTransactionsForSource(
       supabase,
       "quote_submission",
-      submittedQuoteId
+      submittedQuoteId,
     );
 
     const { error } = await supabase
@@ -121,7 +150,11 @@ export default async function QuoteDetailPage({
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      redirectQuoteWithMessage(submittedQuoteId, "error", "구절 삭제 실패: " + error.message);
+      redirectQuoteWithMessage(
+        submittedQuoteId,
+        "error",
+        "구절 삭제 실패: " + error.message,
+      );
     }
 
     revalidatePath("/quotes");
@@ -155,7 +188,7 @@ export default async function QuoteDetailPage({
       "quote_reactions",
       "quote_id",
       quoteId,
-      sessionUser.id
+      sessionUser.id,
     );
 
     revalidatePath(`/quotes/${quoteId}`);

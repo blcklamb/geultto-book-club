@@ -25,9 +25,9 @@ export default async function SchedulePage({
     .select("cohort")
     .not("cohort", "is", null)
     .order("cohort");
-  const cohorts = [
-    ...new Set(cohortRows?.map((r) => r.cohort) ?? []),
-  ].filter((c): c is number => c !== null);
+  const cohorts = [...new Set(cohortRows?.map((r) => r.cohort) ?? [])].filter(
+    (c): c is number => c !== null,
+  );
 
   let schedulesQuery = supabase
     .from("schedules")

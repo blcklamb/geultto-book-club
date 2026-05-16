@@ -40,7 +40,11 @@ export default async function TopicCreatePage() {
                   {schedule.book_title} ·{" "}
                   <LocalizedDate
                     value={schedule.date}
-                    options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                    options={{
+                      year: "numeric",
+                      month: "numeric",
+                      day: "numeric",
+                    }}
                   />
                 </SelectItem>
               ))}

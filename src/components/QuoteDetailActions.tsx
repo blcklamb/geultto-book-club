@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,8 +36,15 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
   updateAction,
   deleteAction,
 }) => {
+  const router = useRouter();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleUpdateAction = async (formData: FormData) => {
+    await updateAction(formData);
+    setIsEditOpen(false);
+    router.refresh();
+  };
 
   return (
     <>
@@ -72,7 +80,7 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
               구절 내용과 쪽수를 수정할 수 있습니다.
             </DialogDescription>
           </DialogHeader>
-          <form action={updateAction} className="space-y-4">
+          <form action={handleUpdateAction} className="space-y-4">
             <input type="hidden" name="quoteId" value={quoteId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1">
@@ -102,12 +110,7 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
               >
                 취소
               </Button>
-              <Button
-                type="submit"
-                onClick={() => {
-                  setIsEditOpen(false);
-                }}
-              >
+              <Button type="submit">
                 저장하기
               </Button>
             </DialogFooter>

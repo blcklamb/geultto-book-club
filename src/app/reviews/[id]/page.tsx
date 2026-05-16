@@ -93,6 +93,7 @@ export default async function ReviewDetailPage({
           }
         })()
       : (review.content_rich ?? defaultContent);
+  const reviewContentKey = `${review.id}:${review.title}:${JSON.stringify(reviewContent)}`;
 
   const canEdit =
     !!sessionUser &&
@@ -330,11 +331,6 @@ export default async function ReviewDetailPage({
 
     revalidatePath(`/reviews/${submittedReviewId}`);
     revalidatePath("/reviews");
-    redirectReviewWithMessage(
-      submittedReviewId,
-      "success",
-      "독후감이 수정되었습니다.",
-    );
   }
 
   async function handleDeleteReview(formData: FormData) {
@@ -501,6 +497,7 @@ export default async function ReviewDetailPage({
             </div>
             {canEdit ? (
               <ReviewDetailActions
+                key={`actions:${reviewContentKey}`}
                 reviewId={review.id}
                 initialTitle={review.title}
                 initialContent={reviewContent}
@@ -512,6 +509,7 @@ export default async function ReviewDetailPage({
           <Card>
             <CardContent className="prose prose-slate max-w-none p-4">
               <ReviewViewerInteractive
+                key={`viewer:${reviewContentKey}`}
                 content={reviewContent}
                 reviewId={review.id}
                 initialHighlights={highlights}

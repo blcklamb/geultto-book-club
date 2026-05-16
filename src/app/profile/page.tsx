@@ -18,9 +18,7 @@ export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("users")
-    .select(
-      "nickname, real_name, favorite_genres, recommended_book"
-    )
+    .select("nickname, real_name, favorite_genres, recommended_book")
     .eq("id", user.id)
     .single();
   const { data: userProfile } = await supabase
@@ -31,14 +29,14 @@ export default async function ProfilePage() {
   const { data: pointLogs } = await supabase
     .from("point_transactions")
     .select(
-      "id, source_type, points, memo, created_at, schedule:schedules!point_transactions_schedule_id_fkey(book_title)"
+      "id, source_type, points, memo, created_at, schedule:schedules!point_transactions_schedule_id_fkey(book_title)",
     )
     .eq("user_id", user.id)
     .eq("cohort", CURRENT_POINT_COHORT)
     .order("created_at", { ascending: false });
   const pointTotal = (pointLogs ?? []).reduce(
     (sum, item) => sum + item.points,
-    0
+    0,
   );
   const formattedPointLogs =
     pointLogs?.map((log) => {
@@ -86,7 +84,11 @@ export default async function ProfilePage() {
                     <p className="text-xs text-slate-500">
                       <LocalizedDate
                         value={log.createdAt}
-                        options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                        options={{
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                        }}
                       />
                       {log.scheduleTitle ? ` · ${log.scheduleTitle}` : ""}
                     </p>

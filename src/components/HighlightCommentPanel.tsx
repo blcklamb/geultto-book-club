@@ -264,7 +264,7 @@ function CommentItem({
 
         <EmojiReactionBar
           initialReactions={comment.reactions}
-          onToggle={onToggleReaction}
+          toggleAction={onToggleReaction}
           disabled={disabled}
           currentUserNickname={currentUserNickname}
         />

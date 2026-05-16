@@ -34,7 +34,9 @@ export function PointLogDialog({ logs }: { logs: PointLogItem[] }) {
         </DialogHeader>
         <div className="space-y-3">
           {logs.length === 0 ? (
-            <p className="text-sm text-slate-500">아직 포인트 로그가 없습니다.</p>
+            <p className="text-sm text-slate-500">
+              아직 포인트 로그가 없습니다.
+            </p>
           ) : (
             logs.map((log) => (
               <div

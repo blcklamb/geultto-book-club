@@ -103,7 +103,11 @@ export default async function HomePage() {
                   <p>
                     <LocalizedDate
                       value={nextSchedule.date}
-                      options={{ month: "long", day: "numeric", weekday: "short" }}
+                      options={{
+                        month: "long",
+                        day: "numeric",
+                        weekday: "short",
+                      }}
                     />
                   </p>
                   <div className="flex items-center gap-2">
@@ -153,7 +157,11 @@ export default async function HomePage() {
                             {review.schedules?.book_title} ·{" "}
                             <LocalizedDate
                               value={review.created_at as string}
-                              options={{ year: "numeric", month: "numeric", day: "numeric" }}
+                              options={{
+                                year: "numeric",
+                                month: "numeric",
+                                day: "numeric",
+                              }}
                             />
                           </p>
                         </div>

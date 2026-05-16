@@ -81,7 +81,7 @@ export function EmojiReactionBar({
       }
 
       return sortReactions(next);
-    }
+    },
   );
 
   const handleToggle = (emoji: string) => {
@@ -99,7 +99,7 @@ export function EmojiReactionBar({
         setError(
           err instanceof Error
             ? err.message
-            : "이모지 반응을 저장하지 못했습니다."
+            : "이모지 반응을 저장하지 못했습니다.",
         );
       }
     });

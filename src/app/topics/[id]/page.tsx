@@ -15,7 +15,7 @@ import type { Json } from "@supabase/types";
 function redirectTopicWithMessage(
   topicId: string,
   type: "error" | "success",
-  message: string
+  message: string,
 ): never {
   const params = new URLSearchParams({ [type]: message });
   redirect(`/topics/${topicId}?${params.toString()}`);
@@ -34,7 +34,7 @@ export default async function TopicDetailPage({
   const { data: topic } = await supabase
     .from("topics")
     .select(
-      "id, title, body_markdown, body_rich, created_at, author_id, author:users!topics_author_id_fkey(nickname), schedule:schedules!topics_schedule_id_fkey(book_title)"
+      "id, title, body_markdown, body_rich, created_at, author_id, author:users!topics_author_id_fkey(nickname), schedule:schedules!topics_schedule_id_fkey(book_title)",
     )
     .eq("id", topicId)
     .single();
@@ -44,7 +44,7 @@ export default async function TopicDetailPage({
   const { data: comments } = await supabase
     .from("topic_comments")
     .select(
-      "id, body, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)"
+      "id, body, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)",
     )
     .eq("topic_id", topicId)
     .order("created_at", { ascending: true });
@@ -59,10 +59,12 @@ export default async function TopicDetailPage({
             return defaultContent;
           }
         })()
-      : topic.body_rich ?? defaultContent;
+      : (topic.body_rich ?? defaultContent);
 
   const canEdit =
-    !!sessionUser && !sessionUser.isDeactivated && topic.author_id === sessionUser.id;
+    !!sessionUser &&
+    !sessionUser.isDeactivated &&
+    topic.author_id === sessionUser.id;
   const authorIds = [
     topic.author_id,
     ...(comments ?? []).map((comment) => comment.author_id),
@@ -79,7 +81,11 @@ export default async function TopicDetailPage({
   async function handleCommentSubmit(body: string) {
     "use server";
     const sessionUser = await getSessionUser();
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
       throw new Error("승인된 회원만 댓글을 작성할 수 있습니다.");
     }
     if (!body.trim()) {
@@ -106,16 +112,28 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      redirectTopicWithMessage(topicId, "error", "승인된 멤버만 수정할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectTopicWithMessage(
+        topicId,
+        "error",
+        "승인된 멤버만 수정할 수 있습니다.",
+      );
     }
 
     const submittedTopicId = formData.get("topicId")?.toString();
-    const title = formData.get("title")?.toString();
+  const title = formData.get("title")?.toString();
     const bodyRich = formData.get("bodyRich")?.toString();
 
     if (!submittedTopicId || !title || !bodyRich) {
-      redirectTopicWithMessage((await params).id, "error", "필수 값이 누락되었습니다.");
+      redirectTopicWithMessage(
+        (await params).id,
+        "error",
+        "필수 값이 누락되었습니다.",
+      );
     }
 
     let parsedBodyRich: Json;
@@ -125,7 +143,7 @@ export default async function TopicDetailPage({
       redirectTopicWithMessage(
         submittedTopicId,
         "error",
-        "본문을 불러오지 못했습니다. 다시 시도해주세요."
+        "본문을 불러오지 못했습니다. 다시 시도해주세요.",
       );
     }
 
@@ -142,16 +160,28 @@ export default async function TopicDetailPage({
       .maybeSingle();
 
     if (error) {
-      redirectTopicWithMessage(submittedTopicId, "error", "발제 수정 실패: " + error.message);
+      redirectTopicWithMessage(
+        submittedTopicId,
+        "error",
+        "발제 수정 실패: " + error.message,
+      );
     }
 
     if (!data) {
-      redirectTopicWithMessage(submittedTopicId, "error", "수정할 발제를 찾을 수 없습니다.");
+      redirectTopicWithMessage(
+        submittedTopicId,
+        "error",
+        "수정할 발제를 찾을 수 없습니다.",
+      );
     }
 
     revalidatePath(`/topics/${submittedTopicId}`);
     revalidatePath("/topics");
-    redirectTopicWithMessage(submittedTopicId, "success", "발제가 수정되었습니다.");
+    redirectTopicWithMessage(
+      submittedTopicId,
+      "success",
+      "발제가 수정되었습니다.",
+    );
   }
 
   async function handleDeleteTopic(formData: FormData) {
@@ -159,20 +189,32 @@ export default async function TopicDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      redirectTopicWithMessage((await params).id, "error", "승인된 멤버만 삭제할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectTopicWithMessage(
+        (await params).id,
+        "error",
+        "승인된 멤버만 삭제할 수 있습니다.",
+      );
     }
 
     const submittedTopicId = formData.get("topicId")?.toString();
 
     if (!submittedTopicId) {
-      redirectTopicWithMessage((await params).id, "error", "잘못된 요청입니다.");
+      redirectTopicWithMessage(
+        (await params).id,
+        "error",
+        "잘못된 요청입니다.",
+      );
     }
 
     await deletePointTransactionsForSource(
       supabase,
       "topic_submission",
-      submittedTopicId
+      submittedTopicId,
     );
 
     const { error } = await supabase
@@ -182,7 +224,11 @@ export default async function TopicDetailPage({
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      redirectTopicWithMessage(submittedTopicId, "error", "발제 삭제 실패: " + error.message);
+      redirectTopicWithMessage(
+        submittedTopicId,
+        "error",
+        "발제 삭제 실패: " + error.message,
+      );
     }
 
     revalidatePath("/topics");
@@ -216,7 +262,8 @@ export default async function TopicDetailPage({
                 size="sm"
               />
               <span>
-                {topic.author?.nickname ?? "익명"} · {topic.schedule?.book_title}
+                {topic.author?.nickname ?? "익명"} ·{" "}
+                {topic.schedule?.book_title}
               </span>
             </div>
           </div>
@@ -247,11 +294,13 @@ export default async function TopicDetailPage({
               authorDecoration: comment.author_id
                 ? profileImageMap.get(comment.author_id)?.profileDecoration
                 : undefined,
-                createdAt: comment.created_at,
+              createdAt: comment.created_at,
             })) ?? []
           }
           disabled={
-            !sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated
+            !sessionUser ||
+            sessionUser.role === "pending" ||
+            sessionUser.isDeactivated
           }
           submitAction={handleCommentSubmit}
         />

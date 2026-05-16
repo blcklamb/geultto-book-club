@@ -30,7 +30,9 @@ describe("CommentThread", () => {
     expect(screen.getByText("홍길동")).toBeInTheDocument();
     expect(screen.getByText("좋은 리뷰 감사합니다.")).toBeInTheDocument();
     expect(screen.getByText("김철수")).toBeInTheDocument();
-    expect(screen.getByText("저도 이 책 읽었는데 공감해요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("저도 이 책 읽었는데 공감해요."),
+    ).toBeInTheDocument();
   });
 
   it("댓글 작성자 왼쪽에 아바타를 렌더링한다", () => {
@@ -46,7 +48,7 @@ describe("CommentThread", () => {
   it("'댓글 등록' 버튼을 렌더링한다", () => {
     render(<CommentThread comments={[]} />);
     expect(
-      screen.getByRole("button", { name: "댓글 등록" })
+      screen.getByRole("button", { name: "댓글 등록" }),
     ).toBeInTheDocument();
   });
 
@@ -65,7 +67,7 @@ describe("CommentThread", () => {
 
     await user.type(
       screen.getByPlaceholderText("느낀 점을 남겨보세요"),
-      "새 댓글"
+      "새 댓글",
     );
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
@@ -93,10 +95,7 @@ describe("CommentThread", () => {
     const submitAction = vi.fn();
     render(<CommentThread comments={[]} submitAction={submitAction} />);
 
-    await user.type(
-      screen.getByPlaceholderText("느낀 점을 남겨보세요"),
-      "   "
-    );
+    await user.type(screen.getByPlaceholderText("느낀 점을 남겨보세요"), "   ");
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
     expect(submitAction).not.toHaveBeenCalled();

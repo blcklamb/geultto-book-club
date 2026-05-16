@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -36,8 +37,15 @@ export function ReviewDetailActions({
   updateAction,
   deleteAction,
 }: ReviewDetailActionsProps) {
+  const router = useRouter();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleUpdateAction = async (formData: FormData) => {
+    await updateAction(formData);
+    setIsEditOpen(false);
+    router.refresh();
+  };
 
   return (
     <>
@@ -73,7 +81,7 @@ export function ReviewDetailActions({
               제목과 본문을 수정한 후 저장을 눌러주세요.
             </DialogDescription>
           </DialogHeader>
-          <form action={updateAction} className="space-y-4">
+          <form action={handleUpdateAction} className="space-y-4">
             <input type="hidden" name="reviewId" value={reviewId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1 block">
@@ -98,12 +106,7 @@ export function ReviewDetailActions({
               >
                 취소
               </Button>
-              <Button
-                type="submit"
-                onClick={() => {
-                  setIsEditOpen(false);
-                }}
-              >
+              <Button type="submit">
                 저장하기
               </Button>
             </DialogFooter>

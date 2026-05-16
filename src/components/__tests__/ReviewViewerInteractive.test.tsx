@@ -163,8 +163,10 @@ describe("ReviewViewerInteractive", () => {
         initialHighlights={[]}
       />,
     );
-    const callArgs = useEditorMock.mock.calls[0][0] as { editable: boolean };
-    expect(callArgs.editable).toBe(false);
+    const firstArg = (useEditorMock.mock.calls as unknown[][])[0]?.[0] as
+      | { editable: boolean }
+      | undefined;
+    expect(firstArg?.editable).toBe(false);
   });
 
   it("초기 하이라이트가 있을 때 marks를 editor에 적용한다", () => {
@@ -429,7 +431,7 @@ describe("ReviewViewerInteractive", () => {
   });
 
   it("editor가 null이면 EditorContent가 렌더링되지 않는다", () => {
-    useEditorMock.mockReturnValueOnce(null);
+    useEditorMock.mockImplementationOnce(() => null as never);
     render(
       <ReviewViewerInteractive
         content={defaultContent}
