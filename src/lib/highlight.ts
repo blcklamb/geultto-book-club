@@ -6,7 +6,7 @@ export type HighlightReply = {
   author: string;
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
-  createdAt: string;
+  createdAt: string | null | undefined;
 };
 
 export type HighlightComment = {
@@ -15,7 +15,7 @@ export type HighlightComment = {
   author: string;
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
-  createdAt: string;
+  createdAt: string | null | undefined;
   reactions: ReactionSummary[];
   replies: HighlightReply[];
 };

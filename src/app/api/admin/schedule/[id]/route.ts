@@ -8,7 +8,9 @@ export async function POST(
 ) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin" || sessionUser.isDeactivated) {
-    return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "관리자 전용 페이지입니다");
+    return NextResponse.redirect(url, 303);
   }
   const { id } = await params;
   const formData = await req.formData();
@@ -22,10 +24,11 @@ export async function POST(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json(
-      { message: "수정 실패", error: error.message },
-      { status: 400 }
-    );
+    const url = new URL("/admin/schedule", req.url);
+    url.searchParams.set("error", `수정 실패: ${error.message}`);
+    return NextResponse.redirect(url, 303);
   }
-  return NextResponse.redirect(new URL("/admin/schedule", req.url));
+  const url = new URL("/admin/schedule", req.url);
+  url.searchParams.set("success", "기수가 업데이트되었습니다");
+  return NextResponse.redirect(url, 303);
 }

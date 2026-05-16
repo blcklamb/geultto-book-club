@@ -27,9 +27,9 @@ export default async function ReviewsPage({
     .select("cohort")
     .not("cohort", "is", null)
     .order("cohort");
-  const cohorts = [
-    ...new Set(cohortRows?.map((r) => r.cohort) ?? []),
-  ].filter((c): c is number => c !== null);
+  const cohorts = [...new Set(cohortRows?.map((r) => r.cohort) ?? [])].filter(
+    (c): c is number => c !== null,
+  );
 
   let scheduleIds: string[] | null = null;
   if (cohortValue !== null) {
@@ -43,7 +43,7 @@ export default async function ReviewsPage({
   let reviewsQuery = supabase
     .from("reviews")
     .select(
-      "id, title, author_id, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at"
+      "id, title, author_id, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -53,7 +53,9 @@ export default async function ReviewsPage({
 
   const { data: reviews } = await reviewsQuery;
   const authorIds = [
-    ...new Set((reviews ?? []).map((review) => review.author_id).filter(Boolean)),
+    ...new Set(
+      (reviews ?? []).map((review) => review.author_id).filter(Boolean),
+    ),
   ] as string[];
   const { data: avatarRows } =
     authorIds.length > 0
@@ -73,7 +75,9 @@ export default async function ReviewsPage({
             {cohorts.length > 0 ? (
               <CohortFilter cohorts={cohorts} selected={cohortValue} />
             ) : null}
-            {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
+            {sessionUser &&
+            sessionUser.role !== "pending" &&
+            !sessionUser.isDeactivated ? (
               <Link href="/reviews/new">
                 <Button>독후감 작성</Button>
               </Link>
@@ -103,9 +107,7 @@ export default async function ReviewsPage({
                   : undefined
               }
               scheduleTitle={review.schedule?.book_title ?? "모임"}
-              createdAt={new Date(review.created_at || "").toLocaleDateString(
-                "ko-KR"
-              )}
+              createdAt={review.created_at}
             />
           ))}
         </div>

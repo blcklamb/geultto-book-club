@@ -5,7 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin" || sessionUser.isDeactivated) {
-    return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "관리자 전용 페이지입니다");
+    return NextResponse.redirect(url, 303);
   }
 
   const formData = await req.formData();
@@ -13,10 +15,9 @@ export async function POST(req: NextRequest) {
   const isDeactivated = formData.get("isDeactivated") === "true";
 
   if (!userId) {
-    return NextResponse.json(
-      { message: "userId가 필요합니다." },
-      { status: 400 }
-    );
+    const url = new URL("/admin/points", req.url);
+    url.searchParams.set("error", "사용자 정보가 누락되었습니다");
+    return NextResponse.redirect(url, 303);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -26,11 +27,12 @@ export async function POST(req: NextRequest) {
     .eq("id", userId);
 
   if (error) {
-    return NextResponse.json(
-      { message: "업데이트 실패", error: error.message },
-      { status: 400 }
-    );
+    const url = new URL("/admin/points", req.url);
+    url.searchParams.set("error", `상태 변경 실패: ${error.message}`);
+    return NextResponse.redirect(url, 303);
   }
 
-  return NextResponse.redirect(new URL("/admin/points", req.url));
+  const url = new URL("/admin/points", req.url);
+  url.searchParams.set("success", "사용자 상태가 변경되었습니다");
+  return NextResponse.redirect(url, 303);
 }

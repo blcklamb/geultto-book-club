@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
 
@@ -26,9 +27,9 @@ export default async function TopicsPage({
     .select("cohort")
     .not("cohort", "is", null)
     .order("cohort");
-  const cohorts = [
-    ...new Set(cohortRows?.map((r) => r.cohort) ?? []),
-  ].filter((c): c is number => c !== null);
+  const cohorts = [...new Set(cohortRows?.map((r) => r.cohort) ?? [])].filter(
+    (c): c is number => c !== null,
+  );
 
   let scheduleIds: string[] | null = null;
   if (cohortValue !== null) {
@@ -42,7 +43,7 @@ export default async function TopicsPage({
   let topicsQuery = supabase
     .from("topics")
     .select(
-      "id, title, author_id, created_at, schedule:schedules!topics_schedule_id_fkey(book_title), author:users!topics_author_id_fkey(nickname), topic_comments(count)"
+      "id, title, author_id, created_at, schedule:schedules!topics_schedule_id_fkey(book_title), author:users!topics_author_id_fkey(nickname), topic_comments(count)",
     )
     .order("created_at", { ascending: false });
 
@@ -73,7 +74,9 @@ export default async function TopicsPage({
             <h1 className="text-3xl font-semibold text-slate-900">토론 발제</h1>
             <p className="text-sm text-slate-500">토론 주제를 공유해요.</p>
           </div>
-          {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
+          {sessionUser &&
+          sessionUser.role !== "pending" &&
+          !sessionUser.isDeactivated ? (
             <Link href="/topics/new">
               <Button>발제 등록</Button>
             </Link>
@@ -95,7 +98,8 @@ export default async function TopicsPage({
                     <UserAvatar
                       imageUrl={
                         topic.author_id
-                          ? profileImageMap.get(topic.author_id)?.profileImageUrl
+                          ? profileImageMap.get(topic.author_id)
+                              ?.profileImageUrl
                           : undefined
                       }
                       decoration={
@@ -108,9 +112,14 @@ export default async function TopicsPage({
                     />
                     <span>
                       {topic.author?.nickname ?? "익명"} ·{" "}
-                      {new Date(topic.created_at || "").toLocaleDateString(
-                        "ko-KR"
-                      )}{" "}
+                      <LocalizedDate
+                        value={topic.created_at}
+                        options={{
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                        }}
+                      />{" "}
                       · 댓글 {topic.topic_comments?.[0]?.count ?? 0}
                     </span>
                   </div>

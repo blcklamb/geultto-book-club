@@ -3,6 +3,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommentThread } from "../CommentThread";
 
+vi.mock("../LocalizedDate", () => ({
+  LocalizedDate: ({ value }: { value: string | null | undefined }) => (
+    <span>{value ?? "-"}</span>
+  ),
+}));
+
 const sampleComments = [
   {
     id: "c-1",
@@ -24,7 +30,9 @@ describe("CommentThread", () => {
     expect(screen.getByText("홍길동")).toBeInTheDocument();
     expect(screen.getByText("좋은 리뷰 감사합니다.")).toBeInTheDocument();
     expect(screen.getByText("김철수")).toBeInTheDocument();
-    expect(screen.getByText("저도 이 책 읽었는데 공감해요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("저도 이 책 읽었는데 공감해요."),
+    ).toBeInTheDocument();
   });
 
   it("댓글 작성자 왼쪽에 아바타를 렌더링한다", () => {
@@ -40,7 +48,7 @@ describe("CommentThread", () => {
   it("'댓글 등록' 버튼을 렌더링한다", () => {
     render(<CommentThread comments={[]} />);
     expect(
-      screen.getByRole("button", { name: "댓글 등록" })
+      screen.getByRole("button", { name: "댓글 등록" }),
     ).toBeInTheDocument();
   });
 
@@ -52,26 +60,26 @@ describe("CommentThread", () => {
     expect(textarea).toHaveValue("훌륭한 글이에요!");
   });
 
-  it("텍스트 입력 후 '댓글 등록' 클릭 시 onSubmit을 호출한다", async () => {
+  it("텍스트 입력 후 '댓글 등록' 클릭 시 submitAction을 호출한다", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<CommentThread comments={[]} onSubmit={onSubmit} />);
+    const submitAction = vi.fn().mockResolvedValue(undefined);
+    render(<CommentThread comments={[]} submitAction={submitAction} />);
 
     await user.type(
       screen.getByPlaceholderText("느낀 점을 남겨보세요"),
-      "새 댓글"
+      "새 댓글",
     );
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith("새 댓글");
+      expect(submitAction).toHaveBeenCalledWith("새 댓글");
     });
   });
 
   it("댓글 등록 후 textarea가 초기화된다", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<CommentThread comments={[]} onSubmit={onSubmit} />);
+    const submitAction = vi.fn().mockResolvedValue(undefined);
+    render(<CommentThread comments={[]} submitAction={submitAction} />);
 
     const textarea = screen.getByPlaceholderText("느낀 점을 남겨보세요");
     await user.type(textarea, "새 댓글");
@@ -82,18 +90,15 @@ describe("CommentThread", () => {
     });
   });
 
-  it("공백만 입력된 경우 onSubmit을 호출하지 않는다", async () => {
+  it("공백만 입력된 경우 submitAction을 호출하지 않는다", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn();
-    render(<CommentThread comments={[]} onSubmit={onSubmit} />);
+    const submitAction = vi.fn();
+    render(<CommentThread comments={[]} submitAction={submitAction} />);
 
-    await user.type(
-      screen.getByPlaceholderText("느낀 점을 남겨보세요"),
-      "   "
-    );
+    await user.type(screen.getByPlaceholderText("느낀 점을 남겨보세요"), "   ");
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(submitAction).not.toHaveBeenCalled();
   });
 
   it("disabled=true일 때 textarea와 버튼이 비활성화된다", () => {

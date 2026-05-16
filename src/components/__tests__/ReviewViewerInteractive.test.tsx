@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import type { HighlightWithComments } from "@/lib/highlight";
 import type { JSONContent } from "@tiptap/core";
 
+const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+}));
+
 // ─── vi.hoisted로 hoisting-safe mock 변수 선언 ────────────────────────────────
 const { useEditorMock, mockDispatch, mockAddEventListener, editorDom } =
   vi.hoisted(() => {
@@ -56,6 +61,13 @@ vi.mock("next/dynamic", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccessMock,
+    error: toastErrorMock,
+  },
+}));
+
 // fetch mock
 const mockFetch = vi.fn();
 
@@ -70,7 +82,7 @@ const defaultContent: JSONContent = {
 };
 
 const makeHighlight = (
-  overrides?: Partial<HighlightWithComments>
+  overrides?: Partial<HighlightWithComments>,
 ): HighlightWithComments => ({
   id: "h1",
   highlightText: "선택된 텍스트",
@@ -119,6 +131,8 @@ describe("ReviewViewerInteractive", () => {
     mockFetch.mockReset();
     vi.stubGlobal("fetch", mockFetch);
     mockDispatch.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     // restore addEventListener mock after restoreAllMocks
     editorDom.addEventListener = mockAddEventListener;
     mockAddEventListener.mockReset();
@@ -136,7 +150,7 @@ describe("ReviewViewerInteractive", () => {
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[]}
-      />
+      />,
     );
     expect(screen.getByTestId("tiptap-editor")).toBeInTheDocument();
   });
@@ -147,10 +161,12 @@ describe("ReviewViewerInteractive", () => {
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[]}
-      />
+      />,
     );
-    const callArgs = useEditorMock.mock.calls[0][0] as { editable: boolean };
-    expect(callArgs.editable).toBe(false);
+    const firstArg = (useEditorMock.mock.calls as unknown[][])[0]?.[0] as
+      | { editable: boolean }
+      | undefined;
+    expect(firstArg?.editable).toBe(false);
   });
 
   it("초기 하이라이트가 있을 때 marks를 editor에 적용한다", () => {
@@ -159,7 +175,7 @@ describe("ReviewViewerInteractive", () => {
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[makeHighlight()]}
-      />
+      />,
     );
     // tr.addMark가 호출되어 editor.view.dispatch가 호출됨
     expect(mockDispatch).toHaveBeenCalled();
@@ -171,7 +187,7 @@ describe("ReviewViewerInteractive", () => {
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[]}
-      />
+      />,
     );
     expect(mockDispatch).not.toHaveBeenCalled();
   });
@@ -184,7 +200,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
     const eventNames = addEventListenerSpy.mock.calls.map((c) => c[0]);
     expect(eventNames).toContain("selectionchange");
@@ -198,7 +214,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={true}
-      />
+      />,
     );
     const eventNames = addEventListenerSpy.mock.calls.map((c) => c[0]);
     expect(eventNames).not.toContain("selectionchange");
@@ -211,7 +227,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     document.body.appendChild(editorDom);
@@ -236,7 +252,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     document.body.appendChild(editorDom);
@@ -252,7 +268,13 @@ describe("ReviewViewerInteractive", () => {
         startOffset: 0,
         endContainer: textNode,
         endOffset: 3,
-        getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, right: 0, bottom: 0 }),
+        getBoundingClientRect: () => ({
+          left: 0,
+          top: 0,
+          width: 0,
+          right: 0,
+          bottom: 0,
+        }),
         commonAncestorContainer: textNode,
       }),
     } as unknown as Selection);
@@ -274,7 +296,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     // editor DOM이 document.body에 없으면 contains()가 false 반환
@@ -289,7 +311,13 @@ describe("ReviewViewerInteractive", () => {
         startOffset: 0,
         endContainer: outsideNode,
         endOffset: 5,
-        getBoundingClientRect: () => ({ left: 0, top: 0, width: 50, right: 50, bottom: 10 }),
+        getBoundingClientRect: () => ({
+          left: 0,
+          top: 0,
+          width: 50,
+          right: 50,
+          bottom: 10,
+        }),
         commonAncestorContainer: outsideNode,
       }),
     } as unknown as Selection);
@@ -303,7 +331,10 @@ describe("ReviewViewerInteractive", () => {
 
   it("하이라이트 버튼 클릭 시 API를 호출하고 HighlightCommentPanel을 연다", async () => {
     const user = userEvent.setup();
-    const newHighlight = makeHighlight({ id: "h-new", highlightText: "본문 내용" });
+    const newHighlight = makeHighlight({
+      id: "h-new",
+      highlightText: "본문 내용",
+    });
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => newHighlight,
@@ -315,7 +346,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     document.body.appendChild(editorDom);
@@ -331,9 +362,12 @@ describe("ReviewViewerInteractive", () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/reviews/review-1/highlights",
-        expect.objectContaining({ method: "POST" })
+        expect.objectContaining({ method: "POST" }),
       );
     });
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      "하이라이트가 저장되었습니다.",
+    );
 
     // HighlightCommentPanel이 열리면 SheetTitle이 나타남
     await waitFor(() => {
@@ -358,7 +392,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     document.body.appendChild(editorDom);
@@ -371,9 +405,10 @@ describe("ReviewViewerInteractive", () => {
     await user.click(screen.getByRole("button", { name: /하이라이트/ }));
 
     await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith("서버 오류");
       expect(consoleSpy).toHaveBeenCalledWith(
         "하이라이트 생성 실패:",
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -387,22 +422,22 @@ describe("ReviewViewerInteractive", () => {
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[makeHighlight()]}
-      />
+      />,
     );
     expect(mockAddEventListener).toHaveBeenCalledWith(
       "click",
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
   it("editor가 null이면 EditorContent가 렌더링되지 않는다", () => {
-    useEditorMock.mockReturnValueOnce(null);
+    useEditorMock.mockImplementationOnce(() => null as never);
     render(
       <ReviewViewerInteractive
         content={defaultContent}
         reviewId="review-1"
         initialHighlights={[]}
-      />
+      />,
     );
     expect(screen.queryByTestId("tiptap-editor")).not.toBeInTheDocument();
   });
@@ -416,7 +451,7 @@ describe("ReviewViewerInteractive", () => {
         reviewId="review-1"
         initialHighlights={[]}
         disabled={false}
-      />
+      />,
     );
 
     unmount();

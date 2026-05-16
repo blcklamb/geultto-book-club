@@ -11,7 +11,9 @@ import {
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin" || sessionUser.isDeactivated) {
-    return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "관리자 전용 페이지입니다");
+    return NextResponse.redirect(url, 303);
   }
 
   const formData = await req.formData();
@@ -27,10 +29,9 @@ export async function POST(req: NextRequest) {
   );
 
   if (!userId || !sourceType || !option) {
-    return NextResponse.json(
-      { message: "사용자와 포인트 항목을 선택해주세요." },
-      { status: 400 }
-    );
+    const url = new URL("/admin/points", req.url);
+    url.searchParams.set("error", "사용자와 포인트 항목을 선택해주세요");
+    return NextResponse.redirect(url, 303);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -45,5 +46,7 @@ export async function POST(req: NextRequest) {
     idempotencyKey: `manual:${sourceType}:${userId}:${crypto.randomUUID()}`,
   });
 
-  return NextResponse.redirect(new URL("/admin/points", req.url));
+  const url = new URL("/admin/points", req.url);
+  url.searchParams.set("success", "포인트가 입력되었습니다");
+  return NextResponse.redirect(url, 303);
 }

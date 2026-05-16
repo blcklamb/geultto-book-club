@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 
 export type ReviewCardProps = {
@@ -9,7 +10,7 @@ export type ReviewCardProps = {
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
   scheduleTitle: string;
-  createdAt: string;
+  createdAt: string | null | undefined;
 };
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -37,7 +38,12 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             />
             <span>{author}</span>
           </div>
-          <p className="text-xs text-slate-400">{createdAt}</p>
+          <p className="text-xs text-slate-400">
+            <LocalizedDate
+              value={createdAt}
+              options={{ year: "numeric", month: "numeric", day: "numeric" }}
+            />
+          </p>
         </CardContent>
       </Card>
     </Link>

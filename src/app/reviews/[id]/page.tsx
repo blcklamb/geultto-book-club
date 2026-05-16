@@ -9,7 +9,12 @@ import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
 import { ReviewDetailActions } from "@/components/ReviewDetailActions";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
-import { fetchReactionSummary, toggleReaction, summarizeReactions } from "@/lib/reactions";
+import { LocalizedDate } from "@/components/LocalizedDate";
+import {
+  fetchReactionSummary,
+  toggleReaction,
+  summarizeReactions,
+} from "@/lib/reactions";
 import type { HighlightWithComments } from "@/lib/highlight";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
@@ -18,6 +23,15 @@ import {
   deletePointTransactionsForSource,
   recomputeReviewRankBonusPoints,
 } from "@/lib/points";
+
+function redirectReviewWithMessage(
+  reviewId: string,
+  type: "error" | "success",
+  message: string,
+): never {
+  const params = new URLSearchParams({ [type]: message });
+  redirect(`/reviews/${reviewId}?${params.toString()}`);
+}
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -35,7 +49,7 @@ export default async function ReviewDetailPage({
   const { data: review } = await supabase
     .from("reviews")
     .select(
-      "id, title, content_markdown, content_rich, created_at, author_id, author:users!reviews_author_id_fkey(nickname), schedule:schedules!reviews_schedule_id_fkey(book_title)"
+      "id, title, content_markdown, content_rich, created_at, author_id, author:users!reviews_author_id_fkey(nickname), schedule:schedules!reviews_schedule_id_fkey(book_title)",
     )
     .eq("id", reviewId)
     .single();
@@ -55,7 +69,7 @@ export default async function ReviewDetailPage({
            id, body, author_id, created_at,
            author:users!highlight_comment_replies_author_id_fkey(nickname)
          )
-       )`
+       )`,
     )
     .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
@@ -63,12 +77,13 @@ export default async function ReviewDetailPage({
   const { data: comments } = await supabase
     .from("review_comments")
     .select(
-      "id, body, author_id, created_at, author:users!review_comments_author_id_fkey(nickname)"
+      "id, body, author_id, created_at, author:users!review_comments_author_id_fkey(nickname)",
     )
     .eq("review_id", reviewId)
     .order("created_at", { ascending: false });
 
   const defaultContent = { type: "doc", content: [{ type: "paragraph" }] };
+  // TODO: review에 UpdatedAt 추가 후 key 대체하기
   const reviewContent =
     typeof review.content_rich === "string"
       ? (() => {
@@ -78,10 +93,14 @@ export default async function ReviewDetailPage({
             return defaultContent;
           }
         })()
-      : review.content_rich ?? defaultContent;
+      : (review.content_rich ?? defaultContent);
+
+  const reviewContentKey = `${review.id}:${review.title}:${JSON.stringify(reviewContent)}`;
 
   const canEdit =
-    !!sessionUser && !sessionUser.isDeactivated && review.author_id === sessionUser.id;
+    !!sessionUser &&
+    !sessionUser.isDeactivated &&
+    review.author_id === sessionUser.id;
   const authorIds = [
     review.author_id,
     ...(comments ?? []).map((comment) => comment.author_id),
@@ -95,10 +114,10 @@ export default async function ReviewDetailPage({
         return [
           comment.author_id,
           ...(comment.highlight_comment_replies ?? []).map(
-            (reply) => reply.author_id
+            (reply) => reply.author_id,
           ),
         ];
-      })
+      }),
     ),
   ].filter(Boolean) as string[];
   const { data: avatarRows } =
@@ -128,73 +147,74 @@ export default async function ReviewDetailPage({
       authorDecoration: h.author_id
         ? profileImageMap.get(h.author_id)?.profileDecoration
         : undefined,
-      comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
-        const comment = c as {
-          id: string;
-          body: string;
-          author_id: string | null;
-          created_at: string | null;
-          author: { nickname: string } | null;
-          highlight_comment_reactions: Array<{
-            emoji: string;
-            user_id: string | null;
-            user: { nickname: string | null } | Array<{ nickname: string | null }> | null;
-          }>;
-          highlight_comment_replies: Array<{
+      comments: ((h.highlight_comments as unknown[]) ?? []).map(
+        (c: unknown) => {
+          const comment = c as {
             id: string;
             body: string;
             author_id: string | null;
             created_at: string | null;
-            author: { nickname: string } | Array<{ nickname: string }> | null;
-          }>;
-        };
-        return {
-          id: comment.id,
-          body: comment.body,
-          author: comment.author?.nickname ?? "익명",
-          authorImageUrl: comment.author_id
-            ? profileImageMap.get(comment.author_id)?.profileImageUrl
-            : undefined,
-          authorDecoration: comment.author_id
-            ? profileImageMap.get(comment.author_id)?.profileDecoration
-            : undefined,
-          createdAt: comment.created_at
-            ? new Date(comment.created_at).toLocaleString("ko-KR")
-            : "-",
-          reactions: summarizeReactions(
-            (comment.highlight_comment_reactions ?? []).map((r) => ({
-              emoji: r.emoji,
-              user_id: r.user_id,
-              user: Array.isArray(r.user) ? r.user[0] : r.user,
-            })),
-            sessionUser?.id
-          ),
-          replies: (comment.highlight_comment_replies ?? []).map((r) => {
-            const author = Array.isArray(r.author) ? r.author[0] : r.author;
-            return {
-              id: r.id,
-              body: r.body,
-              author: author?.nickname ?? "익명",
-              authorImageUrl: r.author_id
-                ? profileImageMap.get(r.author_id)?.profileImageUrl
-                : undefined,
-              authorDecoration: r.author_id
-                ? profileImageMap.get(r.author_id)?.profileDecoration
-                : undefined,
-              createdAt: r.created_at
-                ? new Date(r.created_at).toLocaleString("ko-KR")
-                : "-",
-            };
-          }),
-        };
-      }),
+            author: { nickname: string } | null;
+            highlight_comment_reactions: Array<{
+              emoji: string;
+              user_id: string | null;
+              user:
+                | { nickname: string | null }
+                | Array<{ nickname: string | null }>
+                | null;
+            }>;
+            highlight_comment_replies: Array<{
+              id: string;
+              body: string;
+              author_id: string | null;
+              created_at: string | null;
+              author: { nickname: string } | Array<{ nickname: string }> | null;
+            }>;
+          };
+          return {
+            id: comment.id,
+            body: comment.body,
+            author: comment.author?.nickname ?? "익명",
+            authorImageUrl: comment.author_id
+              ? profileImageMap.get(comment.author_id)?.profileImageUrl
+              : undefined,
+            authorDecoration: comment.author_id
+              ? profileImageMap.get(comment.author_id)?.profileDecoration
+              : undefined,
+            createdAt: comment.created_at,
+            reactions: summarizeReactions(
+              (comment.highlight_comment_reactions ?? []).map((r) => ({
+                emoji: r.emoji,
+                user_id: r.user_id,
+                user: Array.isArray(r.user) ? r.user[0] : r.user,
+              })),
+              sessionUser?.id,
+            ),
+            replies: (comment.highlight_comment_replies ?? []).map((r) => {
+              const author = Array.isArray(r.author) ? r.author[0] : r.author;
+              return {
+                id: r.id,
+                body: r.body,
+                author: author?.nickname ?? "익명",
+                authorImageUrl: r.author_id
+                  ? profileImageMap.get(r.author_id)?.profileImageUrl
+                  : undefined,
+                authorDecoration: r.author_id
+                  ? profileImageMap.get(r.author_id)?.profileDecoration
+                  : undefined,
+                createdAt: r.created_at,
+              };
+            }),
+          };
+        },
+      ),
     }));
   const reviewReactions = await fetchReactionSummary(
     supabase,
     "review_reactions",
     "review_id",
     reviewId,
-    sessionUser?.id
+    sessionUser?.id,
   );
 
   async function handleCommentSubmit(body: string) {
@@ -203,7 +223,11 @@ export default async function ReviewDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
       throw new Error("승인된 멤버만 댓글을 작성할 수 있습니다.");
     }
 
@@ -244,23 +268,39 @@ export default async function ReviewDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 수정할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectReviewWithMessage(
+        reviewId,
+        "error",
+        "승인된 멤버만 수정할 수 있습니다.",
+      );
     }
 
-    const reviewId = formData.get("reviewId")?.toString();
+    const submittedReviewId = formData.get("reviewId")?.toString();
     const title = formData.get("title")?.toString();
     const contentRich = formData.get("contentRich")?.toString();
 
-    if (!reviewId || !title || !contentRich) {
-      throw new Error("필수 값이 누락되었습니다.");
+    if (!submittedReviewId || !title || !contentRich) {
+      redirectReviewWithMessage(
+        (await params).id,
+        "error",
+        "필수 값이 누락되었습니다.",
+      );
     }
 
     // Validate contentRich is valid JSON string so stored value stays well-formed.
     try {
       JSON.parse(contentRich);
     } catch {
-      throw new Error("본문을 불러오지 못했습니다. 다시 시도해주세요.");
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        "본문을 불러오지 못했습니다. 다시 시도해주세요.",
+      );
     }
 
     const { data, error } = await supabase
@@ -270,22 +310,34 @@ export default async function ReviewDetailPage({
         content_rich: contentRich,
         content_markdown: null,
       })
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id)
       .select("id")
       .maybeSingle();
 
     if (error) {
-      throw new Error("독후감 수정 실패: " + error.message);
+      console.error("Failed to update review", {
+        reviewId: submittedReviewId,
+        userId: sessionUser.id,
+        error: error.message,
+      });
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        "독후감 수정에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
     }
 
     if (!data) {
-      throw new Error("수정할 독후감을 찾을 수 없습니다.");
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        "수정할 독후감을 찾을 수 없습니다.",
+      );
     }
 
-    revalidatePath(`/reviews/${reviewId}`);
+    revalidatePath(`/reviews/${submittedReviewId}`);
     revalidatePath("/reviews");
-    redirect(`/reviews/${reviewId}`);
   }
 
   async function handleDeleteReview(formData: FormData) {
@@ -293,24 +345,36 @@ export default async function ReviewDetailPage({
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
-    if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 삭제할 수 있습니다.");
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      redirectReviewWithMessage(
+        (await params).id,
+        "error",
+        "승인된 멤버만 삭제할 수 있습니다.",
+      );
     }
 
-    const reviewId = formData.get("reviewId")?.toString();
+    const submittedReviewId = formData.get("reviewId")?.toString();
 
-    if (!reviewId) {
-      throw new Error("잘못된 요청입니다.");
+    if (!submittedReviewId) {
+      redirectReviewWithMessage(
+        (await params).id,
+        "error",
+        "잘못된 요청입니다.",
+      );
     }
 
     const { data: commentRows } = await supabase
       .from("review_comments")
       .select("id")
-      .eq("review_id", reviewId);
+      .eq("review_id", submittedReviewId);
     const { data: highlightRowsForDelete } = await supabase
       .from("review_highlights")
       .select("id")
-      .eq("review_id", reviewId);
+      .eq("review_id", submittedReviewId);
     const highlightIds = (highlightRowsForDelete ?? []).map((row) => row.id);
     const { data: highlightCommentRows } =
       highlightIds.length > 0
@@ -322,12 +386,20 @@ export default async function ReviewDetailPage({
     const { data: reviewForDelete } = await supabase
       .from("reviews")
       .select("schedule_id")
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id)
       .maybeSingle();
 
-    await deletePointTransactionsForSource(supabase, "review_submission", reviewId);
-    await deletePointTransactionsForSource(supabase, "late_review", reviewId);
+    await deletePointTransactionsForSource(
+      supabase,
+      "review_submission",
+      submittedReviewId,
+    );
+    await deletePointTransactionsForSource(
+      supabase,
+      "late_review",
+      submittedReviewId,
+    );
     await deletePointTransactionsForSource(supabase, "review_comment", [
       ...(commentRows ?? []).map((row) => row.id),
       ...(highlightCommentRows ?? []).map((row) => row.id),
@@ -336,19 +408,29 @@ export default async function ReviewDetailPage({
     const { error } = await supabase
       .from("reviews")
       .delete()
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      throw new Error("독후감 삭제 실패: " + error.message);
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        "독후감 삭제 실패: " + error.message,
+      );
     }
 
     if (reviewForDelete?.schedule_id) {
-      await recomputeReviewRankBonusPoints(supabase, reviewForDelete.schedule_id);
+      await recomputeReviewRankBonusPoints(
+        supabase,
+        reviewForDelete.schedule_id,
+      );
     }
 
     revalidatePath("/reviews");
-    redirect("/reviews");
+    const urlParams = new URLSearchParams({
+      success: "독후감이 삭제되었습니다.",
+    });
+    redirect(`/reviews?${urlParams.toString()}`);
   }
 
   async function handleToggleReviewReaction(emoji: string) {
@@ -375,7 +457,7 @@ export default async function ReviewDetailPage({
       "review_reactions",
       "review_id",
       reviewId,
-      sessionUser.id
+      sessionUser.id,
     );
 
     revalidatePath(`/reviews/${reviewId}`);
@@ -408,24 +490,33 @@ export default async function ReviewDetailPage({
                 />
                 <span>
                   {review.author?.nickname ?? "익명"} ·{" "}
-                  {new Date(review.created_at || "").toLocaleDateString("ko-KR")}{" "}
+                  <LocalizedDate
+                    value={review.created_at}
+                    options={{
+                      year: "numeric",
+                      month: "numeric",
+                      day: "numeric",
+                    }}
+                  />
                   · {review.schedule?.book_title}
                 </span>
               </div>
             </div>
             {canEdit ? (
               <ReviewDetailActions
+                key={`actions:${reviewContentKey}`}
                 reviewId={review.id}
                 initialTitle={review.title}
                 initialContent={reviewContent}
-                onUpdate={handleUpdateReview}
-                onDelete={handleDeleteReview}
+                updateAction={handleUpdateReview}
+                deleteAction={handleDeleteReview}
               />
             ) : null}
           </header>
           <Card>
             <CardContent className="prose prose-slate max-w-none p-4">
               <ReviewViewerInteractive
+                key={`viewer:${reviewContentKey}`}
                 content={reviewContent}
                 reviewId={review.id}
                 initialHighlights={highlights}
@@ -441,7 +532,7 @@ export default async function ReviewDetailPage({
           </Card>
           <EmojiReactionBar
             initialReactions={reviewReactions}
-            onToggle={handleToggleReviewReaction}
+            toggleAction={handleToggleReviewReaction}
             disabled={!sessionUser}
             currentUserNickname={sessionUser?.nickname}
           />
@@ -457,9 +548,7 @@ export default async function ReviewDetailPage({
                 authorDecoration: comment.author_id
                   ? profileImageMap.get(comment.author_id)?.profileDecoration
                   : undefined,
-                createdAt: new Date(comment.created_at || "").toLocaleString(
-                  "ko-KR"
-                ),
+                createdAt: comment.created_at,
               })) ?? []
             }
             disabled={
@@ -467,7 +556,7 @@ export default async function ReviewDetailPage({
               sessionUser.role === "pending" ||
               sessionUser.isDeactivated
             }
-            onSubmit={handleCommentSubmit}
+            submitAction={handleCommentSubmit}
           />
         </article>
         {/* Client-side component ensures view count increments after hydration */}

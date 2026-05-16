@@ -5,6 +5,11 @@ import { HighlightCommentPanel } from "../HighlightCommentPanel";
 import type { HighlightWithComments } from "@/lib/highlight";
 import type { ReactionSummary } from "@/lib/reactions";
 
+const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+}));
+
 // next/dynamic는 jsdom에서 동작하지 않으므로 EmojiPicker mock
 vi.mock("next/dynamic", () => ({
   default: () => {
@@ -13,11 +18,18 @@ vi.mock("next/dynamic", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccessMock,
+    error: toastErrorMock,
+  },
+}));
+
 // fetch mock
 const mockFetch = vi.fn();
 
 const makeHighlight = (
-  overrides?: Partial<HighlightWithComments>
+  overrides?: Partial<HighlightWithComments>,
 ): HighlightWithComments => ({
   id: "h1",
   highlightText: "인상 깊은 구절입니다",
@@ -43,6 +55,8 @@ describe("HighlightCommentPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     vi.stubGlobal("fetch", mockFetch);
   });
 
@@ -57,11 +71,9 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
-    expect(
-      screen.getByText(/인상 깊은 구절입니다/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/인상 깊은 구절입니다/)).toBeInTheDocument();
   });
 
   it("하이라이트 작성자 닉네임을 표시한다", () => {
@@ -71,7 +83,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/홍길동 님이 하이라이트함/)).toBeInTheDocument();
   });
@@ -83,7 +95,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText("첫 댓글을 남겨보세요")).toBeInTheDocument();
   });
@@ -101,7 +113,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText("좋은 구절이에요")).toBeInTheDocument();
     expect(screen.getByText("저도 좋아요")).toBeInTheDocument();
@@ -117,13 +129,13 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(
-      screen.queryByPlaceholderText("이 구절에 대한 생각을 남겨보세요")
+      screen.queryByPlaceholderText("이 구절에 대한 생각을 남겨보세요"),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "댓글 등록" })
+      screen.queryByRole("button", { name: "댓글 등록" }),
     ).not.toBeInTheDocument();
   });
 
@@ -134,7 +146,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByRole("button", { name: "댓글 등록" })).toBeDisabled();
   });
@@ -158,12 +170,12 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={onCommentsUpdated}
-      />
+      />,
     );
 
     await user.type(
       screen.getByPlaceholderText("이 구절에 대한 생각을 남겨보세요"),
-      "새 댓글 내용"
+      "새 댓글 내용",
     );
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
@@ -175,11 +187,12 @@ describe("HighlightCommentPanel", () => {
         comments: expect.arrayContaining([
           expect.objectContaining({ id: "c-new" }),
         ]),
-      })
+      }),
     );
+    expect(toastSuccessMock).toHaveBeenCalledWith("댓글이 등록되었습니다.");
   });
 
-  it("댓글 등록 API 실패 시 에러 메시지를 표시한다", async () => {
+  it("댓글 등록 API 실패 시 에러 토스트를 띄운다", async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -192,17 +205,17 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.type(
       screen.getByPlaceholderText("이 구절에 대한 생각을 남겨보세요"),
-      "내용"
+      "내용",
     );
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("댓글 작성 실패");
+      expect(toastErrorMock).toHaveBeenCalledWith("댓글 작성 실패");
     });
   });
 
@@ -214,10 +227,10 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(
-      screen.getByRole("button", { name: "하이라이트 삭제" })
+      screen.getByRole("button", { name: "하이라이트 삭제" }),
     ).toBeInTheDocument();
   });
 
@@ -229,10 +242,10 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
     expect(
-      screen.queryByRole("button", { name: "하이라이트 삭제" })
+      screen.queryByRole("button", { name: "하이라이트 삭제" }),
     ).not.toBeInTheDocument();
   });
 
@@ -251,7 +264,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={onHighlightDeleted}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "하이라이트 삭제" }));
@@ -259,9 +272,12 @@ describe("HighlightCommentPanel", () => {
     await waitFor(() => {
       expect(onHighlightDeleted).toHaveBeenCalledWith("h1");
     });
+    expect(toastSuccessMock).toHaveBeenCalledWith(
+      "하이라이트가 삭제되었습니다.",
+    );
   });
 
-  it("하이라이트 삭제 실패 시 에러 메시지를 표시한다", async () => {
+  it("하이라이트 삭제 실패 시 에러 토스트를 띄운다", async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -275,15 +291,13 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "하이라이트 삭제" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "하이라이트 삭제 실패"
-      );
+      expect(toastErrorMock).toHaveBeenCalledWith("하이라이트 삭제 실패");
     });
   });
 
@@ -299,13 +313,13 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "답글 달기" }));
 
     expect(
-      screen.getByPlaceholderText("답글을 입력하세요")
+      screen.getByPlaceholderText("답글을 입력하세요"),
     ).toBeInTheDocument();
   });
 
@@ -331,13 +345,13 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "답글 달기" }));
     await user.type(
       screen.getByPlaceholderText("답글을 입력하세요"),
-      "답글 내용입니다"
+      "답글 내용입니다",
     );
     await user.click(screen.getByRole("button", { name: "등록" }));
 
@@ -356,15 +370,17 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "답글 달기" }));
-    expect(screen.getByPlaceholderText("답글을 입력하세요")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("답글을 입력하세요"),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "취소" }));
     expect(
-      screen.queryByPlaceholderText("답글을 입력하세요")
+      screen.queryByPlaceholderText("답글을 입력하세요"),
     ).not.toBeInTheDocument();
   });
 
@@ -373,7 +389,12 @@ describe("HighlightCommentPanel", () => {
       comments: [
         makeComment({
           replies: [
-            { id: "r1", body: "첫 번째 답글", author: "나", createdAt: "2024-01-01" },
+            {
+              id: "r1",
+              body: "첫 번째 답글",
+              author: "나",
+              createdAt: "2024-01-01",
+            },
           ],
         }),
       ],
@@ -385,7 +406,7 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     expect(screen.getByText("첫 번째 답글")).toBeInTheDocument();
@@ -423,19 +444,17 @@ describe("HighlightCommentPanel", () => {
         onClose={vi.fn()}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
-    const reactionBtn = screen
-      .getByText("👍")
-      .closest("button")!;
+    const reactionBtn = screen.getByText("👍").closest("button")!;
     await user.click(reactionBtn);
 
     await waitFor(() => {
       // reactedByUser becomes true → button variant changes to "secondary"
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/highlights/comments/c1/reactions"),
-        expect.objectContaining({ method: "POST" })
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });
@@ -450,7 +469,7 @@ describe("HighlightCommentPanel", () => {
         onClose={onClose}
         onHighlightDeleted={vi.fn()}
         onCommentsUpdated={vi.fn()}
-      />
+      />,
     );
 
     // Sheet의 닫기 버튼 클릭 (SheetClose 내 X 버튼)

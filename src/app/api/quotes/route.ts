@@ -5,11 +5,14 @@ import { awardQuoteSubmissionPoints } from "@/lib/points";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-    return NextResponse.json(
-      { message: "구절은 승인된 멤버만 추가할 수 있습니다." },
-      { status: 403 }
-    );
+  if (
+    !sessionUser ||
+    sessionUser.role === "pending" ||
+    sessionUser.isDeactivated
+  ) {
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "구절은 승인된 멤버만 추가할 수 있습니다.");
+    return NextResponse.redirect(url, 303);
   }
 
   const formData = await req.formData();
@@ -19,10 +22,11 @@ export async function POST(req: NextRequest) {
   const redirectTo = formData.get("redirectTo")?.toString();
 
   if (!scheduleId || !text) {
-    return NextResponse.json(
-      { message: "필수 정보가 누락되었습니다." },
-      { status: 400 }
-    );
+    const target =
+      redirectTo && redirectTo.startsWith("/") ? redirectTo : "/quotes";
+    const url = new URL(target, req.url);
+    url.searchParams.set("error", "필수 정보가 누락되었습니다.");
+    return NextResponse.redirect(url, 303);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -40,10 +44,21 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { message: "등록 실패", error: error.message },
-      { status: 400 }
+    console.error("Failed to create quote", {
+      userId: sessionUser.id,
+      scheduleId,
+      redirectTo,
+      error,
+    });
+
+    const target =
+      redirectTo && redirectTo.startsWith("/") ? redirectTo : "/quotes";
+    const url = new URL(target, req.url);
+    url.searchParams.set(
+      "error",
+      "구절 등록에 실패했습니다. 잠시 후 다시 시도해주세요.",
     );
+    return NextResponse.redirect(url, 303);
   }
   await awardQuoteSubmissionPoints(supabase, {
     userId: sessionUser.id,
@@ -53,9 +68,9 @@ export async function POST(req: NextRequest) {
 
   const fallbackUrl = `/schedule/${scheduleId}`;
   const target =
-    redirectTo && redirectTo.startsWith("/")
-      ? redirectTo
-      : fallbackUrl;
+    redirectTo && redirectTo.startsWith("/") ? redirectTo : fallbackUrl;
 
-  return NextResponse.redirect(new URL(target, req.url));
+  const url = new URL(target, req.url);
+  url.searchParams.set("success", "구절이 등록되었습니다.");
+  return NextResponse.redirect(url, 303);
 }

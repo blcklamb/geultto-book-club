@@ -1,6 +1,8 @@
 import "@/styles/globals.css";
 import type { Metadata } from "next";
+import { FlashMessage } from "@/components/FlashMessage";
 import { SessionProvider } from "@/components/SessionProvider";
+import { Toaster } from "@/components/ui/sonner";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -47,6 +49,8 @@ export default async function RootLayout({
     <html lang="ko">
       <body className="min-h-screen">
         <SessionProvider initialSessionUser={sessionUser}>
+          <FlashMessage />
+          <Toaster position="top-center" richColors closeButton />
           {children}
         </SessionProvider>
       </body>

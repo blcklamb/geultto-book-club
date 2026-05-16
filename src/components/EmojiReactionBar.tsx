@@ -27,14 +27,14 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
 
 type EmojiReactionBarProps = {
   initialReactions: ReactionSummary[];
-  onToggle: (emoji: string) => Promise<ReactionSummary[]>;
+  toggleAction: (emoji: string) => Promise<ReactionSummary[]>;
   disabled?: boolean;
   currentUserNickname?: string;
 };
 
 export function EmojiReactionBar({
   initialReactions,
-  onToggle,
+  toggleAction,
   disabled = false,
   currentUserNickname,
 }: EmojiReactionBarProps) {
@@ -81,7 +81,7 @@ export function EmojiReactionBar({
       }
 
       return sortReactions(next);
-    }
+    },
   );
 
   const handleToggle = (emoji: string) => {
@@ -93,13 +93,13 @@ export function EmojiReactionBar({
     startTransition(async () => {
       try {
         toggleOptimistic(emoji);
-        const next = await onToggle(emoji);
+        const next = await toggleAction(emoji);
         setReactions(next);
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
-            : "이모지 반응을 저장하지 못했습니다."
+            : "이모지 반응을 저장하지 못했습니다.",
         );
       }
     });

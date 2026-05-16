@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { getPointSourceLabel } from "@/lib/points";
 
 type PointLogItem = {
@@ -33,7 +34,9 @@ export function PointLogDialog({ logs }: { logs: PointLogItem[] }) {
         </DialogHeader>
         <div className="space-y-3">
           {logs.length === 0 ? (
-            <p className="text-sm text-slate-500">아직 포인트 로그가 없습니다.</p>
+            <p className="text-sm text-slate-500">
+              아직 포인트 로그가 없습니다.
+            </p>
           ) : (
             logs.map((log) => (
               <div
@@ -45,7 +48,10 @@ export function PointLogDialog({ logs }: { logs: PointLogItem[] }) {
                     {getPointSourceLabel(log.sourceType)}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {new Date(log.createdAt).toLocaleString("ko-KR")}
+                    <LocalizedDate
+                      value={log.createdAt}
+                      options={{ dateStyle: "medium", timeStyle: "short" }}
+                    />
                     {log.scheduleTitle ? ` · ${log.scheduleTitle}` : ""}
                   </p>
                   {log.memo ? (

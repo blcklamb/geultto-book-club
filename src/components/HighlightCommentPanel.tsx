@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
+import { toast } from "sonner";
 import type {
   HighlightWithComments,
   HighlightComment,
@@ -41,16 +43,14 @@ export function HighlightCommentPanel({
   onCommentsUpdated,
 }: HighlightCommentPanelProps) {
   const [comments, setComments] = useState<HighlightComment[]>(
-    highlight.comments
+    highlight.comments,
   );
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmitComment = async () => {
     if (!newCommentBody.trim()) return;
     setIsSubmitting(true);
-    setError(null);
     try {
       const res = await fetch(`/api/highlights/${highlight.id}/comments`, {
         method: "POST",
@@ -65,16 +65,16 @@ export function HighlightCommentPanel({
       const updated = [...comments, created];
       setComments(updated);
       setNewCommentBody("");
+      toast.success("댓글이 등록되었습니다.");
       onCommentsUpdated({ ...highlight, comments: updated });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "댓글 작성 실패");
+      toast.error(e instanceof Error ? e.message : "댓글 작성 실패");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteHighlight = async () => {
-    setError(null);
     try {
       const res = await fetch(`/api/highlights/${highlight.id}`, {
         method: "DELETE",
@@ -83,9 +83,10 @@ export function HighlightCommentPanel({
         const err = await res.json();
         throw new Error(err.message ?? "하이라이트 삭제 실패");
       }
+      toast.success("하이라이트가 삭제되었습니다.");
       onHighlightDeleted(highlight.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "하이라이트 삭제 실패");
+      toast.error(e instanceof Error ? e.message : "하이라이트 삭제 실패");
     }
   };
 
@@ -97,29 +98,26 @@ export function HighlightCommentPanel({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emoji }),
-        }
+        },
       );
       if (!res.ok) throw new Error("반응 저장 실패");
       const updated: ReactionSummary[] = await res.json();
       setComments((prev) =>
         prev.map((c) =>
-          c.id === commentId ? { ...c, reactions: updated } : c
-        )
+          c.id === commentId ? { ...c, reactions: updated } : c,
+        ),
       );
       return updated;
     },
-    []
+    [],
   );
 
   const handleAddReply = async (commentId: string, body: string) => {
-    const res = await fetch(
-      `/api/highlights/comments/${commentId}/replies`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
-      }
-    );
+    const res = await fetch(`/api/highlights/comments/${commentId}/replies`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message ?? "답글 작성 실패");
@@ -127,9 +125,10 @@ export function HighlightCommentPanel({
     const created: HighlightReply = await res.json();
     setComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, created] } : c
-      )
+        c.id === commentId ? { ...c, replies: [...c.replies, created] } : c,
+      ),
     );
+    toast.success("답글이 등록되었습니다.");
   };
 
   const isHighlightAuthor =
@@ -137,10 +136,7 @@ export function HighlightCommentPanel({
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="pr-6">
           <SheetTitle className="text-sm font-semibold">
             하이라이트 댓글
@@ -206,12 +202,6 @@ export function HighlightCommentPanel({
               </Button>
             </div>
           )}
-
-          {error && (
-            <p className="text-xs text-red-600" role="alert">
-              {error}
-            </p>
-          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -236,18 +226,16 @@ function CommentItem({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [replyError, setReplyError] = useState<string | null>(null);
 
   const handleSubmitReply = async () => {
     if (!replyBody.trim()) return;
     setIsSubmitting(true);
-    setReplyError(null);
     try {
       await onAddReply(replyBody.trim());
       setReplyBody("");
       setShowReplyForm(false);
     } catch (e) {
-      setReplyError(e instanceof Error ? e.message : "답글 작성 실패");
+      toast.error(e instanceof Error ? e.message : "답글 작성 실패");
     } finally {
       setIsSubmitting(false);
     }
@@ -266,12 +254,17 @@ function CommentItem({
             <span>{comment.author}</span>
           </div>
           <p className="text-sm text-slate-600">{comment.body}</p>
-          <p className="text-xs text-slate-400">{comment.createdAt}</p>
+          <p className="text-xs text-slate-400">
+            <LocalizedDate
+              value={comment.createdAt}
+              options={{ dateStyle: "medium", timeStyle: "short" }}
+            />
+          </p>
         </div>
 
         <EmojiReactionBar
           initialReactions={comment.reactions}
-          onToggle={onToggleReaction}
+          toggleAction={onToggleReaction}
           disabled={disabled}
           currentUserNickname={currentUserNickname}
         />
@@ -289,7 +282,12 @@ function CommentItem({
                   <span>{reply.author}</span>
                 </div>
                 <p className="text-xs text-slate-600">{reply.body}</p>
-                <p className="text-xs text-slate-400">{reply.createdAt}</p>
+                <p className="text-xs text-slate-400">
+                  <LocalizedDate
+                    value={reply.createdAt}
+                    options={{ dateStyle: "medium", timeStyle: "short" }}
+                  />
+                </p>
               </div>
             ))}
           </div>
@@ -306,11 +304,6 @@ function CommentItem({
                   className="text-xs"
                   rows={2}
                 />
-                {replyError && (
-                  <p className="text-xs text-red-600" role="alert">
-                    {replyError}
-                  </p>
-                )}
                 <div className="flex gap-1">
                   <Button
                     size="sm"
@@ -327,7 +320,6 @@ function CommentItem({
                     onClick={() => {
                       setShowReplyForm(false);
                       setReplyBody("");
-                      setReplyError(null);
                     }}
                   >
                     취소

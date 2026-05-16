@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,19 +26,26 @@ type TopicDetailActionsProps = {
   topicId: string;
   initialTitle: string;
   initialContent: JSONContent | string;
-  onUpdate: (formData: FormData) => Promise<void>;
-  onDelete: (formData: FormData) => Promise<void>;
+  updateAction: (formData: FormData) => Promise<void>;
+  deleteAction: (formData: FormData) => Promise<void>;
 };
 
 export function TopicDetailActions({
   topicId,
   initialTitle,
   initialContent,
-  onUpdate,
-  onDelete,
+  updateAction,
+  deleteAction,
 }: TopicDetailActionsProps) {
+  const router = useRouter();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleUpdateAction = async (formData: FormData) => {
+    await updateAction(formData);
+    setIsEditOpen(false);
+    router.refresh();
+  };
 
   return (
     <>
@@ -73,7 +81,7 @@ export function TopicDetailActions({
               제목과 발제 내용을 수정할 수 있습니다.
             </DialogDescription>
           </DialogHeader>
-          <form action={onUpdate} className="space-y-4">
+          <form action={handleUpdateAction} className="space-y-4">
             <input type="hidden" name="topicId" value={topicId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1 block">
@@ -98,14 +106,7 @@ export function TopicDetailActions({
               >
                 취소
               </Button>
-              <Button
-                type="submit"
-                onClick={() => {
-                  setIsEditOpen(false);
-                }}
-              >
-                저장하기
-              </Button>
+              <Button type="submit">저장하기</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -119,7 +120,7 @@ export function TopicDetailActions({
               이 발제를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </DialogDescription>
           </DialogHeader>
-          <form action={onDelete}>
+          <form action={deleteAction}>
             <input type="hidden" name="topicId" value={topicId} />
             <DialogFooter className="mt-4">
               <Button

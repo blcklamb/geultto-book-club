@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DetailHeader from "@/components/DetailHeader";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
 import { syncAttendancePoints } from "@/lib/points";
@@ -50,14 +51,14 @@ export default async function ScheduleDetailPage({
   const { data: attendees } = await supabase
     .from("schedule_attendees")
     .select(
-      "user_id, is_attending, requested_attending, actual_attended, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)"
+      "user_id, is_attending, requested_attending, actual_attended, fee_paid, user:users!schedule_attendees_user_id_fkey(nickname)",
     )
     .eq("schedule_id", scheduleId);
 
   const { data: quotes } = await supabase
     .from("quotes")
     .select(
-      "id, text, page_number, author_id, author:users!quotes_author_id_fkey(nickname)"
+      "id, text, page_number, author_id, author:users!quotes_author_id_fkey(nickname)",
     )
     .eq("schedule_id", scheduleId)
     .order("created_at", { ascending: false });
@@ -74,7 +75,7 @@ export default async function ScheduleDetailPage({
   const quoteProfileImageMap = profileImagesByUserId(quoteAvatarRows);
 
   const myAttendance = attendees?.find(
-    (att) => att.user_id === sessionUser?.id
+    (att) => att.user_id === sessionUser?.id,
   );
 
   return (
@@ -88,7 +89,12 @@ export default async function ScheduleDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-600">
-            <p>{new Date(schedule.date).toLocaleString("ko-KR")}</p>
+            <p>
+              <LocalizedDate
+                value={schedule.date}
+                options={{ dateStyle: "medium", timeStyle: "short" }}
+              />
+            </p>
             <p>{schedule.place}</p>
             {schedule.book_link ? (
               <a
@@ -103,7 +109,9 @@ export default async function ScheduleDetailPage({
           </CardContent>
         </Card>
 
-        {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
+        {sessionUser &&
+        sessionUser.role !== "pending" &&
+        !sessionUser.isDeactivated ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">참석 여부</CardTitle>
@@ -180,7 +188,9 @@ export default async function ScheduleDetailPage({
               인상 깊은 구절
             </h2>
           </div>
-          {sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated ? (
+          {sessionUser &&
+          sessionUser.role !== "pending" &&
+          !sessionUser.isDeactivated ? (
             <form
               action="/api/quotes"
               method="post"

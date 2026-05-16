@@ -43,7 +43,7 @@ describe("ReviewCard", () => {
 
   it("작성일을 렌더링한다", () => {
     render(<ReviewCard {...defaultProps} />);
-    expect(screen.getByText("2024-01-15")).toBeInTheDocument();
+    expect(screen.getByText("2024. 1. 15.")).toBeInTheDocument();
   });
 
   it("리뷰 상세 페이지로 연결되는 링크를 가진다", () => {

@@ -5,6 +5,7 @@ import { HomeScene3D } from "@/components/HomeScene3D";
 import { NaverMapCopyButton } from "@/components/NaverMapCopyButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LocalizedDate } from "@/components/LocalizedDate";
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
@@ -60,11 +61,7 @@ export default async function HomePage() {
 
   const nextSchedule = schedules?.[0]
     ? {
-        date: new Date(schedules[0].date).toLocaleDateString("ko-KR", {
-          month: "long",
-          day: "numeric",
-          weekday: "short",
-        }),
+        date: schedules[0].date,
         place: schedules[0].place,
         book: schedules[0].book_title,
       }
@@ -103,7 +100,16 @@ export default async function HomePage() {
             <CardContent className="space-y-2 text-sm text-slate-600">
               {nextSchedule ? (
                 <>
-                  <p>{nextSchedule.date}</p>
+                  <p>
+                    <LocalizedDate
+                      value={nextSchedule.date}
+                      options={{
+                        month: "long",
+                        day: "numeric",
+                        weekday: "short",
+                      }}
+                    />
+                  </p>
                   <div className="flex items-center gap-2">
                     <p>{nextSchedule.place}</p>
                     <NaverMapCopyButton searchValue={schedules?.[0]?.place} />
@@ -149,9 +155,14 @@ export default async function HomePage() {
                           </p>
                           <p className="text-xs text-slate-500">
                             {review.schedules?.book_title} ·{" "}
-                            {new Date(
-                              review.created_at as string,
-                            ).toLocaleDateString("ko-KR")}
+                            <LocalizedDate
+                              value={review.created_at as string}
+                              options={{
+                                year: "numeric",
+                                month: "numeric",
+                                day: "numeric",
+                              }}
+                            />
                           </p>
                         </div>
                       </Link>

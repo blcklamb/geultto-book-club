@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LocalizedDate } from "@/components/LocalizedDate";
 import {
   CURRENT_POINT_COHORT,
   MANUAL_POINT_OPTIONS,
@@ -48,7 +49,7 @@ export default async function AdminPointsPage({
   let transactionsQuery = supabase
     .from("point_transactions")
     .select(
-      "id, user_id, schedule_id, source_type, points, memo, created_at, user:users!point_transactions_user_id_fkey(nickname), schedule:schedules!point_transactions_schedule_id_fkey(book_title)"
+      "id, user_id, schedule_id, source_type, points, memo, created_at, user:users!point_transactions_user_id_fkey(nickname), schedule:schedules!point_transactions_schedule_id_fkey(book_title)",
     )
     .eq("cohort", CURRENT_POINT_COHORT)
     .order("created_at", { ascending: false })
@@ -75,7 +76,7 @@ export default async function AdminPointsPage({
   for (const transaction of allTransactions ?? []) {
     totalsByUserId.set(
       transaction.user_id,
-      (totalsByUserId.get(transaction.user_id) ?? 0) + transaction.points
+      (totalsByUserId.get(transaction.user_id) ?? 0) + transaction.points,
     );
   }
 
@@ -97,7 +98,8 @@ export default async function AdminPointsPage({
             포인트 대시보드
           </h1>
           <p className="text-sm text-slate-500">
-            {CURRENT_POINT_COHORT}기 포인트 현황 조회, 수동 입력, 비활성 사용자를 관리합니다.
+            {CURRENT_POINT_COHORT}기 포인트 현황 조회, 수동 입력, 비활성
+            사용자를 관리합니다.
           </p>
         </div>
         <div className="flex gap-3 text-sm">
@@ -298,7 +300,10 @@ export default async function AdminPointsPage({
               {transactions?.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell className="text-xs text-slate-500">
-                    {new Date(transaction.created_at).toLocaleString("ko-KR")}
+                    <LocalizedDate
+                      value={transaction.created_at}
+                      options={{ dateStyle: "medium", timeStyle: "short" }}
+                    />
                   </TableCell>
                   <TableCell>
                     {transaction.user?.nickname ?? transaction.user_id}
