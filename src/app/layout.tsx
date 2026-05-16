@@ -4,8 +4,8 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "글또 북클럽",
-  description: "독서 모임을 위한 커뮤니티 플랫폼",
+  title: "글또 5기 북클럽",
+  description: "글또 5기 독서모임 커뮤니티 플랫폼",
 };
 
 export default async function RootLayout({
@@ -17,7 +17,7 @@ export default async function RootLayout({
 
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-slate-50 text-slate-900">
+      <body className="min-h-screen">
         <SessionProvider initialSessionUser={sessionUser}>
           {children}
         </SessionProvider>

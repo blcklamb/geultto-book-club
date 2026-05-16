@@ -14,7 +14,7 @@ export default async function HomePage() {
 
   const { data: schedules } = await supabase
     .from("schedules")
-    .select("id, date, place, book_title")
+    .select("id, date, place, book_title, book_link")
     .gte("date", nowIso)
     .order("date", { ascending: true })
     .limit(1);
@@ -40,6 +40,23 @@ export default async function HomePage() {
         .limit(3)
     : { data: [] };
 
+  let bookCoverUrl: string | undefined;
+  if (schedules?.[0]?.book_link) {
+    try {
+      const res = await fetch(schedules[0].book_link, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+        next: { revalidate: 3600 },
+      });
+      const html = await res.text();
+      const match = html.match(
+        /property="og:image"[^>]*content="([^"]+)"|content="([^"]+)"[^>]*property="og:image"/
+      );
+      bookCoverUrl = match?.[1] ?? match?.[2];
+    } catch {
+      // og:image 파싱 실패 시 기본 표지 사용
+    }
+  }
+
   const nextSchedule = schedules?.[0]
     ? {
         date: new Date(schedules[0].date).toLocaleDateString("ko-KR", {
@@ -58,14 +75,14 @@ export default async function HomePage() {
         <div className="space-y-6">
           <div className="space-y-3">
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-              어쩌다 4기, 글또 북클럽
+              글또 5기 독서모임
             </h1>
             <p className="text-base text-slate-600">
               다음 모임 일정을 확인하고, 독후감과 토론으로 풍성한 대화를
               이어가요.
             </p>
           </div>
-          <HomeScene3D nextSchedule={nextSchedule} />
+          <HomeScene3D nextSchedule={nextSchedule} bookCoverUrl={bookCoverUrl} />
         </div>
         <div className="space-y-4">
           <Card>
