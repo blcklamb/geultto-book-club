@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     bookTitle: formData.get("bookTitle")?.toString(),
     bookLink: formData.get("bookLink")?.toString(),
     genre: formData.get("genre")?.toString(),
+    cohort: formData.get("cohort")?.toString(),
   };
   if (!payload.date || !payload.place || !payload.bookTitle) {
     return NextResponse.json({ message: "필수 값 누락" }, { status: 400 });
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
       book_title: payload.bookTitle,
       book_link: payload.bookLink,
       genre_tag: payload.genre,
+      cohort: payload.cohort ? Number(payload.cohort) : null,
     },
   ]);
   if (error) {

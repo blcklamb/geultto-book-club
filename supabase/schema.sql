@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.schedules (
   book_title text NOT NULL,
   book_link text,
   genre_tag text,
+  cohort integer,
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 

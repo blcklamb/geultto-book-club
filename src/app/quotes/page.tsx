@@ -2,15 +2,48 @@ import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { QuotesClient } from "./QuotesClient";
 
-export default async function QuotesPage() {
+export default async function QuotesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cohort?: string }>;
+}) {
+  const { cohort: cohortParam } = await searchParams;
+  const cohortValue = cohortParam ? Number(cohortParam) : null;
+
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
-  const { data: quotes } = await supabase
+
+  const { data: cohortRows } = await supabase
+    .from("schedules")
+    .select("cohort")
+    .not("cohort", "is", null)
+    .order("cohort");
+  const cohorts = [
+    ...new Set(cohortRows?.map((r) => r.cohort) ?? []),
+  ].filter((c): c is number => c !== null);
+
+  let scheduleIds: string[] | null = null;
+  if (cohortValue !== null) {
+    const { data: cohortSchedules } = await supabase
+      .from("schedules")
+      .select("id")
+      .eq("cohort", cohortValue);
+    scheduleIds = cohortSchedules?.map((s) => s.id) ?? [];
+  }
+
+  let quotesQuery = supabase
     .from("quotes")
     .select(
       "id, text, page_number, schedule:schedules!quotes_schedule_id_fkey(book_title), author:users!quotes_author_id_fkey(nickname)"
     )
     .order("created_at", { ascending: false });
+
+  if (scheduleIds !== null) {
+    quotesQuery = quotesQuery.in("schedule_id", scheduleIds);
+  }
+
+  const { data: quotes } = await quotesQuery;
+
   const { data: schedules } = await supabase
     .from("schedules")
     .select("id, book_title")
@@ -34,6 +67,8 @@ export default async function QuotesPage() {
         })) ?? []
       }
       canCreate={!!sessionUser && sessionUser.role !== "pending"}
+      cohorts={cohorts}
+      selectedCohort={cohortValue}
     />
   );
 }

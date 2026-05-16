@@ -4,31 +4,68 @@ import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/auth";
 import Link from "next/link";
 import DetailHeader from "@/components/DetailHeader";
+import { CohortFilter } from "@/components/CohortFilter";
 
 // Reviews index page: lists recent reviews.
 // Queries: reviews joined with schedules + users for display.
 // Access: everyone can read, but new button hidden for pending/unauthed.
-export default async function ReviewsPage() {
+export default async function ReviewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cohort?: string }>;
+}) {
+  const { cohort: cohortParam } = await searchParams;
+  const cohortValue = cohortParam ? Number(cohortParam) : null;
+
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
 
-  const { data: reviews } = await supabase
+  const { data: cohortRows } = await supabase
+    .from("schedules")
+    .select("cohort")
+    .not("cohort", "is", null)
+    .order("cohort");
+  const cohorts = [
+    ...new Set(cohortRows?.map((r) => r.cohort) ?? []),
+  ].filter((c): c is number => c !== null);
+
+  let scheduleIds: string[] | null = null;
+  if (cohortValue !== null) {
+    const { data: cohortSchedules } = await supabase
+      .from("schedules")
+      .select("id")
+      .eq("cohort", cohortValue);
+    scheduleIds = cohortSchedules?.map((s) => s.id) ?? [];
+  }
+
+  let reviewsQuery = supabase
     .from("reviews")
     .select(
       "id, title, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at"
     )
     .order("created_at", { ascending: false });
 
+  if (scheduleIds !== null) {
+    reviewsQuery = reviewsQuery.in("schedule_id", scheduleIds);
+  }
+
+  const { data: reviews } = await reviewsQuery;
+
   return (
     <>
       <DetailHeader title="독후감" />
       <div className="space-y-6 p-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          {sessionUser && sessionUser.role !== "pending" ? (
-            <Link href="/reviews/new">
-              <Button>독후감 작성</Button>
-            </Link>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-4">
+            {cohorts.length > 0 ? (
+              <CohortFilter cohorts={cohorts} selected={cohortValue} />
+            ) : null}
+            {sessionUser && sessionUser.role !== "pending" ? (
+              <Link href="/reviews/new">
+                <Button>독후감 작성</Button>
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {reviews && reviews.length === 0 ? (

@@ -12,7 +12,7 @@ export default async function AdminSchedulePage() {
   const supabase = await createSupabaseServerClient();
   const { data: schedules, error } = await supabase
     .from("schedules")
-    .select("id, date, place, book_title, book_link, genre_tag")
+    .select("id, date, place, book_title, book_link, genre_tag, cohort")
     .order("date", { ascending: false });
 
   return (
@@ -47,6 +47,15 @@ export default async function AdminSchedulePage() {
               <Label htmlFor="genre">장르 태그</Label>
               <Input id="genre" name="genre" placeholder="에세이" />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="cohort">기수</Label>
+              <Input
+                id="cohort"
+                name="cohort"
+                type="number"
+                placeholder="예: 5"
+              />
+            </div>
             <Button type="submit" className="md:col-span-2">
               일정 저장
             </Button>
@@ -72,13 +81,33 @@ export default async function AdminSchedulePage() {
               <p className="text-xs text-slate-400">
                 장르: {schedule.genre_tag ?? "-"}
               </p>
-              <div className="mt-3 flex gap-3 text-sm">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <a
                   className="text-sky-600"
                   href={`/admin/attendees/${schedule.id}`}
                 >
                   참석자 관리
                 </a>
+                <form
+                  action={`/api/admin/schedule/${schedule.id}`}
+                  method="post"
+                  className="flex items-center gap-2"
+                >
+                  <Label htmlFor={`cohort-${schedule.id}`} className="text-xs">
+                    기수
+                  </Label>
+                  <Input
+                    id={`cohort-${schedule.id}`}
+                    name="cohort"
+                    type="number"
+                    defaultValue={schedule.cohort ?? ""}
+                    placeholder="-"
+                    className="h-7 w-20 text-xs"
+                  />
+                  <Button type="submit" size="sm" variant="outline">
+                    저장
+                  </Button>
+                </form>
               </div>
             </div>
           )) ?? <p>등록된 일정이 없습니다.</p>}

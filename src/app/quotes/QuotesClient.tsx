@@ -6,6 +6,7 @@ import { QuotesFloatingScene3D } from "@/components/QuotesFloatingScene3D";
 import { QuoteCard } from "@/components/QuoteCard";
 import DetailHeader from "@/components/DetailHeader";
 import { QuoteCreateDialog } from "@/components/QuoteCreateDialog";
+import { CohortFilter } from "@/components/CohortFilter";
 
 export type QuotesClientProps = {
   quotes: Array<{
@@ -20,12 +21,16 @@ export type QuotesClientProps = {
     title: string;
   }>;
   canCreate: boolean;
+  cohorts: number[];
+  selectedCohort: number | null;
 };
 
 export const QuotesClient: React.FC<QuotesClientProps> = ({
   quotes,
   schedules,
   canCreate,
+  cohorts,
+  selectedCohort,
 }) => {
   const [mode, setMode] = useState<QuoteViewMode>("3d");
 
@@ -34,7 +39,10 @@ export const QuotesClient: React.FC<QuotesClientProps> = ({
       <DetailHeader title="인상 깊은 구절" />
       <div className="space-y-6 p-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {cohorts.length > 0 ? (
+              <CohortFilter cohorts={cohorts} selected={selectedCohort} />
+            ) : null}
             <QuoteListToggle mode={mode} onChange={setMode} />
             {canCreate ? (
               <QuoteCreateDialog schedules={schedules} redirectTo="/quotes" />

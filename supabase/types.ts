@@ -49,6 +49,7 @@ export interface Database {
           book_title: string;
           book_link: string | null;
           genre_tag: string | null;
+          cohort: number | null;
           created_at: string | null;
         };
         Insert: {
@@ -58,6 +59,7 @@ export interface Database {
           book_title: string;
           book_link?: string | null;
           genre_tag?: string | null;
+          cohort?: number | null;
           created_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"]>;
