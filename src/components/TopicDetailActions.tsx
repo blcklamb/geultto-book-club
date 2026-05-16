@@ -106,9 +106,7 @@ export function TopicDetailActions({
               >
                 취소
               </Button>
-              <Button type="submit">
-                저장하기
-              </Button>
+              <Button type="submit">저장하기</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -125,7 +125,7 @@ export default async function TopicDetailPage({
     }
 
     const submittedTopicId = formData.get("topicId")?.toString();
-  const title = formData.get("title")?.toString();
+    const title = formData.get("title")?.toString();
     const bodyRich = formData.get("bodyRich")?.toString();
 
     if (!submittedTopicId || !title || !bodyRich) {
