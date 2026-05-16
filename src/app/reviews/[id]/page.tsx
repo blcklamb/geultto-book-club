@@ -83,6 +83,7 @@ export default async function ReviewDetailPage({
     .order("created_at", { ascending: false });
 
   const defaultContent = { type: "doc", content: [{ type: "paragraph" }] };
+  // TODO: review에 UpdatedAt 추가 후 key 대체하기
   const reviewContent =
     typeof review.content_rich === "string"
       ? (() => {
@@ -93,6 +94,7 @@ export default async function ReviewDetailPage({
           }
         })()
       : (review.content_rich ?? defaultContent);
+
   const reviewContentKey = `${review.id}:${review.title}:${JSON.stringify(reviewContent)}`;
 
   const canEdit =
@@ -314,10 +316,15 @@ export default async function ReviewDetailPage({
       .maybeSingle();
 
     if (error) {
+      console.error("Failed to update review", {
+        reviewId: submittedReviewId,
+        userId: sessionUser.id,
+        error: error.message,
+      });
       redirectReviewWithMessage(
         submittedReviewId,
         "error",
-        "독후감 수정 실패: " + error.message,
+        "독후감 수정에 실패했습니다. 잠시 후 다시 시도해주세요.",
       );
     }
 

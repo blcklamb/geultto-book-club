@@ -72,4 +72,21 @@ describe("FlashMessage", () => {
       expect(replaceMock).toHaveBeenCalledWith("/reviews/1");
     });
   });
+
+  it("SSR 렌더링이 error 쿼리에 의존하는 경로에서는 URL 정리를 건너뛴다", async () => {
+    usePathnameMock.mockReturnValue("/pending");
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams("error=%EA%B6%8C%ED%95%9C%20%EC%97%86%EC%9D%8C"),
+    );
+
+    render(<FlashMessage />);
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith("권한 없음", {
+        id: "/pending:error",
+      });
+    });
+
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
 });

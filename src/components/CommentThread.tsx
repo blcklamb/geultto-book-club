@@ -18,7 +18,7 @@ export type CommentThreadProps = {
     body: string;
     createdAt: string | null | undefined;
   }>;
-  submitAction?: (body: string) => Promise<void>;
+  submitAction: (body: string) => Promise<void>;
   disabled?: boolean;
 };
 
@@ -39,7 +39,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
     setIsSubmitting(true);
     setFeedback(null);
     try {
-      await submitAction?.(value);
+      await submitAction(value);
       setValue("");
       setFeedback({ type: "success", message: "댓글이 등록되었습니다." });
     } catch (error) {

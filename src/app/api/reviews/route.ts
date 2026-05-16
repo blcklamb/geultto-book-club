@@ -5,7 +5,11 @@ import { awardReviewSubmissionPoints } from "@/lib/points";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
+  if (
+    !sessionUser ||
+    sessionUser.role === "pending" ||
+    sessionUser.isDeactivated
+  ) {
     const url = new URL("/pending", req.url);
     url.searchParams.set("error", "승인된 회원만 작성할 수 있습니다.");
     return NextResponse.redirect(url, 303);
@@ -37,8 +41,17 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
+    console.error("Failed to create review", {
+      userId: sessionUser.id,
+      scheduleId,
+      error,
+    });
+
     const url = new URL("/reviews/new", req.url);
-    url.searchParams.set("error", `독후감 등록 실패: ${error.message}`);
+    url.searchParams.set(
+      "error",
+      "독후감 등록에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    );
     return NextResponse.redirect(url, 303);
   }
 

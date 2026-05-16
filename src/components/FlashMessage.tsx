@@ -4,6 +4,8 @@ import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 
+const PRESERVE_FLASH_QUERY_PATHS = new Set(["/pending"]);
+
 function FlashMessageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -29,6 +31,10 @@ function FlashMessageInner() {
 
     if (success) {
       toast.success(success, { id: `${pathname}:success` });
+    }
+
+    if (PRESERVE_FLASH_QUERY_PATHS.has(pathname)) {
+      return;
     }
 
     const params = new URLSearchParams(searchParams.toString());
