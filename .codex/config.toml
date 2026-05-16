@@ -1,0 +1,11 @@
+[mcp_servers.serena]
+args = [
+    "--from",
+    "git+https://github.com/oraios/serena",
+    "serena-mcp-server",
+    "--context",
+    "ide-assistant",
+    "--project",
+    "/Users/jeong/dev/geultto-book-club",
+]
+command = "uvx"

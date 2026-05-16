@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="글또 5기 북클럽">
+  <defs>
+    <linearGradient id="bg" x1="82" y1="48" x2="1100" y2="592" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8E4"/>
+      <stop offset="0.42" stop-color="#F7C76A"/>
+      <stop offset="1" stop-color="#9A5A10"/>
+    </linearGradient>
+    <linearGradient id="bookCover" x1="750" y1="144" x2="1002" y2="490" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D98A32"/>
+      <stop offset="1" stop-color="#6B3A1A"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#4E2B12" flood-opacity="0.28"/>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#6B3A1A" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1040" cy="122" r="154" fill="#FFF8E4" opacity="0.28"/>
+  <circle cx="116" cy="526" r="214" fill="#6B3A1A" opacity="0.12"/>
+  <path d="M0 492C166 430 264 454 406 508c126 48 238 64 390 6 152-58 264-58 404-4v120H0V492Z" fill="#FFF8E4" opacity="0.42"/>
+
+  <g transform="translate(94 126)">
+    <rect x="0" y="0" width="128" height="42" rx="21" fill="#FFF8E4" opacity="0.82"/>
+    <text x="64" y="28" text-anchor="middle" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="20" font-weight="700" fill="#6B3A1A">BOOK CLUB</text>
+
+    <text x="0" y="132" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="78" font-weight="800" fill="#2A2118">글또 5기</text>
+    <text x="0" y="222" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="78" font-weight="800" fill="#2A2118">북클럽</text>
+    <text x="4" y="292" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="30" font-weight="600" fill="#5B4632">독후감, 토론, 인상 깊은 구절을 함께 나누는</text>
+    <text x="4" y="334" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="30" font-weight="600" fill="#5B4632">글또 독서모임 커뮤니티</text>
+
+    <g transform="translate(4 382)">
+      <rect x="0" y="0" width="156" height="48" rx="24" fill="#2A2118"/>
+      <text x="78" y="32" text-anchor="middle" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFF8E4">읽고</text>
+      <rect x="176" y="0" width="156" height="48" rx="24" fill="#FFF8E4" opacity="0.78"/>
+      <text x="254" y="32" text-anchor="middle" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#6B3A1A">기록하고</text>
+      <rect x="352" y="0" width="156" height="48" rx="24" fill="#FFF8E4" opacity="0.78"/>
+      <text x="430" y="32" text-anchor="middle" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#6B3A1A">나누기</text>
+    </g>
+  </g>
+
+  <g transform="translate(710 120)" filter="url(#shadow)">
+    <path d="M0 58c0-21 18-36 38-32 84 16 142 46 194 94 52-48 110-78 194-94 20-4 38 11 38 32v350c0 17-12 31-29 34-80 13-139 35-190 74-8 6-18 9-28 9s-20-3-28-9c-51-39-110-61-190-74-17-3-29-17-29-34V58Z" fill="#FFF8E4"/>
+    <path d="M38 62c73 14 124 39 168 78v314c-45-31-97-49-168-62V62Z" fill="url(#bookCover)"/>
+    <path d="M426 62c-73 14-124 39-168 78v314c45-31 97-49 168-62V62Z" fill="#F5EDD8"/>
+    <path d="M232 128v348" stroke="#6B3A1A" stroke-width="12" stroke-linecap="round"/>
+    <path d="M310 202h64M310 264h64M310 326h46" stroke="#C8782A" stroke-width="14" stroke-linecap="round"/>
+    <path d="M104 188c-43 5-70 33-70 73 0 37 22 64 57 64 28 0 48-19 48-45 0-24-17-40-40-40-9 0-16 2-22 5 4-20 18-35 42-39l-15-18Zm96 0c-43 5-70 33-70 73 0 37 22 64 57 64 28 0 48-19 48-45 0-24-17-40-40-40-9 0-16 2-22 5 4-20 18-35 42-39l-15-18Z" fill="#FFF8E4"/>
+  </g>
+
+  <g transform="translate(760 512)" filter="url(#softShadow)">
+    <rect width="252" height="58" rx="29" fill="#FFF8E4" opacity="0.92"/>
+    <text x="126" y="38" text-anchor="middle" font-family="Apple SD Gothic Neo, Pretendard, Arial, sans-serif" font-size="24" font-weight="800" fill="#6B3A1A">geultto book club</text>
+  </g>
+</svg>
