@@ -4,18 +4,20 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/components/SessionProvider";
 import { UserAvatar } from "@/components/UserAvatar";
+import { getParentPathname } from "@/lib/navigation";
 
 interface DetailHeaderProps {
   title: string;
   profileImageUrl?: string | null;
   profileDecoration?: string | null;
   onClickBack?: () => void;
+  backHref?: string;
 }
 
 // TODO: 커스텀훅으로 분리
 export function useProfileImage(
   initialImageUrl: string | null = null,
-  initialDecoration = "none"
+  initialDecoration = "none",
 ) {
   const { supabase, session } = useSession();
   const [profileImage, setProfileImage] = useState<{
@@ -59,13 +61,22 @@ export default function DetailHeader({
   profileImageUrl = null,
   profileDecoration = "none",
   onClickBack,
+  backHref,
 }: DetailHeaderProps) {
   const router = useRouter();
-  const dynamicProfileImage = useProfileImage(profileImageUrl, profileDecoration ?? "none");
+  const dynamicProfileImage = useProfileImage(
+    profileImageUrl,
+    profileDecoration ?? "none",
+  );
   const pathname = usePathname();
 
   const handleBack = () => {
-    onClickBack ? onClickBack() : router.back();
+    if (onClickBack) {
+      onClickBack();
+      return;
+    }
+
+    router.replace(backHref ?? getParentPathname(pathname));
   };
 
   const handleProfileClick = () => {

@@ -51,7 +51,11 @@ export async function POST(req: NextRequest) {
   };
 
   if (!payload.nickname || !payload.real_name) {
-    return redirectProfileWithMessage(req, "error", "닉네임과 실명은 필수입니다.");
+    return redirectProfileWithMessage(
+      req,
+      "error",
+      "닉네임과 실명은 필수입니다.",
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -69,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const profileImage = formData.get("profileImage");
   const profileDecoration = normalizeProfileDecoration(
-    formData.get("profileDecoration")?.toString()
+    formData.get("profileDecoration")?.toString(),
   );
   let profileImageUrl: string | null | undefined;
 
@@ -90,8 +94,11 @@ export async function POST(req: NextRequest) {
     }
 
     const extension =
-      profileImage.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ??
-      "jpg";
+      profileImage.name
+        .split(".")
+        .pop()
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]/g, "") ?? "jpg";
     const imagePath = `${userId}/${Date.now()}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from(PROFILE_IMAGE_BUCKET)
@@ -115,16 +122,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (profileImageUrl !== undefined) {
-    const { error: profileError } = await supabase
-      .from("user_profiles")
-      .upsert(
-        {
-          user_id: userId,
-          profile_image_url: profileImageUrl,
-          profile_decoration: profileDecoration,
-        },
-        { onConflict: "user_id" },
-      );
+    const { error: profileError } = await supabase.from("user_profiles").upsert(
+      {
+        user_id: userId,
+        profile_image_url: profileImageUrl,
+        profile_decoration: profileDecoration,
+      },
+      { onConflict: "user_id" },
+    );
 
     if (profileError) {
       return redirectProfileWithMessage(
@@ -138,7 +143,7 @@ export async function POST(req: NextRequest) {
       .from("user_profiles")
       .upsert(
         { user_id: userId, profile_decoration: profileDecoration },
-        { onConflict: "user_id" }
+        { onConflict: "user_id" },
       );
     if (profileError) {
       return redirectProfileWithMessage(

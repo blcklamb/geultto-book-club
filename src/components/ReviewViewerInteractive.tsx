@@ -41,14 +41,13 @@ export function ReviewViewerInteractive({
   currentUserNickname,
   currentUserId,
 }: ReviewViewerInteractiveProps) {
-  const [highlights, setHighlights] = useState<HighlightWithComments[]>(
-    initialHighlights
-  );
+  const [highlights, setHighlights] =
+    useState<HighlightWithComments[]>(initialHighlights);
   const [selectionPopup, setSelectionPopup] = useState<SelectionPopup | null>(
-    null
+    null,
   );
   const [activeHighlightId, setActiveHighlightId] = useState<string | null>(
-    null
+    null,
   );
   const [isPending, setIsPending] = useState(false);
   const editorWrapRef = useRef<HTMLDivElement>(null);
@@ -97,7 +96,10 @@ export function ReviewViewerInteractive({
         newTr.addMark(
           h.startPos,
           h.endPos,
-          markType.create({ highlightId: h.id, color: highlightColorFor(h.id) })
+          markType.create({
+            highlightId: h.id,
+            color: highlightColorFor(h.id),
+          }),
         );
       } catch {
         // Skip highlights with invalid positions (e.g., after content edit)
@@ -225,14 +227,12 @@ export function ReviewViewerInteractive({
           markType.create({
             highlightId: newHighlight.id,
             color: highlightColorFor(newHighlight.id),
-          })
+          }),
         );
         editor.view.dispatch(newTr);
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "하이라이트 생성 실패"
-      );
+      toast.error(err instanceof Error ? err.message : "하이라이트 생성 실패");
       console.error("하이라이트 생성 실패:", err);
     } finally {
       setIsPending(false);
@@ -260,7 +260,7 @@ export function ReviewViewerInteractive({
             newTr.removeMark(
               highlight.startPos,
               highlight.endPos,
-              specificMark
+              specificMark,
             );
             editor.view.dispatch(newTr);
           } catch {
@@ -269,16 +269,16 @@ export function ReviewViewerInteractive({
         }
       }
     },
-    [highlights, editor]
+    [highlights, editor],
   );
 
   const handleCommentsUpdated = useCallback(
     (updated: HighlightWithComments) => {
       setHighlights((prev) =>
-        prev.map((h) => (h.id === updated.id ? updated : h))
+        prev.map((h) => (h.id === updated.id ? updated : h)),
       );
     },
-    []
+    [],
   );
 
   const activeHighlight = highlights.find((h) => h.id === activeHighlightId);

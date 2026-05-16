@@ -42,7 +42,7 @@ export function HighlightCommentPanel({
   onCommentsUpdated,
 }: HighlightCommentPanelProps) {
   const [comments, setComments] = useState<HighlightComment[]>(
-    highlight.comments
+    highlight.comments,
   );
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,29 +97,26 @@ export function HighlightCommentPanel({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ emoji }),
-        }
+        },
       );
       if (!res.ok) throw new Error("반응 저장 실패");
       const updated: ReactionSummary[] = await res.json();
       setComments((prev) =>
         prev.map((c) =>
-          c.id === commentId ? { ...c, reactions: updated } : c
-        )
+          c.id === commentId ? { ...c, reactions: updated } : c,
+        ),
       );
       return updated;
     },
-    []
+    [],
   );
 
   const handleAddReply = async (commentId: string, body: string) => {
-    const res = await fetch(
-      `/api/highlights/comments/${commentId}/replies`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
-      }
-    );
+    const res = await fetch(`/api/highlights/comments/${commentId}/replies`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message ?? "답글 작성 실패");
@@ -127,8 +124,8 @@ export function HighlightCommentPanel({
     const created: HighlightReply = await res.json();
     setComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, created] } : c
-      )
+        c.id === commentId ? { ...c, replies: [...c.replies, created] } : c,
+      ),
     );
     toast.success("답글이 등록되었습니다.");
   };
@@ -138,10 +135,7 @@ export function HighlightCommentPanel({
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader className="pr-6">
           <SheetTitle className="text-sm font-semibold">
             하이라이트 댓글

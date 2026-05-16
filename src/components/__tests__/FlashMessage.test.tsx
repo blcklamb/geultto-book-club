@@ -43,7 +43,9 @@ describe("FlashMessage", () => {
 
   it("success 쿼리를 success 토스트로 보여주고 URL에서 제거한다", async () => {
     useSearchParamsMock.mockReturnValue(
-      new URLSearchParams("success=%EB%93%B1%EB%A1%9D%20%EC%99%84%EB%A3%8C&cohort=5")
+      new URLSearchParams(
+        "success=%EB%93%B1%EB%A1%9D%20%EC%99%84%EB%A3%8C&cohort=5",
+      ),
     );
 
     render(<FlashMessage />);
@@ -58,7 +60,7 @@ describe("FlashMessage", () => {
 
   it("error 쿼리를 error 토스트로 보여주고 URL에서 제거한다", async () => {
     useSearchParamsMock.mockReturnValue(
-      new URLSearchParams("error=%EC%8B%A4%ED%8C%A8")
+      new URLSearchParams("error=%EC%8B%A4%ED%8C%A8"),
     );
 
     render(<FlashMessage />);
