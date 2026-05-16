@@ -1,16 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
-import { ReviewHighlightSidebar } from "@/components/ReviewHighlightSidebar";
 import { CommentThread } from "@/components/CommentThread";
 import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
-import { ReviewViewer } from "@/components/ReviewViewer";
+import { ReviewViewerInteractive } from "@/components/ReviewViewerInteractive";
 import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
 import { ReviewDetailActions } from "@/components/ReviewDetailActions";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
-import { fetchReactionSummary, toggleReaction } from "@/lib/reactions";
+import { fetchReactionSummary, toggleReaction, summarizeReactions } from "@/lib/reactions";
+import type { HighlightWithComments } from "@/lib/highlight";
 
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
@@ -35,11 +35,23 @@ export default async function ReviewDetailPage({
 
   if (!review) notFound();
 
-  const { data: highlights } = await supabase
+  const { data: highlightRows } = await supabase
     .from("review_highlights")
-    .select("id, highlight_text, reaction, comment")
+    .select(
+      `id, author_id, highlight_text, start_pos, end_pos,
+       author:users!review_highlights_author_id_fkey(nickname),
+       highlight_comments(
+         id, body, created_at,
+         author:users!highlight_comments_author_id_fkey(nickname),
+         highlight_comment_reactions(emoji, user_id, user:users(nickname)),
+         highlight_comment_replies(
+           id, body, created_at,
+           author:users!highlight_comment_replies_author_id_fkey(nickname)
+         )
+       )`
+    )
     .eq("review_id", reviewId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
 
   const { data: comments } = await supabase
     .from("review_comments")
@@ -62,6 +74,66 @@ export default async function ReviewDetailPage({
       : review.content_rich ?? defaultContent;
 
   const canEdit = !!sessionUser && review.author_id === sessionUser.id;
+
+  // Transform nested highlight rows into typed HighlightWithComments[].
+  // Rows with null positions are skipped — 0 is not a valid ProseMirror position.
+  const highlights: HighlightWithComments[] = (highlightRows ?? [])
+    .filter((h) => h.start_pos != null && h.end_pos != null)
+    .map((h) => ({
+      id: h.id,
+      authorId: h.author_id ?? "",
+      highlightText: h.highlight_text,
+      startPos: h.start_pos!,
+      endPos: h.end_pos!,
+      authorNickname:
+        (h.author as { nickname: string } | null)?.nickname ?? "익명",
+      comments: ((h.highlight_comments as unknown[]) ?? []).map((c: unknown) => {
+        const comment = c as {
+          id: string;
+          body: string;
+          created_at: string | null;
+          author: { nickname: string } | null;
+          highlight_comment_reactions: Array<{
+            emoji: string;
+            user_id: string | null;
+            user: { nickname: string | null } | Array<{ nickname: string | null }> | null;
+          }>;
+          highlight_comment_replies: Array<{
+            id: string;
+            body: string;
+            created_at: string | null;
+            author: { nickname: string } | Array<{ nickname: string }> | null;
+          }>;
+        };
+        return {
+          id: comment.id,
+          body: comment.body,
+          author: comment.author?.nickname ?? "익명",
+          createdAt: comment.created_at
+            ? new Date(comment.created_at).toLocaleString("ko-KR")
+            : "-",
+          reactions: summarizeReactions(
+            (comment.highlight_comment_reactions ?? []).map((r) => ({
+              emoji: r.emoji,
+              user_id: r.user_id,
+              user: Array.isArray(r.user) ? r.user[0] : r.user,
+            })),
+            sessionUser?.id
+          ),
+          replies: (comment.highlight_comment_replies ?? []).map((r) => {
+            const author = Array.isArray(r.author) ? r.author[0] : r.author;
+            return {
+              id: r.id,
+              body: r.body,
+              author: author?.nickname ?? "익명",
+              createdAt: r.created_at
+                ? new Date(r.created_at).toLocaleString("ko-KR")
+                : "-",
+            };
+          }),
+        };
+      }),
+    }));
   const reviewReactions = await fetchReactionSummary(
     supabase,
     "review_reactions",
@@ -232,7 +304,14 @@ export default async function ReviewDetailPage({
           </header>
           <Card>
             <CardContent className="prose prose-slate max-w-none p-4">
-              <ReviewViewer content={reviewContent} />
+              <ReviewViewerInteractive
+                content={reviewContent}
+                reviewId={review.id}
+                initialHighlights={highlights}
+                disabled={!sessionUser || sessionUser.role === "pending"}
+                currentUserNickname={sessionUser?.nickname}
+                currentUserId={sessionUser?.id}
+              />
             </CardContent>
           </Card>
           <EmojiReactionBar
@@ -258,16 +337,6 @@ export default async function ReviewDetailPage({
         </article>
         {/* Client-side component ensures view count increments after hydration */}
         <ViewCountPinger reviewId={review.id} />
-        {/* <ReviewHighlightSidebar
-        highlights={
-          highlights?.map((highlight) => ({
-            id: highlight.id,
-            text: highlight.highlight_text,
-            reactions: highlight.reaction ?? [],
-            comment: highlight.comment ?? undefined,
-          })) ?? []
-        }
-      /> */}
       </div>
     </>
   );

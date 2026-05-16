@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (!sessionUser) {
     return NextResponse.json(
       { message: "로그인이 필요합니다." },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (!userId || userId !== sessionUser.id) {
     return NextResponse.json(
       { message: "본인만 수정 가능합니다." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!payload.nickname || !payload.real_name) {
     return NextResponse.json(
       { message: "닉네임과 실명은 필수입니다." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json(
       { message: "업데이트 실패", error: error.message },
-      { status: 400 }
+      { status: 400 },
     );
   }
   return NextResponse.redirect(new URL("/profile", req.url));
