@@ -6,20 +6,18 @@ import { awardTopicSubmissionPoints } from "@/lib/points";
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-    return NextResponse.json(
-      { message: "승인된 회원만 작성할 수 있습니다." },
-      { status: 403 }
-    );
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "승인된 회원만 작성할 수 있습니다.");
+    return NextResponse.redirect(url, 303);
   }
   const formData = await req.formData();
   const scheduleId = formData.get("scheduleId")?.toString();
   const title = formData.get("title")?.toString();
   const bodyRich = formData.get("bodyRich")?.toString();
   if (!scheduleId || !title || !bodyRich) {
-    return NextResponse.json(
-      { message: "필수 정보가 누락되었습니다." },
-      { status: 400 }
-    );
+    const url = new URL("/topics/new", req.url);
+    url.searchParams.set("error", "필수 정보가 누락되었습니다.");
+    return NextResponse.redirect(url, 303);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -37,15 +35,16 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
   if (error) {
-    return NextResponse.json(
-      { message: "등록 실패", error: error.message },
-      { status: 400 }
-    );
+    const url = new URL("/topics/new", req.url);
+    url.searchParams.set("error", `발제 등록 실패: ${error.message}`);
+    return NextResponse.redirect(url, 303);
   }
   await awardTopicSubmissionPoints(supabase, {
     userId: sessionUser.id,
     scheduleId,
     topicId: data.id,
   });
-  return NextResponse.redirect(new URL("/topics", req.url));
+  const url = new URL("/topics", req.url);
+  url.searchParams.set("success", "발제가 등록되었습니다.");
+  return NextResponse.redirect(url, 303);
 }

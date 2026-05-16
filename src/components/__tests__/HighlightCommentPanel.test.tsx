@@ -5,11 +5,23 @@ import { HighlightCommentPanel } from "../HighlightCommentPanel";
 import type { HighlightWithComments } from "@/lib/highlight";
 import type { ReactionSummary } from "@/lib/reactions";
 
+const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+}));
+
 // next/dynamic는 jsdom에서 동작하지 않으므로 EmojiPicker mock
 vi.mock("next/dynamic", () => ({
   default: () => {
     const MockComponent = () => <div data-testid="emoji-picker-mock" />;
     return MockComponent;
+  },
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccessMock,
+    error: toastErrorMock,
   },
 }));
 
@@ -43,6 +55,8 @@ describe("HighlightCommentPanel", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockFetch.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     vi.stubGlobal("fetch", mockFetch);
   });
 
@@ -177,9 +191,10 @@ describe("HighlightCommentPanel", () => {
         ]),
       })
     );
+    expect(toastSuccessMock).toHaveBeenCalledWith("댓글이 등록되었습니다.");
   });
 
-  it("댓글 등록 API 실패 시 에러 메시지를 표시한다", async () => {
+  it("댓글 등록 API 실패 시 에러 토스트를 띄운다", async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -202,7 +217,7 @@ describe("HighlightCommentPanel", () => {
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("댓글 작성 실패");
+      expect(toastErrorMock).toHaveBeenCalledWith("댓글 작성 실패");
     });
   });
 
@@ -259,9 +274,10 @@ describe("HighlightCommentPanel", () => {
     await waitFor(() => {
       expect(onHighlightDeleted).toHaveBeenCalledWith("h1");
     });
+    expect(toastSuccessMock).toHaveBeenCalledWith("하이라이트가 삭제되었습니다.");
   });
 
-  it("하이라이트 삭제 실패 시 에러 메시지를 표시한다", async () => {
+  it("하이라이트 삭제 실패 시 에러 토스트를 띄운다", async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -281,9 +297,7 @@ describe("HighlightCommentPanel", () => {
     await user.click(screen.getByRole("button", { name: "하이라이트 삭제" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "하이라이트 삭제 실패"
-      );
+      expect(toastErrorMock).toHaveBeenCalledWith("하이라이트 삭제 실패");
     });
   });
 

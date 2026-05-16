@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
 import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
+import { toast } from "sonner";
 
 type SelectionPopup = {
   x: number;
@@ -211,6 +212,7 @@ export function ReviewViewerInteractive({
       setHighlights((prev) => [...prev, newHighlight]);
       setActiveHighlightId(newHighlight.id);
       setSelectionPopup(null);
+      toast.success("하이라이트가 저장되었습니다.");
 
       // Apply highlight mark visually
       const { schema } = editor.state;
@@ -228,6 +230,9 @@ export function ReviewViewerInteractive({
         editor.view.dispatch(newTr);
       }
     } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "하이라이트 생성 실패"
+      );
       console.error("하이라이트 생성 실패:", err);
     } finally {
       setIsPending(false);

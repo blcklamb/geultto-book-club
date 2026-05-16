@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import type { HighlightWithComments } from "@/lib/highlight";
 import type { JSONContent } from "@tiptap/core";
 
+const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+}));
+
 // ─── vi.hoisted로 hoisting-safe mock 변수 선언 ────────────────────────────────
 const { useEditorMock, mockDispatch, mockAddEventListener, editorDom } =
   vi.hoisted(() => {
@@ -53,6 +58,13 @@ vi.mock("next/dynamic", () => ({
   default: () => {
     const MockComponent = () => <div data-testid="emoji-picker-mock" />;
     return MockComponent;
+  },
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccessMock,
+    error: toastErrorMock,
   },
 }));
 
@@ -119,6 +131,8 @@ describe("ReviewViewerInteractive", () => {
     mockFetch.mockReset();
     vi.stubGlobal("fetch", mockFetch);
     mockDispatch.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     // restore addEventListener mock after restoreAllMocks
     editorDom.addEventListener = mockAddEventListener;
     mockAddEventListener.mockReset();
@@ -334,6 +348,7 @@ describe("ReviewViewerInteractive", () => {
         expect.objectContaining({ method: "POST" })
       );
     });
+    expect(toastSuccessMock).toHaveBeenCalledWith("하이라이트가 저장되었습니다.");
 
     // HighlightCommentPanel이 열리면 SheetTitle이 나타남
     await waitFor(() => {
@@ -371,6 +386,7 @@ describe("ReviewViewerInteractive", () => {
     await user.click(screen.getByRole("button", { name: /하이라이트/ }));
 
     await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith("서버 오류");
       expect(consoleSpy).toHaveBeenCalledWith(
         "하이라이트 생성 실패:",
         expect.any(Error)

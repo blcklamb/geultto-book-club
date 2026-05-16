@@ -12,28 +12,29 @@ const ALLOWED_PROFILE_IMAGE_TYPES = new Set([
   "image/gif",
 ]);
 
+function redirectProfileWithMessage(
+  req: NextRequest,
+  type: "error" | "success",
+  message: string,
+) {
+  const url = new URL("/profile", req.url);
+  url.searchParams.set(type, message);
+  return NextResponse.redirect(url, 303);
+}
+
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser) {
-    return NextResponse.json(
-      { message: "로그인이 필요합니다." },
-      { status: 401 },
-    );
+    return redirectProfileWithMessage(req, "error", "로그인이 필요합니다.");
   }
   if (sessionUser.isDeactivated) {
-    return NextResponse.json(
-      { message: "비활성화된 계정입니다." },
-      { status: 403 },
-    );
+    return redirectProfileWithMessage(req, "error", "비활성화된 계정입니다.");
   }
 
   const formData = await req.formData();
   const userId = formData.get("userId")?.toString();
   if (!userId || userId !== sessionUser.id) {
-    return NextResponse.json(
-      { message: "본인만 수정 가능합니다." },
-      { status: 403 },
-    );
+    return redirectProfileWithMessage(req, "error", "본인만 수정 가능합니다.");
   }
 
   const payload = {
@@ -50,10 +51,7 @@ export async function POST(req: NextRequest) {
   };
 
   if (!payload.nickname || !payload.real_name) {
-    return NextResponse.json(
-      { message: "닉네임과 실명은 필수입니다." },
-      { status: 400 },
-    );
+    return redirectProfileWithMessage(req, "error", "닉네임과 실명은 필수입니다.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -62,9 +60,10 @@ export async function POST(req: NextRequest) {
     .update(payload)
     .eq("id", userId);
   if (error) {
-    return NextResponse.json(
-      { message: "업데이트 실패", error: error.message },
-      { status: 400 },
+    return redirectProfileWithMessage(
+      req,
+      "error",
+      `업데이트 실패: ${error.message}`,
     );
   }
 
@@ -76,15 +75,17 @@ export async function POST(req: NextRequest) {
 
   if (profileImage instanceof File && profileImage.size > 0) {
     if (!ALLOWED_PROFILE_IMAGE_TYPES.has(profileImage.type)) {
-      return NextResponse.json(
-        { message: "지원하지 않는 이미지 형식입니다." },
-        { status: 400 },
+      return redirectProfileWithMessage(
+        req,
+        "error",
+        "지원하지 않는 이미지 형식입니다.",
       );
     }
     if (profileImage.size > MAX_PROFILE_IMAGE_SIZE) {
-      return NextResponse.json(
-        { message: "프로필 이미지는 5MB 이하만 업로드할 수 있습니다." },
-        { status: 400 },
+      return redirectProfileWithMessage(
+        req,
+        "error",
+        "프로필 이미지는 5MB 이하만 업로드할 수 있습니다.",
       );
     }
 
@@ -100,9 +101,10 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json(
-        { message: "이미지 업로드 실패", error: uploadError.message },
-        { status: 400 },
+      return redirectProfileWithMessage(
+        req,
+        "error",
+        `이미지 업로드 실패: ${uploadError.message}`,
       );
     }
 
@@ -125,9 +127,10 @@ export async function POST(req: NextRequest) {
       );
 
     if (profileError) {
-      return NextResponse.json(
-        { message: "프로필 이미지 저장 실패", error: profileError.message },
-        { status: 400 },
+      return redirectProfileWithMessage(
+        req,
+        "error",
+        `프로필 이미지 저장 실패: ${profileError.message}`,
       );
     }
   } else {
@@ -138,12 +141,13 @@ export async function POST(req: NextRequest) {
         { onConflict: "user_id" }
       );
     if (profileError) {
-      return NextResponse.json(
-        { message: "프로필 저장 실패", error: profileError.message },
-        { status: 400 },
+      return redirectProfileWithMessage(
+        req,
+        "error",
+        `프로필 저장 실패: ${profileError.message}`,
       );
     }
   }
 
-  return NextResponse.redirect(new URL("/profile", req.url));
+  return redirectProfileWithMessage(req, "success", "프로필이 저장되었습니다.");
 }

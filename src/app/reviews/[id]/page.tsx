@@ -19,6 +19,15 @@ import {
   recomputeReviewRankBonusPoints,
 } from "@/lib/points";
 
+function redirectReviewWithMessage(
+  reviewId: string,
+  type: "error" | "success",
+  message: string
+): never {
+  const params = new URLSearchParams({ [type]: message });
+  redirect(`/reviews/${reviewId}?${params.toString()}`);
+}
+
 // Review detail page showing Tiptap content, highlights, and comments.
 // Params: { params: { id: string } }
 // Queries: review with author/schedule, highlights, comments
@@ -245,22 +254,26 @@ export default async function ReviewDetailPage({
     const sessionUser = await getSessionUser();
 
     if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 수정할 수 있습니다.");
+      redirectReviewWithMessage(reviewId, "error", "승인된 멤버만 수정할 수 있습니다.");
     }
 
-    const reviewId = formData.get("reviewId")?.toString();
+    const submittedReviewId = formData.get("reviewId")?.toString();
     const title = formData.get("title")?.toString();
     const contentRich = formData.get("contentRich")?.toString();
 
-    if (!reviewId || !title || !contentRich) {
-      throw new Error("필수 값이 누락되었습니다.");
+    if (!submittedReviewId || !title || !contentRich) {
+      redirectReviewWithMessage((await params).id, "error", "필수 값이 누락되었습니다.");
     }
 
     // Validate contentRich is valid JSON string so stored value stays well-formed.
     try {
       JSON.parse(contentRich);
     } catch {
-      throw new Error("본문을 불러오지 못했습니다. 다시 시도해주세요.");
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        "본문을 불러오지 못했습니다. 다시 시도해주세요."
+      );
     }
 
     const { data, error } = await supabase
@@ -270,22 +283,22 @@ export default async function ReviewDetailPage({
         content_rich: contentRich,
         content_markdown: null,
       })
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id)
       .select("id")
       .maybeSingle();
 
     if (error) {
-      throw new Error("독후감 수정 실패: " + error.message);
+      redirectReviewWithMessage(submittedReviewId, "error", "독후감 수정 실패: " + error.message);
     }
 
     if (!data) {
-      throw new Error("수정할 독후감을 찾을 수 없습니다.");
+      redirectReviewWithMessage(submittedReviewId, "error", "수정할 독후감을 찾을 수 없습니다.");
     }
 
-    revalidatePath(`/reviews/${reviewId}`);
+    revalidatePath(`/reviews/${submittedReviewId}`);
     revalidatePath("/reviews");
-    redirect(`/reviews/${reviewId}`);
+    redirectReviewWithMessage(submittedReviewId, "success", "독후감이 수정되었습니다.");
   }
 
   async function handleDeleteReview(formData: FormData) {
@@ -294,23 +307,23 @@ export default async function ReviewDetailPage({
     const sessionUser = await getSessionUser();
 
     if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 삭제할 수 있습니다.");
+      redirectReviewWithMessage((await params).id, "error", "승인된 멤버만 삭제할 수 있습니다.");
     }
 
-    const reviewId = formData.get("reviewId")?.toString();
+    const submittedReviewId = formData.get("reviewId")?.toString();
 
-    if (!reviewId) {
-      throw new Error("잘못된 요청입니다.");
+    if (!submittedReviewId) {
+      redirectReviewWithMessage((await params).id, "error", "잘못된 요청입니다.");
     }
 
     const { data: commentRows } = await supabase
       .from("review_comments")
       .select("id")
-      .eq("review_id", reviewId);
+      .eq("review_id", submittedReviewId);
     const { data: highlightRowsForDelete } = await supabase
       .from("review_highlights")
       .select("id")
-      .eq("review_id", reviewId);
+      .eq("review_id", submittedReviewId);
     const highlightIds = (highlightRowsForDelete ?? []).map((row) => row.id);
     const { data: highlightCommentRows } =
       highlightIds.length > 0
@@ -322,12 +335,12 @@ export default async function ReviewDetailPage({
     const { data: reviewForDelete } = await supabase
       .from("reviews")
       .select("schedule_id")
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id)
       .maybeSingle();
 
-    await deletePointTransactionsForSource(supabase, "review_submission", reviewId);
-    await deletePointTransactionsForSource(supabase, "late_review", reviewId);
+    await deletePointTransactionsForSource(supabase, "review_submission", submittedReviewId);
+    await deletePointTransactionsForSource(supabase, "late_review", submittedReviewId);
     await deletePointTransactionsForSource(supabase, "review_comment", [
       ...(commentRows ?? []).map((row) => row.id),
       ...(highlightCommentRows ?? []).map((row) => row.id),
@@ -336,11 +349,11 @@ export default async function ReviewDetailPage({
     const { error } = await supabase
       .from("reviews")
       .delete()
-      .eq("id", reviewId)
+      .eq("id", submittedReviewId)
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      throw new Error("독후감 삭제 실패: " + error.message);
+      redirectReviewWithMessage(submittedReviewId, "error", "독후감 삭제 실패: " + error.message);
     }
 
     if (reviewForDelete?.schedule_id) {
@@ -348,7 +361,10 @@ export default async function ReviewDetailPage({
     }
 
     revalidatePath("/reviews");
-    redirect("/reviews");
+    const urlParams = new URLSearchParams({
+      success: "독후감이 삭제되었습니다.",
+    });
+    redirect(`/reviews?${urlParams.toString()}`);
   }
 
   async function handleToggleReviewReaction(emoji: string) {

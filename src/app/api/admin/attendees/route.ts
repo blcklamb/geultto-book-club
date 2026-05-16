@@ -5,15 +5,16 @@ import { createSupabaseServerClient } from "@supabase/server";
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin") {
-    return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "관리자 전용 페이지입니다");
+    return NextResponse.redirect(url, 303);
   }
   const formData = await req.formData();
   const scheduleId = formData.get("scheduleId")?.toString();
   if (!scheduleId) {
-    return NextResponse.json(
-      { message: "scheduleId가 필요합니다." },
-      { status: 400 }
-    );
+    const url = new URL("/admin/schedule", req.url);
+    url.searchParams.set("error", "일정 정보가 누락되었습니다");
+    return NextResponse.redirect(url, 303);
   }
 
   const userIds = formData.getAll("userIds").map((id) => id?.toString() || "");
@@ -51,13 +52,12 @@ export async function POST(req: NextRequest) {
     .from("schedule_attendees")
     .upsert(updates, { onConflict: "schedule_id,user_id" });
   if (error) {
-    return NextResponse.json(
-      { message: "업데이트 실패", error: error.message },
-      { status: 400 }
-    );
+    const url = new URL(`/admin/attendees/${scheduleId}`, req.url);
+    url.searchParams.set("error", `저장 실패: ${error.message}`);
+    return NextResponse.redirect(url, 303);
   }
 
-  return NextResponse.redirect(
-    new URL(`/admin/attendees/${scheduleId}`, req.url)
-  );
+  const url = new URL(`/admin/attendees/${scheduleId}`, req.url);
+  url.searchParams.set("success", "참석자 상태가 저장되었습니다");
+  return NextResponse.redirect(url, 303);
 }

@@ -10,6 +10,16 @@ import DetailHeader from "@/components/DetailHeader";
 import { UserAvatar } from "@/components/UserAvatar";
 import { profileImagesByUserId } from "@/lib/profile-image";
 import { deletePointTransactionsForSource } from "@/lib/points";
+import type { Json } from "@supabase/types";
+
+function redirectTopicWithMessage(
+  topicId: string,
+  type: "error" | "success",
+  message: string
+): never {
+  const params = new URLSearchParams({ [type]: message });
+  redirect(`/topics/${topicId}?${params.toString()}`);
+}
 
 // Topic detail page: renders tiptap content and comment thread.
 export default async function TopicDetailPage({
@@ -97,40 +107,51 @@ export default async function TopicDetailPage({
     const sessionUser = await getSessionUser();
 
     if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 수정할 수 있습니다.");
+      redirectTopicWithMessage(topicId, "error", "승인된 멤버만 수정할 수 있습니다.");
     }
 
-    const topicId = formData.get("topicId")?.toString();
+    const submittedTopicId = formData.get("topicId")?.toString();
     const title = formData.get("title")?.toString();
     const bodyRich = formData.get("bodyRich")?.toString();
 
-    if (!topicId || !title || !bodyRich) {
-      throw new Error("필수 값이 누락되었습니다.");
+    if (!submittedTopicId || !title || !bodyRich) {
+      redirectTopicWithMessage((await params).id, "error", "필수 값이 누락되었습니다.");
+    }
+
+    let parsedBodyRich: Json;
+    try {
+      parsedBodyRich = JSON.parse(bodyRich);
+    } catch {
+      redirectTopicWithMessage(
+        submittedTopicId,
+        "error",
+        "본문을 불러오지 못했습니다. 다시 시도해주세요."
+      );
     }
 
     const { data, error } = await supabase
       .from("topics")
       .update({
         title,
-        body_rich: JSON.parse(bodyRich),
+        body_rich: parsedBodyRich,
         body_markdown: null,
       })
-      .eq("id", topicId)
+      .eq("id", submittedTopicId)
       .eq("author_id", sessionUser.id)
       .select("id")
       .maybeSingle();
 
     if (error) {
-      throw new Error("발제 수정 실패: " + error.message);
+      redirectTopicWithMessage(submittedTopicId, "error", "발제 수정 실패: " + error.message);
     }
 
     if (!data) {
-      throw new Error("수정할 발제를 찾을 수 없습니다.");
+      redirectTopicWithMessage(submittedTopicId, "error", "수정할 발제를 찾을 수 없습니다.");
     }
 
-    revalidatePath(`/topics/${topicId}`);
+    revalidatePath(`/topics/${submittedTopicId}`);
     revalidatePath("/topics");
-    redirect(`/topics/${topicId}`);
+    redirectTopicWithMessage(submittedTopicId, "success", "발제가 수정되었습니다.");
   }
 
   async function handleDeleteTopic(formData: FormData) {
@@ -139,33 +160,36 @@ export default async function TopicDetailPage({
     const sessionUser = await getSessionUser();
 
     if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
-      throw new Error("승인된 멤버만 삭제할 수 있습니다.");
+      redirectTopicWithMessage((await params).id, "error", "승인된 멤버만 삭제할 수 있습니다.");
     }
 
-    const topicId = formData.get("topicId")?.toString();
+    const submittedTopicId = formData.get("topicId")?.toString();
 
-    if (!topicId) {
-      throw new Error("잘못된 요청입니다.");
+    if (!submittedTopicId) {
+      redirectTopicWithMessage((await params).id, "error", "잘못된 요청입니다.");
     }
 
     await deletePointTransactionsForSource(
       supabase,
       "topic_submission",
-      topicId
+      submittedTopicId
     );
 
     const { error } = await supabase
       .from("topics")
       .delete()
-      .eq("id", topicId)
+      .eq("id", submittedTopicId)
       .eq("author_id", sessionUser.id);
 
     if (error) {
-      throw new Error("발제 삭제 실패: " + error.message);
+      redirectTopicWithMessage(submittedTopicId, "error", "발제 삭제 실패: " + error.message);
     }
 
     revalidatePath("/topics");
-    redirect("/topics");
+    const urlParams = new URLSearchParams({
+      success: "발제가 삭제되었습니다.",
+    });
+    redirect(`/topics?${urlParams.toString()}`);
   }
 
   return (

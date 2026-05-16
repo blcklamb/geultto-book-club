@@ -73,29 +73,31 @@ export default function DetailHeader({
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b">
-      <button
-        onClick={handleBack}
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        aria-label="뒤로가기"
-      >
-        ←
-      </button>
+    <>
+      <header className="flex items-center justify-between px-4 py-3 border-b">
+        <button
+          onClick={handleBack}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="뒤로가기"
+        >
+          ←
+        </button>
 
-      <h1 className="text-lg font-semibold">{title}</h1>
+        <h1 className="text-lg font-semibold">{title}</h1>
 
-      <button
-        onClick={handleProfileClick}
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        aria-label="프로필로 이동"
-        disabled={pathname === "/profile"}
-      >
-        <UserAvatar
-          imageUrl={dynamicProfileImage.imageUrl}
-          decoration={dynamicProfileImage.decoration}
-          size="sm"
-        />
-      </button>
-    </header>
+        <button
+          onClick={handleProfileClick}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="프로필로 이동"
+          disabled={pathname === "/profile"}
+        >
+          <UserAvatar
+            imageUrl={dynamicProfileImage.imageUrl}
+            decoration={dynamicProfileImage.decoration}
+            size="sm"
+          />
+        </button>
+      </header>
+    </>
   );
 }

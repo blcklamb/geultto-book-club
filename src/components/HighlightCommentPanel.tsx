@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { UserAvatar } from "@/components/UserAvatar";
+import { toast } from "sonner";
 import type {
   HighlightWithComments,
   HighlightComment,
@@ -45,12 +46,10 @@ export function HighlightCommentPanel({
   );
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmitComment = async () => {
     if (!newCommentBody.trim()) return;
     setIsSubmitting(true);
-    setError(null);
     try {
       const res = await fetch(`/api/highlights/${highlight.id}/comments`, {
         method: "POST",
@@ -65,16 +64,16 @@ export function HighlightCommentPanel({
       const updated = [...comments, created];
       setComments(updated);
       setNewCommentBody("");
+      toast.success("댓글이 등록되었습니다.");
       onCommentsUpdated({ ...highlight, comments: updated });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "댓글 작성 실패");
+      toast.error(e instanceof Error ? e.message : "댓글 작성 실패");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteHighlight = async () => {
-    setError(null);
     try {
       const res = await fetch(`/api/highlights/${highlight.id}`, {
         method: "DELETE",
@@ -83,9 +82,10 @@ export function HighlightCommentPanel({
         const err = await res.json();
         throw new Error(err.message ?? "하이라이트 삭제 실패");
       }
+      toast.success("하이라이트가 삭제되었습니다.");
       onHighlightDeleted(highlight.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "하이라이트 삭제 실패");
+      toast.error(e instanceof Error ? e.message : "하이라이트 삭제 실패");
     }
   };
 
@@ -130,6 +130,7 @@ export function HighlightCommentPanel({
         c.id === commentId ? { ...c, replies: [...c.replies, created] } : c
       )
     );
+    toast.success("답글이 등록되었습니다.");
   };
 
   const isHighlightAuthor =
@@ -206,12 +207,6 @@ export function HighlightCommentPanel({
               </Button>
             </div>
           )}
-
-          {error && (
-            <p className="text-xs text-red-600" role="alert">
-              {error}
-            </p>
-          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -236,18 +231,16 @@ function CommentItem({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [replyError, setReplyError] = useState<string | null>(null);
 
   const handleSubmitReply = async () => {
     if (!replyBody.trim()) return;
     setIsSubmitting(true);
-    setReplyError(null);
     try {
       await onAddReply(replyBody.trim());
       setReplyBody("");
       setShowReplyForm(false);
     } catch (e) {
-      setReplyError(e instanceof Error ? e.message : "답글 작성 실패");
+      toast.error(e instanceof Error ? e.message : "답글 작성 실패");
     } finally {
       setIsSubmitting(false);
     }
@@ -306,11 +299,6 @@ function CommentItem({
                   className="text-xs"
                   rows={2}
                 />
-                {replyError && (
-                  <p className="text-xs text-red-600" role="alert">
-                    {replyError}
-                  </p>
-                )}
                 <div className="flex gap-1">
                   <Button
                     size="sm"
@@ -327,7 +315,6 @@ function CommentItem({
                     onClick={() => {
                       setShowReplyForm(false);
                       setReplyBody("");
-                      setReplyError(null);
                     }}
                   >
                     취소

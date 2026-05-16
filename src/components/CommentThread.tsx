@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, CircleCheck } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,10 +27,29 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   disabled,
 }) => {
   const [value, setValue] = useState("");
+  const [feedback, setFeedback] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (!value.trim()) return;
-    await onSubmit?.(value);
-    setValue("");
+    setIsSubmitting(true);
+    setFeedback(null);
+    try {
+      await onSubmit?.(value);
+      setValue("");
+      setFeedback({ type: "success", message: "댓글이 등록되었습니다." });
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "댓글 등록에 실패했습니다.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -38,13 +59,25 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           <CardTitle className="text-sm">댓글</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
+          {feedback?.type === "error" ? (
+            <Alert variant="destructive">
+              <CircleAlert className="h-4 w-4" />
+              <AlertDescription>{feedback.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {feedback?.type === "success" ? (
+            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800">
+              <CircleCheck className="h-4 w-4 text-emerald-600" />
+              <AlertDescription>{feedback.message}</AlertDescription>
+            </Alert>
+          ) : null}
           <Textarea
             placeholder="느낀 점을 남겨보세요"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            disabled={disabled}
+            disabled={disabled || isSubmitting}
           />
-          <Button onClick={handleSubmit} disabled={disabled}>
+          <Button onClick={handleSubmit} disabled={disabled || isSubmitting}>
             댓글 등록
           </Button>
         </CardContent>

@@ -5,7 +5,9 @@ import { getSessionUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin") {
-    return NextResponse.json({ message: "관리자 전용" }, { status: 403 });
+    const url = new URL("/pending", req.url);
+    url.searchParams.set("error", "관리자 전용 페이지입니다");
+    return NextResponse.redirect(url, 303);
   }
   const formData = await req.formData();
   const payload = {
@@ -17,7 +19,9 @@ export async function POST(req: NextRequest) {
     cohort: formData.get("cohort")?.toString(),
   };
   if (!payload.date || !payload.place || !payload.bookTitle) {
-    return NextResponse.json({ message: "필수 값 누락" }, { status: 400 });
+    const url = new URL("/admin/schedule", req.url);
+    url.searchParams.set("error", "날짜, 장소, 도서명은 필수입니다");
+    return NextResponse.redirect(url, 303);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -32,10 +36,11 @@ export async function POST(req: NextRequest) {
     },
   ]);
   if (error) {
-    return NextResponse.json(
-      { message: "등록 실패", error: error.message },
-      { status: 400 }
-    );
+    const url = new URL("/admin/schedule", req.url);
+    url.searchParams.set("error", `등록 실패: ${error.message}`);
+    return NextResponse.redirect(url, 303);
   }
-  return NextResponse.redirect(new URL("/admin/schedule", req.url));
+  const url = new URL("/admin/schedule", req.url);
+  url.searchParams.set("success", "일정이 등록되었습니다");
+  return NextResponse.redirect(url, 303);
 }
