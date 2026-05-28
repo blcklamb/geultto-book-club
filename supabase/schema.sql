@@ -155,6 +155,24 @@ CREATE TABLE IF NOT EXISTS public.topic_comments (
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 
+-- Replies to a review comment (1-level deep)
+CREATE TABLE IF NOT EXISTS public.review_comment_replies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+-- Replies to a topic comment (1-level deep)
+CREATE TABLE IF NOT EXISTS public.topic_comment_replies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
 CREATE TABLE IF NOT EXISTS public.point_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -185,7 +203,21 @@ ALTER TABLE public.quote_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "members can insert review comment replies"
+  ON public.review_comment_replies FOR INSERT TO authenticated
+  WITH CHECK (author_id = auth.uid());
+CREATE POLICY "anyone can read review comment replies"
+  ON public.review_comment_replies FOR SELECT USING (true);
+
+CREATE POLICY "members can insert topic comment replies"
+  ON public.topic_comment_replies FOR INSERT TO authenticated
+  WITH CHECK (author_id = auth.uid());
+CREATE POLICY "anyone can read topic comment replies"
+  ON public.topic_comment_replies FOR SELECT USING (true);
 
 CREATE OR REPLACE FUNCTION public.delete_point_transactions_for_source(
   p_source_type text,
