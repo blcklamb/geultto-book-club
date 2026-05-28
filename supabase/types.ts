@@ -131,6 +131,39 @@ export interface Database {
           }
         ];
       };
+      schedule_timetable_items: {
+        Row: {
+          id: string;
+          schedule_id: string;
+          position: number;
+          start_time: string;
+          end_time: string;
+          detail: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          schedule_id: string;
+          position: number;
+          start_time: string;
+          end_time: string;
+          detail: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["schedule_timetable_items"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "schedule_timetable_items_schedule_id_fkey";
+            columns: ["schedule_id"];
+            referencedRelation: "schedules";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       reviews: {
         Row: {
           id: string;

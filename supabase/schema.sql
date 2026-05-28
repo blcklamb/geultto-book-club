@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS public.schedule_attendees (
   PRIMARY KEY(schedule_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.schedule_timetable_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  schedule_id uuid NOT NULL REFERENCES public.schedules(id) ON DELETE CASCADE,
+  position integer NOT NULL,
+  start_time time NOT NULL,
+  end_time time NOT NULL,
+  detail text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  updated_at timestamptz DEFAULT timezone('utc', now())
+);
+
 CREATE TABLE IF NOT EXISTS public.reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -232,6 +243,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule_timetable_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_highlights ENABLE ROW LEVEL SECURITY;
@@ -250,6 +262,19 @@ ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "anyone can read schedule timetable items"
+  ON public.schedule_timetable_items FOR SELECT
+  TO public USING (true);
+CREATE POLICY "authenticated users can insert schedule timetable items"
+  ON public.schedule_timetable_items FOR INSERT
+  TO authenticated WITH CHECK (true);
+CREATE POLICY "authenticated users can update schedule timetable items"
+  ON public.schedule_timetable_items FOR UPDATE
+  TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "authenticated users can delete schedule timetable items"
+  ON public.schedule_timetable_items FOR DELETE
+  TO authenticated USING (true);
 
 CREATE POLICY "members can insert review comment replies"
   ON public.review_comment_replies FOR INSERT TO authenticated
