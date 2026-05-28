@@ -534,16 +534,13 @@ export default async function ReviewDetailPage({
       emoji,
     });
 
-    const summary = await fetchReactionSummary(
+    return fetchReactionSummary(
       supabase,
       "review_comment_reply_reactions",
       "reply_id",
       replyId,
       sessionUser.id,
     );
-
-    revalidatePath(`/reviews/${reviewId}`);
-    return summary;
   }
 
   async function handleToggleCommentReaction(
@@ -564,16 +561,13 @@ export default async function ReviewDetailPage({
       emoji,
     });
 
-    const summary = await fetchReactionSummary(
+    return fetchReactionSummary(
       supabase,
       "review_comment_reactions",
       "comment_id",
       commentId,
       sessionUser.id,
     );
-
-    revalidatePath(`/reviews/${reviewId}`);
-    return summary;
   }
 
   async function handleToggleReviewReaction(emoji: string) {

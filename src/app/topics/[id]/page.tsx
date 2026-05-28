@@ -164,16 +164,13 @@ export default async function TopicDetailPage({
       emoji,
     });
 
-    const summary = await fetchReactionSummary(
+    return fetchReactionSummary(
       supabase,
       "topic_comment_reply_reactions",
       "reply_id",
       replyId,
       sessionUser.id,
     );
-
-    revalidatePath(`/topics/${topicId}`);
-    return summary;
   }
 
   async function handleToggleCommentReaction(
@@ -194,16 +191,13 @@ export default async function TopicDetailPage({
       emoji,
     });
 
-    const summary = await fetchReactionSummary(
+    return fetchReactionSummary(
       supabase,
       "topic_comment_reactions",
       "comment_id",
       commentId,
       sessionUser.id,
     );
-
-    revalidatePath(`/topics/${topicId}`);
-    return summary;
   }
 
   async function handleCommentSubmit(body: string) {
