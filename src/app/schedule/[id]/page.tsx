@@ -14,6 +14,7 @@ import {
 import DetailHeader from "@/components/DetailHeader";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ScheduleTimetableEditor } from "@/components/ScheduleTimetableEditor";
 import { profileImagesByUserId } from "@/lib/profile-image";
 import { syncAttendancePoints } from "@/lib/points";
 
@@ -55,6 +56,12 @@ export default async function ScheduleDetailPage({
     )
     .eq("schedule_id", scheduleId);
 
+  const { data: timetableItems } = await supabase
+    .from("schedule_timetable_items")
+    .select("id, start_time, end_time, detail")
+    .eq("schedule_id", scheduleId)
+    .order("position", { ascending: true });
+
   const { data: quotes } = await supabase
     .from("quotes")
     .select(
@@ -77,6 +84,10 @@ export default async function ScheduleDetailPage({
   const myAttendance = attendees?.find(
     (att) => att.user_id === sessionUser?.id,
   );
+  const canEditTimetable =
+    !!sessionUser &&
+    sessionUser.role !== "pending" &&
+    !sessionUser.isDeactivated;
 
   return (
     <>
@@ -108,6 +119,19 @@ export default async function ScheduleDetailPage({
             ) : null}
           </CardContent>
         </Card>
+
+        <ScheduleTimetableEditor
+          scheduleId={schedule.id}
+          items={
+            timetableItems?.map((item) => ({
+              id: item.id,
+              startTime: item.start_time,
+              endTime: item.end_time,
+              detail: item.detail,
+            })) ?? []
+          }
+          canEdit={canEditTimetable}
+        />
 
         {sessionUser &&
         sessionUser.role !== "pending" &&

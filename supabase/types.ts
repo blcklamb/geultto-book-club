@@ -131,6 +131,39 @@ export interface Database {
           }
         ];
       };
+      schedule_timetable_items: {
+        Row: {
+          id: string;
+          schedule_id: string;
+          position: number;
+          start_time: string;
+          end_time: string;
+          detail: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          schedule_id: string;
+          position: number;
+          start_time: string;
+          end_time: string;
+          detail: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["schedule_timetable_items"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "schedule_timetable_items_schedule_id_fkey";
+            columns: ["schedule_id"];
+            referencedRelation: "schedules";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       reviews: {
         Row: {
           id: string;
@@ -506,6 +539,192 @@ export interface Database {
           }
         ];
       };
+      review_comment_replies: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          author_id: string | null;
+          body: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          author_id?: string | null;
+          body: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["review_comment_replies"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "review_comment_replies_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "review_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comment_replies_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      topic_comment_replies: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          author_id: string | null;
+          body: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          author_id?: string | null;
+          body: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["topic_comment_replies"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "topic_comment_replies_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "topic_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "topic_comment_replies_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      review_comment_reply_reactions: {
+        Row: {
+          id: string;
+          reply_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reply_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["review_comment_reply_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "review_comment_reply_reactions_reply_id_fkey";
+            columns: ["reply_id"];
+            referencedRelation: "review_comment_replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comment_reply_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      topic_comment_reply_reactions: {
+        Row: {
+          id: string;
+          reply_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reply_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["topic_comment_reply_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "topic_comment_reply_reactions_reply_id_fkey";
+            columns: ["reply_id"];
+            referencedRelation: "topic_comment_replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "topic_comment_reply_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      review_comment_reactions: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["review_comment_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "review_comment_reactions_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "review_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comment_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      topic_comment_reactions: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["topic_comment_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "topic_comment_reactions_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "topic_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "topic_comment_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       point_transactions: {
         Row: {
           id: string;
@@ -565,6 +784,13 @@ export interface Database {
           p_source_type: string;
           p_source_ids: string[];
           p_cohort?: number;
+        };
+        Returns: void;
+      };
+      replace_schedule_timetable_items: {
+        Args: {
+          p_schedule_id: string;
+          p_items: Json;
         };
         Returns: void;
       };

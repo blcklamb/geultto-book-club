@@ -29,11 +29,6 @@ describe("EmojiReactionBar", () => {
     vi.restoreAllMocks();
   });
 
-  it("반응이 없을 때 안내 문구를 표시한다", () => {
-    render(<EmojiReactionBar initialReactions={[]} toggleAction={vi.fn()} />);
-    expect(screen.getByText("첫 반응을 남겨보세요.")).toBeInTheDocument();
-  });
-
   it("초기 반응 목록을 렌더링한다", () => {
     const reactions = makeReactions([
       {

@@ -8,8 +8,14 @@ export type ReactionSummary = {
   nicknames: string[];
 };
 
-type ReactionTable = "quote_reactions" | "review_reactions";
-type ReactionColumn = "quote_id" | "review_id";
+type ReactionTable =
+  | "quote_reactions"
+  | "review_reactions"
+  | "review_comment_reactions"
+  | "topic_comment_reactions"
+  | "review_comment_reply_reactions"
+  | "topic_comment_reply_reactions";
+type ReactionColumn = "quote_id" | "review_id" | "comment_id" | "reply_id";
 
 type ReactionRow = {
   emoji: string;
