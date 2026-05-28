@@ -34,7 +34,7 @@ CREATE POLICY "Enable read access for all users"
 
 CREATE POLICY "Enable insert for authenticated users only"
   ON public.review_comment_reactions FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Enable delete for reaction owner"
   ON public.review_comment_reactions FOR DELETE
@@ -48,11 +48,17 @@ CREATE POLICY "Enable read access for all users"
 
 CREATE POLICY "Enable insert for authenticated users only"
   ON public.topic_comment_reactions FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Enable delete for reaction owner"
   ON public.topic_comment_reactions FOR DELETE
   TO authenticated USING ((SELECT auth.uid()) = user_id);
+
+GRANT SELECT ON public.review_comment_reactions TO anon;
+GRANT SELECT, INSERT, DELETE ON public.review_comment_reactions TO authenticated;
+
+GRANT SELECT ON public.topic_comment_reactions TO anon;
+GRANT SELECT, INSERT, DELETE ON public.topic_comment_reactions TO authenticated;
 
 -- Ask PostgREST to reload its schema cache ----------------------------------
 

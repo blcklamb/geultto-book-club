@@ -29,44 +29,18 @@ export async function POST(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: schedule } = await supabase
-    .from("schedules")
-    .select("id")
-    .eq("id", id)
-    .single();
+  const { error } = await supabase.rpc("replace_schedule_timetable_items", {
+    p_schedule_id: id,
+    p_items: items.map((item) => ({
+      start_time: item.startTime,
+      end_time: item.endTime,
+      detail: item.detail,
+    })),
+  });
 
-  if (!schedule) {
-    redirectUrl.searchParams.set("error", "일정을 찾을 수 없습니다");
+  if (error) {
+    redirectUrl.searchParams.set("error", `타임테이블 저장 실패: ${error.message}`);
     return NextResponse.redirect(redirectUrl, 303);
-  }
-
-  const { error: deleteError } = await supabase
-    .from("schedule_timetable_items")
-    .delete()
-    .eq("schedule_id", id);
-
-  if (deleteError) {
-    redirectUrl.searchParams.set("error", `타임테이블 저장 실패: ${deleteError.message}`);
-    return NextResponse.redirect(redirectUrl, 303);
-  }
-
-  if (items.length > 0) {
-    const { error: insertError } = await supabase
-      .from("schedule_timetable_items")
-      .insert(
-        items.map((item, index) => ({
-          schedule_id: id,
-          position: index,
-          start_time: item.startTime,
-          end_time: item.endTime,
-          detail: item.detail,
-        })),
-      );
-
-    if (insertError) {
-      redirectUrl.searchParams.set("error", `타임테이블 저장 실패: ${insertError.message}`);
-      return NextResponse.redirect(redirectUrl, 303);
-    }
   }
 
   redirectUrl.searchParams.set("success", "타임테이블이 저장되었습니다");

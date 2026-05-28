@@ -32,11 +32,13 @@ CREATE POLICY "Enable read access for all users"
 
 CREATE POLICY "Enable insert for authenticated users only"
   ON public.review_comment_replies FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK ((SELECT auth.uid()) = author_id);
 
 CREATE POLICY "Enable update for authenticated users only"
   ON public.review_comment_replies FOR UPDATE
-  TO authenticated USING (true) WITH CHECK (true);
+  TO authenticated
+  USING ((SELECT auth.uid()) = author_id)
+  WITH CHECK ((SELECT auth.uid()) = author_id);
 
 CREATE POLICY "Enable delete for users based on author_id"
   ON public.review_comment_replies FOR DELETE
@@ -50,15 +52,23 @@ CREATE POLICY "Enable read access for all users"
 
 CREATE POLICY "Enable insert for authenticated users only"
   ON public.topic_comment_replies FOR INSERT
-  TO authenticated WITH CHECK (true);
+  TO authenticated WITH CHECK ((SELECT auth.uid()) = author_id);
 
 CREATE POLICY "Enable update for authenticated users only"
   ON public.topic_comment_replies FOR UPDATE
-  TO authenticated USING (true) WITH CHECK (true);
+  TO authenticated
+  USING ((SELECT auth.uid()) = author_id)
+  WITH CHECK ((SELECT auth.uid()) = author_id);
 
 CREATE POLICY "Enable delete for users based on author_id"
   ON public.topic_comment_replies FOR DELETE
   TO authenticated USING ((SELECT auth.uid()) = author_id);
+
+GRANT SELECT ON public.review_comment_replies TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.review_comment_replies TO authenticated;
+
+GRANT SELECT ON public.topic_comment_replies TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.topic_comment_replies TO authenticated;
 
 -- Ask PostgREST to reload its schema cache ---------------------------------
 

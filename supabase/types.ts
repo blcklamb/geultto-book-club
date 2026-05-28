@@ -787,6 +787,13 @@ export interface Database {
         };
         Returns: void;
       };
+      replace_schedule_timetable_items: {
+        Args: {
+          p_schedule_id: string;
+          p_items: Json;
+        };
+        Returns: void;
+      };
       recompute_review_rank_bonus_points: {
         Args: {
           p_schedule_id: string;
