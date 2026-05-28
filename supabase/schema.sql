@@ -109,6 +109,46 @@ CREATE TABLE IF NOT EXISTS public.highlight_comment_reactions (
   UNIQUE (comment_id, user_id, emoji)
 );
 
+-- Per-user emoji reactions on review comment replies
+CREATE TABLE IF NOT EXISTS public.review_comment_reply_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reply_id uuid REFERENCES public.review_comment_replies(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (reply_id, user_id, emoji)
+);
+
+-- Per-user emoji reactions on topic comment replies
+CREATE TABLE IF NOT EXISTS public.topic_comment_reply_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reply_id uuid REFERENCES public.topic_comment_replies(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (reply_id, user_id, emoji)
+);
+
+-- Per-user emoji reactions on review comments
+CREATE TABLE IF NOT EXISTS public.review_comment_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (comment_id, user_id, emoji)
+);
+
+-- Per-user emoji reactions on topic comments
+CREATE TABLE IF NOT EXISTS public.topic_comment_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (comment_id, user_id, emoji)
+);
+
 CREATE TABLE IF NOT EXISTS public.quotes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -205,6 +245,10 @@ ALTER TABLE public.topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comment_replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comment_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "members can insert review comment replies"

@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
+import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import type { ReactionSummary } from "@/lib/reactions";
 import { toast } from "sonner";
 
 export type CommentReply = {
@@ -18,6 +20,7 @@ export type CommentReply = {
   authorDecoration?: string | null;
   body: string;
   createdAt: string | null | undefined;
+  reactions?: ReactionSummary[];
 };
 
 export type CommentThreadProps = {
@@ -29,9 +32,19 @@ export type CommentThreadProps = {
     body: string;
     createdAt: string | null | undefined;
     replies?: CommentReply[];
+    reactions?: ReactionSummary[];
   }>;
   submitAction: (body: string) => Promise<void>;
   submitReplyAction?: (commentId: string, body: string) => Promise<void>;
+  toggleReactionAction?: (
+    commentId: string,
+    emoji: string,
+  ) => Promise<ReactionSummary[]>;
+  toggleReplyReactionAction?: (
+    replyId: string,
+    emoji: string,
+  ) => Promise<ReactionSummary[]>;
+  currentUserNickname?: string;
   disabled?: boolean;
 };
 
@@ -39,6 +52,9 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   comments,
   submitAction,
   submitReplyAction,
+  toggleReactionAction,
+  toggleReplyReactionAction,
+  currentUserNickname,
   disabled,
 }) => {
   const router = useRouter();
@@ -110,6 +126,13 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
                 ? (body) => submitReplyAction(comment.id, body)
                 : undefined
             }
+            onToggleReaction={
+              toggleReactionAction
+                ? (emoji) => toggleReactionAction(comment.id, emoji)
+                : undefined
+            }
+            onToggleReplyReaction={toggleReplyReactionAction}
+            currentUserNickname={currentUserNickname}
           />
         ))}
       </div>
@@ -121,9 +144,22 @@ type CommentItemProps = {
   comment: CommentThreadProps["comments"][number];
   disabled?: boolean;
   onAddReply?: (body: string) => Promise<void>;
+  onToggleReaction?: (emoji: string) => Promise<ReactionSummary[]>;
+  onToggleReplyReaction?: (
+    replyId: string,
+    emoji: string,
+  ) => Promise<ReactionSummary[]>;
+  currentUserNickname?: string;
 };
 
-function CommentItem({ comment, disabled, onAddReply }: CommentItemProps) {
+function CommentItem({
+  comment,
+  disabled,
+  onAddReply,
+  onToggleReaction,
+  onToggleReplyReaction,
+  currentUserNickname,
+}: CommentItemProps) {
   const router = useRouter();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyBody, setReplyBody] = useState("");
@@ -145,6 +181,10 @@ function CommentItem({ comment, disabled, onAddReply }: CommentItemProps) {
     }
   };
 
+  const showCommentReactions =
+    onToggleReaction !== undefined ||
+    (comment.reactions ?? []).length > 0;
+
   return (
     <Card>
       <CardContent className="space-y-1 text-sm p-4">
@@ -164,27 +204,54 @@ function CommentItem({ comment, disabled, onAddReply }: CommentItemProps) {
           />
         </p>
 
+        {showCommentReactions && (
+          <EmojiReactionBar
+            initialReactions={comment.reactions ?? []}
+            toggleAction={onToggleReaction ?? (() => Promise.resolve([]))}
+            disabled={disabled || !onToggleReaction}
+            currentUserNickname={currentUserNickname}
+          />
+        )}
+
         {(comment.replies ?? []).length > 0 && (
           <div className="ml-3 mt-2 space-y-2 border-l-2 border-slate-100 pl-3">
-            {(comment.replies ?? []).map((reply) => (
-              <div key={reply.id} className="space-y-0.5">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                  <UserAvatar
-                    imageUrl={reply.authorImageUrl}
-                    decoration={reply.authorDecoration}
-                    size="sm"
-                  />
-                  <span>{reply.author}</span>
+            {(comment.replies ?? []).map((reply) => {
+              const showReplyReactions =
+                onToggleReplyReaction !== undefined ||
+                (reply.reactions ?? []).length > 0;
+
+              return (
+                <div key={reply.id} className="space-y-0.5">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                    <UserAvatar
+                      imageUrl={reply.authorImageUrl}
+                      decoration={reply.authorDecoration}
+                      size="sm"
+                    />
+                    <span>{reply.author}</span>
+                  </div>
+                  <p className="text-xs text-slate-600">{reply.body}</p>
+                  <p className="text-xs text-slate-400">
+                    <LocalizedDate
+                      value={reply.createdAt}
+                      options={{ dateStyle: "medium", timeStyle: "short" }}
+                    />
+                  </p>
+                  {showReplyReactions && (
+                    <EmojiReactionBar
+                      initialReactions={reply.reactions ?? []}
+                      toggleAction={
+                        onToggleReplyReaction
+                          ? (emoji) => onToggleReplyReaction(reply.id, emoji)
+                          : () => Promise.resolve([])
+                      }
+                      disabled={disabled || !onToggleReplyReaction}
+                      currentUserNickname={currentUserNickname}
+                    />
+                  )}
                 </div>
-                <p className="text-xs text-slate-600">{reply.body}</p>
-                <p className="text-xs text-slate-400">
-                  <LocalizedDate
-                    value={reply.createdAt}
-                    options={{ dateStyle: "medium", timeStyle: "short" }}
-                  />
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

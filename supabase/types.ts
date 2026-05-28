@@ -568,6 +568,130 @@ export interface Database {
           }
         ];
       };
+      review_comment_reply_reactions: {
+        Row: {
+          id: string;
+          reply_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reply_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["review_comment_reply_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "review_comment_reply_reactions_reply_id_fkey";
+            columns: ["reply_id"];
+            referencedRelation: "review_comment_replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comment_reply_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      topic_comment_reply_reactions: {
+        Row: {
+          id: string;
+          reply_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reply_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["topic_comment_reply_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "topic_comment_reply_reactions_reply_id_fkey";
+            columns: ["reply_id"];
+            referencedRelation: "topic_comment_replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "topic_comment_reply_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      review_comment_reactions: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["review_comment_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "review_comment_reactions_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "review_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comment_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      topic_comment_reactions: {
+        Row: {
+          id: string;
+          comment_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          comment_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["topic_comment_reactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "topic_comment_reactions_comment_id_fkey";
+            columns: ["comment_id"];
+            referencedRelation: "topic_comments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "topic_comment_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       point_transactions: {
         Row: {
           id: string;
