@@ -113,42 +113,34 @@ export function EmojiReactionBar({
     <div>
       <TooltipProvider delayDuration={150}>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {optimisticReactions.length === 0 ? (
-            <span className="text-xs text-slate-500">
-              첫 반응을 남겨보세요.
-            </span>
-          ) : (
-            optimisticReactions.map((reaction) => (
-              <Tooltip key={reaction.emoji}>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant={reaction.reactedByUser ? "secondary" : "outline"}
-                    className="flex items-center gap-2"
-                    onClick={() => handleToggle(reaction.emoji)}
-                    disabled={disabled || isPending}
-                    aria-label={
-                      reaction.nicknames.length > 0
-                        ? `${reaction.nicknames.join(", ")} 님의 반응`
-                        : "이모지 반응"
-                    }
-                  >
-                    <span className="text-lg leading-none">
-                      {reaction.emoji}
-                    </span>
-                    <span className="text-xs font-medium text-slate-700">
-                      {reaction.count}
-                    </span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {reaction.nicknames.length > 0
-                    ? reaction.nicknames.join(", ")
-                    : "아직 닉네임 정보가 없어요"}
-                </TooltipContent>
-              </Tooltip>
-            ))
-          )}
+          {optimisticReactions.map((reaction) => (
+            <Tooltip key={reaction.emoji}>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant={reaction.reactedByUser ? "secondary" : "outline"}
+                  className="flex items-center gap-2"
+                  onClick={() => handleToggle(reaction.emoji)}
+                  disabled={disabled || isPending}
+                  aria-label={
+                    reaction.nicknames.length > 0
+                      ? `${reaction.nicknames.join(", ")} 님의 반응`
+                      : "이모지 반응"
+                  }
+                >
+                  <span className="text-lg leading-none">{reaction.emoji}</span>
+                  <span className="text-xs font-medium text-slate-700">
+                    {reaction.count}
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {reaction.nicknames.length > 0
+                  ? reaction.nicknames.join(", ")
+                  : "아직 닉네임 정보가 없어요"}
+              </TooltipContent>
+            </Tooltip>
+          ))}
           <DropdownMenu open={pickerOpen} onOpenChange={setPickerOpen}>
             <DropdownMenuTrigger asChild>
               <Button

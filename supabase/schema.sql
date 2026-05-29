@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS public.schedule_attendees (
   PRIMARY KEY(schedule_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.schedule_timetable_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  schedule_id uuid NOT NULL REFERENCES public.schedules(id) ON DELETE CASCADE,
+  position integer NOT NULL,
+  start_time time NOT NULL,
+  end_time time NOT NULL,
+  detail text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  updated_at timestamptz DEFAULT timezone('utc', now())
+);
+
 CREATE TABLE IF NOT EXISTS public.reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -109,6 +120,15 @@ CREATE TABLE IF NOT EXISTS public.highlight_comment_reactions (
   UNIQUE (comment_id, user_id, emoji)
 );
 
+CREATE TABLE IF NOT EXISTS public.review_comment_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (comment_id, user_id, emoji)
+);
+
 CREATE TABLE IF NOT EXISTS public.quotes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -136,6 +156,23 @@ CREATE TABLE IF NOT EXISTS public.review_reactions (
   UNIQUE (review_id, user_id, emoji)
 );
 
+CREATE TABLE IF NOT EXISTS public.review_comment_replies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE IF NOT EXISTS public.review_comment_reply_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reply_id uuid REFERENCES public.review_comment_replies(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (reply_id, user_id, emoji)
+);
+
 CREATE TABLE IF NOT EXISTS public.topics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid REFERENCES public.schedules(id) ON DELETE CASCADE,
@@ -153,6 +190,32 @@ CREATE TABLE IF NOT EXISTS public.topic_comments (
   author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
   body text NOT NULL,
   created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE IF NOT EXISTS public.topic_comment_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (comment_id, user_id, emoji)
+);
+
+CREATE TABLE IF NOT EXISTS public.topic_comment_replies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
+  author_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  body text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE IF NOT EXISTS public.topic_comment_reply_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reply_id uuid REFERENCES public.topic_comment_replies(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT timezone('utc', now()),
+  UNIQUE (reply_id, user_id, emoji)
 );
 
 CREATE TABLE IF NOT EXISTS public.point_transactions (
@@ -174,6 +237,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule_timetable_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_highlights ENABLE ROW LEVEL SECURITY;
@@ -185,6 +249,12 @@ ALTER TABLE public.quote_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can select their own profile"

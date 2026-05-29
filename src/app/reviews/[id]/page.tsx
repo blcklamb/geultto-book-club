@@ -14,6 +14,7 @@ import {
   fetchReactionSummary,
   toggleReaction,
   summarizeReactions,
+  type ReactionSummary,
 } from "@/lib/reactions";
 import type { HighlightWithComments } from "@/lib/highlight";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -82,6 +83,67 @@ export default async function ReviewDetailPage({
     .eq("review_id", reviewId)
     .order("created_at", { ascending: false });
 
+  const commentIds = (comments ?? []).map((c) => c.id);
+  const { data: commentReplyRows } =
+    commentIds.length > 0
+      ? await supabase
+          .from("review_comment_replies")
+          .select(
+            "id, comment_id, body, author_id, created_at, author:users!review_comment_replies_author_id_fkey(nickname)",
+          )
+          .in("comment_id", commentIds)
+          .order("created_at", { ascending: true })
+      : { data: [] };
+
+  const { data: commentReactionRows } =
+    commentIds.length > 0
+      ? await supabase
+          .from("review_comment_reactions")
+          .select("comment_id, emoji, user_id, user:users(nickname)")
+          .in("comment_id", commentIds)
+      : { data: [] };
+
+  const replyIds = (commentReplyRows ?? []).map((r) => r.id);
+  const { data: replyReactionRows } =
+    replyIds.length > 0
+      ? await supabase
+          .from("review_comment_reply_reactions")
+          .select("reply_id, emoji, user_id, user:users(nickname)")
+          .in("reply_id", replyIds)
+      : { data: [] };
+
+  const replyReactionMap = new Map<string, ReactionSummary[]>(
+    (commentReplyRows ?? []).map((r) => [
+      r.id,
+      summarizeReactions(
+        (replyReactionRows ?? [])
+          .filter((rr) => rr.reply_id === r.id)
+          .map((rr) => ({
+            emoji: rr.emoji,
+            user_id: rr.user_id,
+            user: Array.isArray(rr.user) ? rr.user[0] : rr.user,
+          })),
+        sessionUser?.id,
+      ),
+    ]),
+  );
+
+  const commentReactionMap = new Map<string, ReactionSummary[]>(
+    (comments ?? []).map((c) => [
+      c.id,
+      summarizeReactions(
+        (commentReactionRows ?? [])
+          .filter((r) => r.comment_id === c.id)
+          .map((r) => ({
+            emoji: r.emoji,
+            user_id: r.user_id,
+            user: Array.isArray(r.user) ? r.user[0] : r.user,
+          })),
+        sessionUser?.id,
+      ),
+    ]),
+  );
+
   const defaultContent = { type: "doc", content: [{ type: "paragraph" }] };
   // TODO: review에 UpdatedAt 추가 후 key 대체하기
   const reviewContent =
@@ -104,6 +166,7 @@ export default async function ReviewDetailPage({
   const authorIds = [
     review.author_id,
     ...(comments ?? []).map((comment) => comment.author_id),
+    ...(commentReplyRows ?? []).map((r) => r.author_id),
     ...(highlightRows ?? []).map((highlight) => highlight.author_id),
     ...(highlightRows ?? []).flatMap((highlight) =>
       ((highlight.highlight_comments as unknown[]) ?? []).flatMap((item) => {
@@ -260,6 +323,26 @@ export default async function ReviewDetailPage({
         commentId: data.id,
       });
     }
+    revalidatePath(`/reviews/${reviewId}`);
+  }
+
+  async function handleReplySubmit(commentId: string, body: string) {
+    "use server";
+    const sessionUser = await getSessionUser();
+    if (
+      !sessionUser ||
+      sessionUser.role === "pending" ||
+      sessionUser.isDeactivated
+    ) {
+      throw new Error("승인된 멤버만 답글을 작성할 수 있습니다.");
+    }
+    if (!body.trim()) throw new Error("답글 내용을 입력해주세요.");
+
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from("review_comment_replies")
+      .insert([{ comment_id: commentId, author_id: sessionUser.id, body }]);
+    if (error) throw new Error("답글 작성 실패: " + error.message);
     revalidatePath(`/reviews/${reviewId}`);
   }
 
@@ -433,6 +516,60 @@ export default async function ReviewDetailPage({
     redirect(`/reviews?${urlParams.toString()}`);
   }
 
+  async function handleToggleReplyReaction(
+    replyId: string,
+    emoji: string,
+  ): Promise<ReactionSummary[]> {
+    "use server";
+    const supabase = await createSupabaseServerClient();
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) throw new Error("로그인이 필요합니다.");
+
+    await toggleReaction({
+      supabase,
+      table: "review_comment_reply_reactions",
+      contentColumn: "reply_id",
+      contentId: replyId,
+      userId: sessionUser.id,
+      emoji,
+    });
+
+    return fetchReactionSummary(
+      supabase,
+      "review_comment_reply_reactions",
+      "reply_id",
+      replyId,
+      sessionUser.id,
+    );
+  }
+
+  async function handleToggleCommentReaction(
+    commentId: string,
+    emoji: string,
+  ): Promise<ReactionSummary[]> {
+    "use server";
+    const supabase = await createSupabaseServerClient();
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) throw new Error("로그인이 필요합니다.");
+
+    await toggleReaction({
+      supabase,
+      table: "review_comment_reactions",
+      contentColumn: "comment_id",
+      contentId: commentId,
+      userId: sessionUser.id,
+      emoji,
+    });
+
+    return fetchReactionSummary(
+      supabase,
+      "review_comment_reactions",
+      "comment_id",
+      commentId,
+      sessionUser.id,
+    );
+  }
+
   async function handleToggleReviewReaction(emoji: string) {
     "use server";
     const supabase = await createSupabaseServerClient();
@@ -549,6 +686,27 @@ export default async function ReviewDetailPage({
                   ? profileImageMap.get(comment.author_id)?.profileDecoration
                   : undefined,
                 createdAt: comment.created_at,
+                reactions: commentReactionMap.get(comment.id) ?? [],
+                replies: (commentReplyRows ?? [])
+                  .filter((r) => r.comment_id === comment.id)
+                  .map((r) => {
+                    const author = Array.isArray(r.author)
+                      ? r.author[0]
+                      : r.author;
+                    return {
+                      id: r.id,
+                      body: r.body,
+                      author: (author as { nickname?: string } | null)?.nickname ?? "익명",
+                      authorImageUrl: r.author_id
+                        ? profileImageMap.get(r.author_id)?.profileImageUrl
+                        : undefined,
+                      authorDecoration: r.author_id
+                        ? profileImageMap.get(r.author_id)?.profileDecoration
+                        : undefined,
+                      createdAt: r.created_at,
+                      reactions: replyReactionMap.get(r.id) ?? [],
+                    };
+                  }),
               })) ?? []
             }
             disabled={
@@ -557,6 +715,10 @@ export default async function ReviewDetailPage({
               sessionUser.isDeactivated
             }
             submitAction={handleCommentSubmit}
+            submitReplyAction={handleReplySubmit}
+            toggleReactionAction={handleToggleCommentReaction}
+            toggleReplyReactionAction={handleToggleReplyReaction}
+            currentUserNickname={sessionUser?.nickname}
           />
         </article>
         {/* Client-side component ensures view count increments after hydration */}
