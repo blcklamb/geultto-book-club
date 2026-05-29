@@ -1,12 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import type { Database } from "@supabase/types";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
@@ -44,32 +46,11 @@ export async function updateSession(request: NextRequest) {
   if (code && !hasDedicatedHandler) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Ensure profile row exists on first login.
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const name =
-          (user.user_metadata as Record<string, string | undefined>)?.name ??
-          user.email ??
-          "회원";
-        const { data, error } = await supabase
-          .from("users")
-          .upsert(
-            {
-              id: user.id,
-              nickname: name,
-              real_name: name,
-            },
-            { onConflict: "id", ignoreDuplicates: true }
-          )
-          .select("id")
-          .single();
-        if (!error && data) {
-          await supabase
-            .from("user_profiles")
-            .upsert({ user_id: data.id }, { onConflict: "user_id" });
-        }
+        await ensureUserProfile(supabase, user);
       }
 
       const redirectUrl = new URL(
