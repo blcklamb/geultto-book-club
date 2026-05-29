@@ -120,7 +120,6 @@ CREATE TABLE IF NOT EXISTS public.highlight_comment_reactions (
   UNIQUE (comment_id, user_id, emoji)
 );
 
--- Per-user emoji reactions on review comments
 CREATE TABLE IF NOT EXISTS public.review_comment_reactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
@@ -157,7 +156,6 @@ CREATE TABLE IF NOT EXISTS public.review_reactions (
   UNIQUE (review_id, user_id, emoji)
 );
 
--- Replies to a review comment (1-level deep)
 CREATE TABLE IF NOT EXISTS public.review_comment_replies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id uuid REFERENCES public.review_comments(id) ON DELETE CASCADE,
@@ -166,7 +164,6 @@ CREATE TABLE IF NOT EXISTS public.review_comment_replies (
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 
--- Per-user emoji reactions on review comment replies
 CREATE TABLE IF NOT EXISTS public.review_comment_reply_reactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reply_id uuid REFERENCES public.review_comment_replies(id) ON DELETE CASCADE,
@@ -195,7 +192,6 @@ CREATE TABLE IF NOT EXISTS public.topic_comments (
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 
--- Per-user emoji reactions on topic comments
 CREATE TABLE IF NOT EXISTS public.topic_comment_reactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
@@ -205,7 +201,6 @@ CREATE TABLE IF NOT EXISTS public.topic_comment_reactions (
   UNIQUE (comment_id, user_id, emoji)
 );
 
--- Replies to a topic comment (1-level deep)
 CREATE TABLE IF NOT EXISTS public.topic_comment_replies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id uuid REFERENCES public.topic_comments(id) ON DELETE CASCADE,
@@ -214,7 +209,6 @@ CREATE TABLE IF NOT EXISTS public.topic_comment_replies (
   created_at timestamptz DEFAULT timezone('utc', now())
 );
 
--- Per-user emoji reactions on topic comment replies
 CREATE TABLE IF NOT EXISTS public.topic_comment_reply_reactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reply_id uuid REFERENCES public.topic_comment_replies(id) ON DELETE CASCADE,
@@ -262,6 +256,45 @@ ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can select their own profile"
+  ON public.users FOR SELECT
+  USING ((SELECT auth.uid()) = id);
+CREATE POLICY "Users can insert their own profile"
+  ON public.users FOR INSERT
+  WITH CHECK ((SELECT auth.uid()) = id);
+CREATE POLICY "Users can update their own profile"
+  ON public.users FOR UPDATE
+  USING ((SELECT auth.uid()) = id)
+  WITH CHECK ((SELECT auth.uid()) = id);
+
+CREATE OR REPLACE FUNCTION public.current_user_is_active_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.users
+    WHERE id = (SELECT auth.uid())
+      AND role = 'admin'
+      AND is_deactivated = false
+  );
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.current_user_is_active_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_is_active_admin() TO authenticated;
+
+CREATE POLICY "Admins can select all users"
+  ON public.users FOR SELECT
+  TO authenticated
+  USING (public.current_user_is_active_admin());
+CREATE POLICY "Admins can update users"
+  ON public.users FOR UPDATE
+  TO authenticated
+  USING (public.current_user_is_active_admin())
+  WITH CHECK (true);
 
 CREATE POLICY "anyone can read schedule timetable items"
   ON public.schedule_timetable_items FOR SELECT
