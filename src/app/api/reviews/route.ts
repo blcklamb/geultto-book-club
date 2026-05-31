@@ -3,6 +3,18 @@ import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { awardReviewSubmissionPoints } from "@/lib/points";
 
+const MIN_REVIEW_CHARS = 500;
+
+function extractPlainText(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as Record<string, unknown>;
+  if (n.type === "text" && typeof n.text === "string") return n.text;
+  if (Array.isArray(n.content)) {
+    return (n.content as unknown[]).map(extractPlainText).join("");
+  }
+  return "";
+}
+
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (
@@ -22,6 +34,23 @@ export async function POST(req: NextRequest) {
   if (!scheduleId || !title || !contentRich) {
     const url = new URL("/reviews/new", req.url);
     url.searchParams.set("error", "필수 정보가 누락되었습니다.");
+    return NextResponse.redirect(url, 303);
+  }
+
+  try {
+    const parsed = JSON.parse(contentRich);
+    const plainText = extractPlainText(parsed);
+    if (plainText.length < MIN_REVIEW_CHARS) {
+      const url = new URL("/reviews/new", req.url);
+      url.searchParams.set(
+        "error",
+        `독후감은 최소 ${MIN_REVIEW_CHARS}자 이상 작성해야 합니다. (현재 ${plainText.length}자)`,
+      );
+      return NextResponse.redirect(url, 303);
+    }
+  } catch {
+    const url = new URL("/reviews/new", req.url);
+    url.searchParams.set("error", "본문 형식이 올바르지 않습니다.");
     return NextResponse.redirect(url, 303);
   }
 

@@ -17,7 +17,7 @@ export default async function TopicsPage({
 }) {
   const { cohort: cohortParam } = await searchParams;
   const parsed = cohortParam ? Number(cohortParam) : NaN;
-  const cohortValue = Number.isFinite(parsed) ? parsed : null;
+  const cohortValue = Number.isFinite(parsed) ? parsed : 5;
 
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
@@ -118,6 +118,8 @@ export default async function TopicsPage({
                           year: "numeric",
                           month: "numeric",
                           day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         }}
                       />{" "}
                       · 댓글 {topic.topic_comments?.[0]?.count ?? 0}

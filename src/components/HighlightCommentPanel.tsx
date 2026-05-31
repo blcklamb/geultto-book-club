@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { useState, useCallback, useEffect } from "react";
+import { Sheet, SheetPortal } from "@/components/ui/sheet";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
+import { LinkedText } from "@/components/LinkedText";
 import { toast } from "sonner";
 import type {
   HighlightWithComments,
@@ -22,6 +21,41 @@ import type {
 import type { ReactionSummary } from "@/lib/reactions";
 
 export type { HighlightWithComments };
+
+// Overlay가 없는 SheetContent — 독후감 본문을 가리지 않도록 dimmed 배경을 제거한다.
+function NoOverlaySheetContent({
+  side,
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
+  side: "right" | "bottom";
+}) {
+  return (
+    <SheetPortal>
+      <SheetPrimitive.Content
+        className={cn(
+          "fixed z-50 bg-background shadow-lg transition ease-in-out",
+          "data-[state=closed]:duration-300 data-[state=open]:duration-500",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          side === "right"
+            ? [
+                "inset-y-0 right-0 h-full w-full border-l sm:max-w-md",
+                "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+              ]
+            : [
+                "inset-x-0 bottom-0 h-[80vh] border-t rounded-t-xl",
+                "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+              ],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+}
 
 type HighlightCommentPanelProps = {
   highlight: HighlightWithComments;
@@ -47,6 +81,20 @@ export function HighlightCommentPanel({
   );
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 부모(ReviewViewerInteractive)가 Realtime으로 highlight를 갱신하면 댓글 목록도 동기화
+  useEffect(() => {
+    setComments(highlight.comments);
+  }, [highlight.comments]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const handleSubmitComment = async () => {
     if (!newCommentBody.trim()) return;
@@ -136,15 +184,31 @@ export function HighlightCommentPanel({
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader className="pr-6">
-          <SheetTitle className="text-sm font-semibold">
-            하이라이트 댓글
-          </SheetTitle>
-          <blockquote className="mt-2 border-l-4 border-yellow-400 bg-yellow-50 py-2 pl-3 pr-2 text-sm text-slate-700 italic">
+      <NoOverlaySheetContent
+        side={isMobile ? "bottom" : "right"}
+        className="flex flex-col p-0"
+      >
+        {/* 헤더: 스크롤 밖 고정 — 닫기 버튼을 항상 접근 가능하게 유지 */}
+        <div className="sticky top-0 z-10 shrink-0 border-b bg-white px-6 pb-4 pt-6">
+          <div className="flex items-start justify-between gap-2">
+            <SheetPrimitive.Title className="text-sm font-semibold">
+              하이라이트 댓글
+            </SheetPrimitive.Title>
+            <SheetPrimitive.Close asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 p-0"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">닫기</span>
+              </Button>
+            </SheetPrimitive.Close>
+          </div>
+          <blockquote className="mt-2 whitespace-pre-wrap border-l-4 border-yellow-400 bg-yellow-50 py-2 pl-3 pr-2 text-sm italic text-slate-700">
             &ldquo;{highlight.highlightText}&rdquo;
           </blockquote>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
             <UserAvatar
               imageUrl={highlight.authorImageUrl}
               decoration={highlight.authorDecoration}
@@ -162,48 +226,51 @@ export function HighlightCommentPanel({
               하이라이트 삭제
             </Button>
           )}
-        </SheetHeader>
-
-        <div className="mt-4 space-y-4 pb-6">
-          {comments.length === 0 ? (
-            <p className="text-center text-xs text-slate-400">
-              첫 댓글을 남겨보세요
-            </p>
-          ) : (
-            comments.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                disabled={disabled}
-                currentUserNickname={currentUserNickname}
-                onToggleReaction={(emoji) =>
-                  handleToggleReaction(comment.id, emoji)
-                }
-                onAddReply={(body) => handleAddReply(comment.id, body)}
-              />
-            ))
-          )}
-
-          {!disabled && (
-            <div className="space-y-2 border-t pt-4">
-              <Textarea
-                placeholder="이 구절에 대한 생각을 남겨보세요"
-                value={newCommentBody}
-                onChange={(e) => setNewCommentBody(e.target.value)}
-                className="text-sm"
-                rows={3}
-              />
-              <Button
-                size="sm"
-                onClick={handleSubmitComment}
-                disabled={isSubmitting || !newCommentBody.trim()}
-              >
-                댓글 등록
-              </Button>
-            </div>
-          )}
         </div>
-      </SheetContent>
+
+        {/* 댓글 목록 + 입력창: 스크롤 영역 */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="space-y-4">
+            {comments.length === 0 ? (
+              <p className="text-center text-xs text-slate-400">
+                첫 댓글을 남겨보세요
+              </p>
+            ) : (
+              comments.map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  disabled={disabled}
+                  currentUserNickname={currentUserNickname}
+                  onToggleReaction={(emoji) =>
+                    handleToggleReaction(comment.id, emoji)
+                  }
+                  onAddReply={(body) => handleAddReply(comment.id, body)}
+                />
+              ))
+            )}
+
+            {!disabled && (
+              <div className="space-y-2 border-t pt-4">
+                <Textarea
+                  placeholder="이 구절에 대한 생각을 남겨보세요"
+                  value={newCommentBody}
+                  onChange={(e) => setNewCommentBody(e.target.value)}
+                  className="text-sm"
+                  rows={3}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleSubmitComment}
+                  disabled={isSubmitting || !newCommentBody.trim()}
+                >
+                  댓글 등록
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </NoOverlaySheetContent>
     </Sheet>
   );
 }
@@ -253,7 +320,9 @@ function CommentItem({
             />
             <span>{comment.author}</span>
           </div>
-          <p className="text-sm text-slate-600">{comment.body}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-600">
+            <LinkedText text={comment.body} />
+          </p>
           <p className="text-xs text-slate-400">
             <LocalizedDate
               value={comment.createdAt}
@@ -281,7 +350,9 @@ function CommentItem({
                   />
                   <span>{reply.author}</span>
                 </div>
-                <p className="text-xs text-slate-600">{reply.body}</p>
+                <p className="whitespace-pre-wrap text-xs text-slate-600">
+                  <LinkedText text={reply.body} />
+                </p>
                 <p className="text-xs text-slate-400">
                   <LocalizedDate
                     value={reply.createdAt}

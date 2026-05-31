@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { PageRealtime } from "@/components/PageRealtime";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { CommentThread } from "@/components/CommentThread";
@@ -53,7 +54,7 @@ export default async function TopicDetailPage({
       "id, body, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)",
     )
     .eq("topic_id", topicId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   const commentIds = (comments ?? []).map((c) => c.id);
   const { data: commentReplyRows } =
@@ -470,6 +471,14 @@ export default async function TopicDetailPage({
           toggleReactionAction={handleToggleCommentReaction}
           toggleReplyReactionAction={handleToggleReplyReaction}
           currentUserNickname={sessionUser?.nickname}
+        />
+        <PageRealtime
+          channelId={`topic-page-${topicId}`}
+          subs={[
+            { table: "topic_comments", filter: `topic_id=eq.${topicId}` },
+            { table: "topic_comment_reactions" },
+            { table: "topic_comment_reply_reactions" },
+          ]}
         />
       </div>
     </>

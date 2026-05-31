@@ -63,7 +63,7 @@ export default async function TopicCreatePage() {
         <div className="space-y-2">
           <Label>발제 내용</Label>
           {/* name을 bodyRich로 지정해 API가 그대로 JSON을 파싱해 저장하도록 맞춥니다. */}
-          <ReviewEditor name="bodyRich" />
+          <ReviewEditor name="bodyRich" placeholder="토론 발제를 작성해주세요…" />
         </div>
         <Button type="submit">발제 등록</Button>
       </form>

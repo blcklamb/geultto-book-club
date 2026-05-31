@@ -10,10 +10,11 @@ import { ListItem, OrderedList, BulletList } from "./editor-extension/list";
 import { Strike } from "./editor-extension/strike";
 import { ReviewHighlightMark } from "./editor-extension/highlight";
 import type { JSONContent } from "@tiptap/core";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
 import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
+import { createClient } from "@supabase/client";
 import { toast } from "sonner";
 
 type SelectionPopup = {
@@ -51,6 +52,10 @@ export function ReviewViewerInteractive({
   );
   const [isPending, setIsPending] = useState(false);
   const editorWrapRef = useRef<HTMLDivElement>(null);
+  // 에디터에 실제로 mark가 적용된 하이라이트 ID → {startPos, endPos} 맵
+  const appliedMarkMap = useRef<Map<string, { startPos: number; endPos: number }>>(new Map());
+  // Supabase 클라이언트는 컴포넌트 수명 동안 하나만 생성
+  const supabase = useMemo(() => createClient(), []);
 
   const editor = useEditor({
     extensions: [
@@ -82,32 +87,102 @@ export function ReviewViewerInteractive({
     },
   });
 
-  // Apply all stored highlight marks to the editor on initial load
+  // 하이라이트 목록을 API에서 재조회하고 에디터 마크를 갱신한다.
+  const refetchHighlights = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}/highlights`);
+      if (!res.ok) return;
+      const updated: HighlightWithComments[] = await res.json();
+      setHighlights(updated);
+    } catch {
+      // 재조회 실패는 조용히 무시 — 기존 데이터를 유지
+    }
+  }, [reviewId]);
+
+  // highlights 상태가 바뀔 때(초기 로드 + Realtime 업데이트) 에디터 marks를 동기화한다.
+  // appliedMarkMap을 통해 추가/삭제된 하이라이트만 처리한다.
   useEffect(() => {
-    if (!editor || highlights.length === 0) return;
+    if (!editor) return;
     const { schema } = editor.state;
     const markType = schema.marks.highlight;
     if (!markType) return;
 
+    const currentIds = new Set(highlights.map((h) => h.id));
     const newTr = editor.state.tr;
+    let changed = false;
+
+    // 새로 추가된 하이라이트에 mark 추가
     for (const h of highlights) {
+      if (appliedMarkMap.current.has(h.id)) continue;
       if (h.startPos == null || h.endPos == null) continue;
       try {
         newTr.addMark(
           h.startPos,
           h.endPos,
-          markType.create({
-            highlightId: h.id,
-            color: highlightColorFor(h.id),
-          }),
+          markType.create({ highlightId: h.id, color: highlightColorFor(h.id) }),
         );
+        appliedMarkMap.current.set(h.id, { startPos: h.startPos, endPos: h.endPos });
+        changed = true;
       } catch {
-        // Skip highlights with invalid positions (e.g., after content edit)
+        // 유효하지 않은 position은 건너뜀
       }
     }
-    editor.view.dispatch(newTr);
+
+    // 삭제된 하이라이트의 mark 제거
+    for (const [id, pos] of appliedMarkMap.current) {
+      if (!currentIds.has(id)) {
+        try {
+          newTr.removeMark(
+            pos.startPos,
+            pos.endPos,
+            markType.create({ highlightId: id, color: highlightColorFor(id) }),
+          );
+          appliedMarkMap.current.delete(id);
+          changed = true;
+        } catch {
+          appliedMarkMap.current.delete(id);
+        }
+      }
+    }
+
+    if (changed) editor.view.dispatch(newTr);
+  }, [editor, highlights]);
+
+  // Supabase Realtime — review_highlights / highlight_comments 변경 시 자동 갱신
+  useEffect(() => {
+    const channel = supabase
+      .channel(`review-highlights-${reviewId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "review_highlights",
+          filter: `review_id=eq.${reviewId}`,
+        },
+        () => { refetchHighlights(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "highlight_comments" },
+        () => { refetchHighlights(); },
+      )
+      .subscribe((status, err) => {
+        if (err) console.error("[Realtime] highlights subscription error:", err);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reviewId, refetchHighlights, supabase]);
+
+  // 패널이 열릴 때 최신 프로필 사진 반영을 위해 재조회
+  useEffect(() => {
+    if (activeHighlightId) {
+      refetchHighlights();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor]); // only re-run when editor instance changes
+  }, [activeHighlightId]);
 
   // Click handler for highlighted spans → opens comment panel
   useEffect(() => {
@@ -285,7 +360,9 @@ export function ReviewViewerInteractive({
 
   return (
     <div ref={editorWrapRef} className="relative">
-      <EditorContent editor={editor} />
+      <div>
+        <EditorContent editor={editor} />
+      </div>
 
       {selectionPopup && !disabled && (
         <div

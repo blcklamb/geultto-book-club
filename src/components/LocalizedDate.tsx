@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 type LocalizedDateProps = {
   value: string | number | Date | null | undefined;
   locale?: string;
@@ -8,22 +10,16 @@ type LocalizedDateProps = {
   className?: string;
 };
 
-function formatLocalizedDate(
+function formatDate(
   value: LocalizedDateProps["value"],
   locale: string,
   options?: Intl.DateTimeFormatOptions,
-) {
-  if (value == null || value === "") {
-    return null;
-  }
-
+): string | null {
+  if (value == null || value === "") return null;
   const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale, options).format(date);
+  if (Number.isNaN(date.getTime())) return null;
+  const merged = { timeZone: "Asia/Seoul", ...options };
+  return new Intl.DateTimeFormat(locale, merged).format(date);
 }
 
 export function LocalizedDate({
@@ -33,7 +29,14 @@ export function LocalizedDate({
   fallback = "-",
   className,
 }: LocalizedDateProps) {
-  const formatted = formatLocalizedDate(value, locale, options);
+  // SSR에서는 빈 상태로 시작하고, 마운트 후 클라이언트에서 KST로 포맷한다.
+  // suppressHydrationWarning은 SSR 값을 고정시키므로 사용하지 않는다.
+  const [formatted, setFormatted] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormatted(formatDate(value, locale, options));
+  }, [value, locale, options]);
+
   const dateTime =
     value instanceof Date
       ? value.toISOString()
@@ -44,7 +47,7 @@ export function LocalizedDate({
           : undefined;
 
   return (
-    <time className={className} dateTime={dateTime} suppressHydrationWarning>
+    <time className={className} dateTime={dateTime}>
       {formatted ?? fallback}
     </time>
   );

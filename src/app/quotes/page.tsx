@@ -10,7 +10,7 @@ export default async function QuotesPage({
 }) {
   const { cohort: cohortParam } = await searchParams;
   const parsed = cohortParam ? Number(cohortParam) : NaN;
-  const cohortValue = Number.isFinite(parsed) ? parsed : null;
+  const cohortValue = Number.isFinite(parsed) ? parsed : 5;
 
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();

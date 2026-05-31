@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { CommentThread } from "@/components/CommentThread";
 import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
+import { PageRealtime } from "@/components/PageRealtime";
 import { ReviewViewerInteractive } from "@/components/ReviewViewerInteractive";
 import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
@@ -721,8 +722,16 @@ export default async function ReviewDetailPage({
             currentUserNickname={sessionUser?.nickname}
           />
         </article>
-        {/* Client-side component ensures view count increments after hydration */}
         <ViewCountPinger reviewId={review.id} />
+        <PageRealtime
+          channelId={`review-page-${review.id}`}
+          subs={[
+            { table: "review_comments", filter: `review_id=eq.${review.id}` },
+            { table: "review_reactions", filter: `review_id=eq.${review.id}` },
+            { table: "review_comment_reactions" },
+            { table: "review_comment_reply_reactions" },
+          ]}
+        />
       </div>
     </>
   );
