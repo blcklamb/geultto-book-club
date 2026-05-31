@@ -148,7 +148,7 @@ export function ReviewViewerInteractive({
     if (changed) editor.view.dispatch(newTr);
   }, [editor, highlights]);
 
-  // Supabase Realtime — review_highlights / highlight_comments 변경 시 자동 갱신
+  // Supabase Realtime — 하이라이트와 관련 댓글/반응 변경 시 자동 갱신
   useEffect(() => {
     const channel = supabase
       .channel(`review-highlights-${reviewId}`)
@@ -165,6 +165,16 @@ export function ReviewViewerInteractive({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "highlight_comments" },
+        () => { refetchHighlights(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "highlight_comment_replies" },
+        () => { refetchHighlights(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "highlight_comment_reactions" },
         () => { refetchHighlights(); },
       )
       .subscribe((status, err) => {

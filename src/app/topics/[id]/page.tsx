@@ -17,6 +17,11 @@ import {
   summarizeReactions,
   type ReactionSummary,
 } from "@/lib/reactions";
+import {
+  extractPlainText,
+  MIN_RICH_TEXT_CHARS,
+  richTextMinCharsMessage,
+} from "@/lib/rich-text";
 import type { Json } from "@supabase/types";
 
 function redirectTopicWithMessage(
@@ -65,7 +70,7 @@ export default async function TopicDetailPage({
             "id, comment_id, body, author_id, created_at, author:users!topic_comment_replies_author_id_fkey(nickname)",
           )
           .in("comment_id", commentIds)
-          .order("created_at", { ascending: true })
+          .order("created_at", { ascending: false })
       : { data: [] };
 
   const { data: commentReactionRows } =
@@ -280,13 +285,23 @@ export default async function TopicDetailPage({
     }
 
     let parsedBodyRich: Json;
+    let plainTextLength = 0;
     try {
       parsedBodyRich = JSON.parse(bodyRich);
+      const plainText = extractPlainText(parsedBodyRich);
+      plainTextLength = plainText.length;
     } catch {
       redirectTopicWithMessage(
         submittedTopicId,
         "error",
         "본문을 불러오지 못했습니다. 다시 시도해주세요.",
+      );
+    }
+    if (plainTextLength < MIN_RICH_TEXT_CHARS) {
+      redirectTopicWithMessage(
+        submittedTopicId,
+        "error",
+        richTextMinCharsMessage("발제", plainTextLength),
       );
     }
 
@@ -476,6 +491,7 @@ export default async function TopicDetailPage({
           channelId={`topic-page-${topicId}`}
           subs={[
             { table: "topic_comments", filter: `topic_id=eq.${topicId}` },
+            { table: "topic_comment_replies" },
             { table: "topic_comment_reactions" },
             { table: "topic_comment_reply_reactions" },
           ]}

@@ -89,6 +89,7 @@ export function HighlightCommentPanel({
   }, [highlight.comments]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(max-width: 639px)");
     setIsMobile(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);

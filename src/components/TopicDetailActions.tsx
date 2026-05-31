@@ -94,6 +94,7 @@ export function TopicDetailActions({
                   <ReviewEditor
                     name="bodyRich"
                     defaultContent={initialContent}
+                    entityName="발제"
                   />
                 </div>
               </label>

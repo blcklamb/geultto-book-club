@@ -10,19 +10,20 @@ import { HorizontalRule } from "./editor-extension/horizontal-rule";
 import { Image } from "./editor-extension/image";
 import { ListItem, OrderedList, BulletList } from "./editor-extension/list";
 import { Strike } from "./editor-extension/strike";
-
-const MIN_CHARS = 500;
+import { MIN_RICH_TEXT_CHARS, richTextMinCharsMessage } from "@/lib/rich-text";
 
 type ReviewEditorProps = {
   name?: string;
   defaultContent?: JSONContent | string;
   placeholder?: string;
+  entityName?: string;
 };
 
 export function ReviewEditor({
   name = "contentRich",
   defaultContent,
   placeholder = "독후감을 작성해주세요…",
+  entityName = "독후감",
 }: ReviewEditorProps) {
   const [serializedContent, setSerializedContent] = useState(
     typeof defaultContent === "string"
@@ -74,13 +75,13 @@ export function ReviewEditor({
   useEffect(() => {
     if (!hiddenInputRef.current) return;
     hiddenInputRef.current.setCustomValidity(
-      charCount >= MIN_CHARS
+      charCount >= MIN_RICH_TEXT_CHARS
         ? ""
-        : `독후감은 최소 ${MIN_CHARS}자 이상 작성해야 합니다. (현재 ${charCount}자)`,
+        : richTextMinCharsMessage(entityName, charCount),
     );
-  }, [charCount]);
+  }, [charCount, entityName]);
 
-  const isUnder = charCount < MIN_CHARS;
+  const isUnder = charCount < MIN_RICH_TEXT_CHARS;
 
   return (
     <>
@@ -88,7 +89,7 @@ export function ReviewEditor({
       <p
         className={`mt-1 text-right text-xs ${isUnder ? "text-slate-400" : "text-emerald-600"}`}
       >
-        {charCount.toLocaleString()} / {MIN_CHARS.toLocaleString()}자 이상
+        {charCount.toLocaleString()} / {MIN_RICH_TEXT_CHARS.toLocaleString()}자 이상
       </p>
       <input
         ref={hiddenInputRef}

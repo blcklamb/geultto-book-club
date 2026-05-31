@@ -5,6 +5,11 @@ import { CommentThread } from "@/components/CommentThread";
 import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
 import { PageRealtime } from "@/components/PageRealtime";
+import {
+  extractPlainText,
+  MIN_RICH_TEXT_CHARS,
+  richTextMinCharsMessage,
+} from "@/lib/rich-text";
 import { ReviewViewerInteractive } from "@/components/ReviewViewerInteractive";
 import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
@@ -93,7 +98,7 @@ export default async function ReviewDetailPage({
             "id, comment_id, body, author_id, created_at, author:users!review_comment_replies_author_id_fkey(nickname)",
           )
           .in("comment_id", commentIds)
-          .order("created_at", { ascending: true })
+          .order("created_at", { ascending: false })
       : { data: [] };
 
   const { data: commentReactionRows } =
@@ -376,14 +381,23 @@ export default async function ReviewDetailPage({
       );
     }
 
-    // Validate contentRich is valid JSON string so stored value stays well-formed.
+    let plainTextLength = 0;
     try {
-      JSON.parse(contentRich);
+      const parsed = JSON.parse(contentRich);
+      const plainText = extractPlainText(parsed);
+      plainTextLength = plainText.length;
     } catch {
       redirectReviewWithMessage(
         submittedReviewId,
         "error",
         "본문을 불러오지 못했습니다. 다시 시도해주세요.",
+      );
+    }
+    if (plainTextLength < MIN_RICH_TEXT_CHARS) {
+      redirectReviewWithMessage(
+        submittedReviewId,
+        "error",
+        richTextMinCharsMessage("독후감", plainTextLength),
       );
     }
 
@@ -727,6 +741,7 @@ export default async function ReviewDetailPage({
           channelId={`review-page-${review.id}`}
           subs={[
             { table: "review_comments", filter: `review_id=eq.${review.id}` },
+            { table: "review_comment_replies" },
             { table: "review_reactions", filter: `review_id=eq.${review.id}` },
             { table: "review_comment_reactions" },
             { table: "review_comment_reply_reactions" },
