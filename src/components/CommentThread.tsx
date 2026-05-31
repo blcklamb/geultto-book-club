@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
+import { LinkedText } from "@/components/LinkedText";
 import type { ReactionSummary } from "@/lib/reactions";
 import { toast } from "sonner";
 
@@ -196,7 +197,9 @@ function CommentItem({
           />
           <span>{comment.author}</span>
         </div>
-        <p className="text-slate-600">{comment.body}</p>
+        <p className="whitespace-pre-wrap text-slate-600">
+          <LinkedText text={comment.body} />
+        </p>
         <p className="text-xs text-slate-400">
           <LocalizedDate
             value={comment.createdAt}
@@ -230,7 +233,9 @@ function CommentItem({
                     />
                     <span>{reply.author}</span>
                   </div>
-                  <p className="text-xs text-slate-600">{reply.body}</p>
+                  <p className="whitespace-pre-wrap text-xs text-slate-600">
+                    <LinkedText text={reply.body} />
+                  </p>
                   <p className="text-xs text-slate-400">
                     <LocalizedDate
                       value={reply.createdAt}

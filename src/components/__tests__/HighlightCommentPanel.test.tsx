@@ -473,7 +473,7 @@ describe("HighlightCommentPanel", () => {
     );
 
     // Sheet의 닫기 버튼 클릭 (SheetClose 내 X 버튼)
-    const closeBtn = screen.getByRole("button", { name: /close/i });
+    const closeBtn = screen.getByRole("button", { name: "닫기" });
     await user.click(closeBtn);
 
     await waitFor(() => {

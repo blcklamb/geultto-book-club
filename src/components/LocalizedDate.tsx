@@ -8,22 +8,16 @@ type LocalizedDateProps = {
   className?: string;
 };
 
-function formatLocalizedDate(
+function formatDate(
   value: LocalizedDateProps["value"],
   locale: string,
   options?: Intl.DateTimeFormatOptions,
-) {
-  if (value == null || value === "") {
-    return null;
-  }
-
+): string | null {
+  if (value == null || value === "") return null;
   const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale, options).format(date);
+  if (Number.isNaN(date.getTime())) return null;
+  const merged = { timeZone: "Asia/Seoul", ...options };
+  return new Intl.DateTimeFormat(locale, merged).format(date);
 }
 
 export function LocalizedDate({
@@ -33,7 +27,8 @@ export function LocalizedDate({
   fallback = "-",
   className,
 }: LocalizedDateProps) {
-  const formatted = formatLocalizedDate(value, locale, options);
+  const formatted = formatDate(value, locale, options);
+
   const dateTime =
     value instanceof Date
       ? value.toISOString()

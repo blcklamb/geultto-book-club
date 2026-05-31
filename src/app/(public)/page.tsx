@@ -61,6 +61,7 @@ export default async function HomePage() {
 
   const nextSchedule = schedules?.[0]
     ? {
+        id: schedules[0].id,
         date: schedules[0].date,
         place: schedules[0].place,
         book: schedules[0].book_title,
@@ -115,6 +116,11 @@ export default async function HomePage() {
                     <NaverMapCopyButton searchValue={schedules?.[0]?.place} />
                   </div>
                   <p className="font-medium">📘 {nextSchedule.book}</p>
+                  <Link href={`/schedule/${nextSchedule.id}`}>
+                    <Button size="sm" variant="outline" className="mt-2 w-full">
+                      일정 상세 보기
+                    </Button>
+                  </Link>
                 </>
               ) : (
                 <p>등록된 일정이 없습니다.</p>

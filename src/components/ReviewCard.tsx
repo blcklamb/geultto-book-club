@@ -11,6 +11,7 @@ export type ReviewCardProps = {
   authorDecoration?: string | null;
   scheduleTitle: string;
   createdAt: string | null | undefined;
+  commentCount?: number;
 };
 
 export const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -21,6 +22,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   authorDecoration,
   scheduleTitle,
   createdAt,
+  commentCount,
 }) => {
   return (
     <Link href={`/reviews/${id}`}>
@@ -38,12 +40,19 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             />
             <span>{author}</span>
           </div>
-          <p className="text-xs text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-slate-400">
             <LocalizedDate
               value={createdAt}
-              options={{ year: "numeric", month: "numeric", day: "numeric" }}
+              options={{
+                year: "numeric",
+                month: "numeric",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }}
             />
-          </p>
+            <span>💬 {commentCount ?? 0}</span>
+          </div>
         </CardContent>
       </Card>
     </Link>

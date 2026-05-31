@@ -340,7 +340,10 @@ export async function syncPerfectAttendancePoints(supabase: Client) {
         .map((row) => row.schedule_id)
     );
 
-    if (scheduleIds.every((scheduleId) => attendedScheduleIds.has(scheduleId))) {
+    if (
+      scheduleIds.length >= 6 &&
+      scheduleIds.every((scheduleId) => attendedScheduleIds.has(scheduleId))
+    ) {
       await awardPointTransaction(supabase, {
         userId: user.id,
         sourceType: "perfect_attendance_bonus",

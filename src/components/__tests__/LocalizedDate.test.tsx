@@ -26,6 +26,7 @@ describe("LocalizedDate", () => {
     expect(Intl.DateTimeFormat).toHaveBeenCalledWith("ko-KR", {
       dateStyle: "medium",
       timeStyle: "short",
+      timeZone: "Asia/Seoul",
     });
     expect(format).toHaveBeenCalled();
     expect(screen.getByText("2026. 5. 17. 오전 9:00")).toBeInTheDocument();

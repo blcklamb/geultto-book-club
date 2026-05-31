@@ -9,6 +9,10 @@ const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
   toastErrorMock: vi.fn(),
 }));
 
+const { mockRemoveChannel } = vi.hoisted(() => ({
+  mockRemoveChannel: vi.fn(),
+}));
+
 // ─── vi.hoisted로 hoisting-safe mock 변수 선언 ────────────────────────────────
 const { useEditorMock, mockDispatch, mockAddEventListener, editorDom } =
   vi.hoisted(() => {
@@ -65,6 +69,19 @@ vi.mock("sonner", () => ({
   toast: {
     success: toastSuccessMock,
     error: toastErrorMock,
+  },
+}));
+
+vi.mock("@supabase/client", () => ({
+  createClient: () => {
+    const channel = {
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    };
+    return {
+      channel: vi.fn(() => channel),
+      removeChannel: mockRemoveChannel,
+    };
   },
 }));
 
@@ -131,6 +148,7 @@ describe("ReviewViewerInteractive", () => {
     mockFetch.mockReset();
     vi.stubGlobal("fetch", mockFetch);
     mockDispatch.mockReset();
+    mockRemoveChannel.mockReset();
     toastSuccessMock.mockReset();
     toastErrorMock.mockReset();
     // restore addEventListener mock after restoreAllMocks

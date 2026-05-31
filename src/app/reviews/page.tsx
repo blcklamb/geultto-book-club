@@ -17,7 +17,7 @@ export default async function ReviewsPage({
 }) {
   const { cohort: cohortParam } = await searchParams;
   const parsed = cohortParam ? Number(cohortParam) : NaN;
-  const cohortValue = Number.isFinite(parsed) ? parsed : null;
+  const cohortValue = Number.isFinite(parsed) ? parsed : 5;
 
   const supabase = await createSupabaseServerClient();
   const sessionUser = await getSessionUser();
@@ -43,7 +43,7 @@ export default async function ReviewsPage({
   let reviewsQuery = supabase
     .from("reviews")
     .select(
-      "id, title, author_id, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at",
+      "id, title, author_id, schedule:schedules!reviews_schedule_id_fkey(book_title), author:users!reviews_author_id_fkey(nickname), created_at, review_comments(count)",
     )
     .order("created_at", { ascending: false });
 
@@ -108,6 +108,7 @@ export default async function ReviewsPage({
               }
               scheduleTitle={review.schedule?.book_title ?? "모임"}
               createdAt={review.created_at}
+              commentCount={review.review_comments?.[0]?.count ?? 0}
             />
           ))}
         </div>
