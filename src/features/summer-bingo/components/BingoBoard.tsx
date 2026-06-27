@@ -5,13 +5,11 @@ import type { BingoBoard as BingoBoardType, BingoCell } from "../types";
 
 type BingoBoardProps = {
   board: BingoBoardType;
-  highlightedCellIndexes: Set<number>;
   onSelectCell: (cell: BingoCell) => void;
 };
 
 export function BingoBoard({
   board,
-  highlightedCellIndexes,
   onSelectCell,
 }: BingoBoardProps) {
   return (
@@ -22,7 +20,6 @@ export function BingoBoard({
             <BingoCellItem
               key={cell.id}
               cell={cell}
-              isHighlighted={highlightedCellIndexes.has(cell.index)}
               onSelect={onSelectCell}
             />
           ))}

@@ -99,7 +99,7 @@ describe("summer bingo image export", () => {
   });
 
   it("downloads generated blobs through an object URL", () => {
-    const objectUrl = "blob:summer-bingo";
+    const objectUrl = "blob:summer-palette";
     const createObjectURL = vi.fn(() => objectUrl);
     const revokeObjectURL = vi.fn();
     const click = vi
@@ -119,7 +119,7 @@ describe("summer bingo image export", () => {
     downloadBlob(new Blob(["png"], { type: "image/png" }));
 
     const link = document.querySelector<HTMLAnchorElement>(
-      'a[download="summer-book-bingo.png"]',
+      'a[download="summer-book-palette.png"]',
     );
     expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
     expect(link).toBeNull();

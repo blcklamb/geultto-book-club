@@ -25,6 +25,7 @@ describe("SaveBoardButton", () => {
 
     const button = container.querySelector<HTMLButtonElement>("button");
     expect(button?.disabled).toBe(false);
+    expect(button?.textContent).toContain("팔레트 저장");
 
     act(() => {
       button?.click();

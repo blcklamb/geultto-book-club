@@ -19,7 +19,7 @@ export function createInitialBoard(now = new Date()): BingoBoard {
 
   return {
     id: "summer-book-bingo",
-    title: "여름 책 빙고",
+    title: "여름 책 팔레트",
     size: 3,
     cells: SUMMER_BINGO_THEMES.map((title, index) => ({
       id: `summer-bingo-cell-${index + 1}`,

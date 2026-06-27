@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProgressListItem } from "./components/ProgressListItem";
 import { BingoBoard } from "./components/BingoBoard";
-import { BingoCelebration } from "./components/BingoCelebration";
+import { BingoCelebration as PaletteCompletionNotice } from "./components/BingoCelebration";
 import { CellEditSheet } from "./components/CellEditSheet";
 import { SaveBoardButton } from "./components/SaveBoardButton";
 import { useBingoBoard } from "./hooks/useBingoBoard";
@@ -36,7 +36,7 @@ export function SummerBingoPage() {
     selectedCellIndex === null ? null : board.cells[selectedCellIndex] ?? null;
 
   function handleReset() {
-    if (window.confirm("현재 빙고 진행 상태를 모두 비울까요?")) {
+    if (window.confirm("현재 팔레트 진행 상태를 모두 비울까요?")) {
       resetBoard();
       setSelectedCellIndex(null);
     }
@@ -51,7 +51,7 @@ export function SummerBingoPage() {
           </Badge>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              여름 책 빙고
+              여름 책 팔레트
             </h1>
             <p className="mt-2 text-sm text-slate-600 sm:text-base">
               아홉 가지 여름 독서 장면을 사진으로 채우고 한 장의 기록으로
@@ -69,9 +69,9 @@ export function SummerBingoPage() {
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-            <p className="text-xs font-medium text-slate-500">빙고</p>
+            <p className="text-xs font-medium text-slate-500">팔레트</p>
             <p className="text-lg font-bold text-slate-900">
-              {stats.completedLines.length}
+              {stats.isFullClear ? "완성" : "진행"}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -83,10 +83,7 @@ export function SummerBingoPage() {
         </div>
       </section>
 
-      <BingoCelebration
-        completedLineCount={stats.completedLines.length}
-        isFullClear={stats.isFullClear}
-      />
+      <PaletteCompletionNotice isFullClear={stats.isFullClear} />
 
       {storageError ? (
         <p
@@ -116,7 +113,6 @@ export function SummerBingoPage() {
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <BingoBoard
           board={board}
-          highlightedCellIndexes={stats.highlightedCellIndexes}
           onSelectCell={(cell) => setSelectedCellIndex(cell.index)}
         />
 

@@ -8,13 +8,11 @@ import { cn } from "@/lib/utils";
 
 type BingoCellItemProps = {
   cell: BingoCell;
-  isHighlighted: boolean;
   onSelect: (cell: BingoCell) => void;
 };
 
 export function BingoCellItem({
   cell,
-  isHighlighted,
   onSelect,
 }: BingoCellItemProps) {
   const filled = isCellFilled(cell);
@@ -29,7 +27,6 @@ export function BingoCellItem({
         filled
           ? "border-orange-200"
           : "border-slate-200 hover:border-orange-300 hover:bg-orange-50",
-        isHighlighted ? "ring-2 ring-orange-400 ring-offset-2" : "",
       )}
       aria-label={`${cell.title} 칸 편집`}
     >

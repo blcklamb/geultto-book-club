@@ -22,7 +22,7 @@ describe("summer bingo logic", () => {
   it("creates a fixed 3x3 board with nine theme cells", () => {
     const board = createInitialBoard(new Date("2026-06-01T00:00:00.000Z"));
 
-    expect(board.title).toBe("여름 책 빙고");
+    expect(board.title).toBe("여름 책 팔레트");
     expect(board.size).toBe(3);
     expect(board.cells).toHaveLength(9);
     expect(board.cells.every((cell) => cell.type === "theme")).toBe(true);

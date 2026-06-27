@@ -61,7 +61,7 @@ export function normalizeBoard(value: unknown): BingoBoard | null {
 
   return {
     ...fallback,
-    title: "여름 책 빙고",
+    title: "여름 책 팔레트",
     cells,
     createdAt:
       typeof value.createdAt === "string" ? value.createdAt : fallback.createdAt,

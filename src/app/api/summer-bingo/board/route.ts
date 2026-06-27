@@ -26,7 +26,7 @@ export async function GET() {
       error,
     });
     return NextResponse.json(
-      { message: "빙고 판을 불러오지 못했습니다." },
+      { message: "팔레트를 불러오지 못했습니다." },
       { status: 500 },
     );
   }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   );
   if (!board) {
     return NextResponse.json(
-      { message: "빙고 판 데이터 형식이 올바르지 않습니다." },
+      { message: "팔레트 데이터 형식이 올바르지 않습니다." },
       { status: 400 },
     );
   }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const serializedBoard = JSON.stringify(board);
   if (new Blob([serializedBoard]).size > MAX_BOARD_PAYLOAD_BYTES) {
     return NextResponse.json(
-      { message: "빙고 판 사진 용량이 너무 큽니다." },
+      { message: "팔레트 사진 용량이 너무 큽니다." },
       { status: 413 },
     );
   }
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       error,
     });
     return NextResponse.json(
-      { message: "빙고 판을 서버에 저장하지 못했습니다." },
+      { message: "팔레트를 서버에 저장하지 못했습니다." },
       { status: 500 },
     );
   }
@@ -108,7 +108,7 @@ async function getBingoAuthError() {
 
   if (sessionUser.isDeactivated || sessionUser.role === "pending") {
     return NextResponse.json(
-      { message: "승인된 회원만 빙고 판을 서버에 저장할 수 있습니다." },
+      { message: "승인된 회원만 팔레트를 서버에 저장할 수 있습니다." },
       { status: 403 },
     );
   }

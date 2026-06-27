@@ -12,7 +12,7 @@ const CELL_SIZE = 344;
 const CELL_GAP = 0;
 const CELL_RADIUS = 0;
 const BOARD_SIZE = CELL_SIZE * 3 + CELL_GAP * 2;
-const EXPORT_FILE_NAME = "summer-book-bingo.png";
+const EXPORT_FILE_NAME = "summer-book-palette.png";
 const IMAGE_LOAD_TIMEOUT_MS = 10_000;
 
 export function useImageExport() {
@@ -29,7 +29,7 @@ export function useImageExport() {
       downloadBlob(blob, EXPORT_FILE_NAME);
     } catch (err) {
       console.error(err);
-      setError("빙고 판 이미지를 저장하지 못했습니다. 다시 시도해주세요.");
+      setError("팔레트 이미지를 저장하지 못했습니다. 다시 시도해주세요.");
     } finally {
       setIsExporting(false);
     }
@@ -48,7 +48,7 @@ export async function renderBoardToBlob(board: BingoBoard) {
   const blob = await canvasToBlob(canvas);
 
   if (!blob) {
-    throw new Error("빙고 판 이미지를 PNG 파일로 변환하지 못했습니다.");
+    throw new Error("팔레트 이미지를 PNG 파일로 변환하지 못했습니다.");
   }
 
   return blob;

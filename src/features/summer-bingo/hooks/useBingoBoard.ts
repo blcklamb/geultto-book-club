@@ -69,7 +69,7 @@ export function useBingoBoard() {
         }
 
         if (!response.ok) {
-          throw new Error("서버 빙고 판을 불러오지 못했습니다.");
+          throw new Error("서버 팔레트를 불러오지 못했습니다.");
         }
 
         const payload = (await response.json()) as { board?: unknown };
@@ -85,7 +85,7 @@ export function useBingoBoard() {
         console.error(err);
         if (!cancelled) {
           setServerError(
-            "서버에 저장된 빙고 판을 불러오지 못했습니다. 이 브라우저의 저장본을 사용합니다.",
+            "서버에 저장된 팔레트를 불러오지 못했습니다. 이 브라우저의 저장본을 사용합니다.",
           );
           setSyncState("error");
           setIsLoaded(true);
@@ -134,7 +134,7 @@ export function useBingoBoard() {
           console.error(err);
           if (!cancelled) {
             setServerError(
-              "빙고 판을 서버에 저장하지 못했습니다. 이 브라우저에는 임시 저장되었습니다.",
+              "팔레트를 서버에 저장하지 못했습니다. 이 브라우저에는 임시 저장되었습니다.",
             );
             setSyncState("error");
           }
@@ -194,7 +194,7 @@ async function saveBoardToServer(board: BingoBoard) {
   });
 
   if (!response.ok) {
-    throw new Error("서버 빙고 판 저장 실패");
+    throw new Error("서버 팔레트 저장 실패");
   }
 }
 

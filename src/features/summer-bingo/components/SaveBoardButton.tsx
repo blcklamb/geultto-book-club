@@ -51,7 +51,7 @@ export function SaveBoardButton({
       ) : (
         <>
           <Download className="h-4 w-4" />
-          빙고 판 저장
+          팔레트 저장
         </>
       )}
     </Button>
