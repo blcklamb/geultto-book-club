@@ -232,6 +232,13 @@ CREATE TABLE IF NOT EXISTS public.point_transactions (
   idempotency_key text NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS public.summer_bingo_boards (
+  user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  board jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
 -- Row Level Security policies (conceptual)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
@@ -256,6 +263,7 @@ ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.summer_bingo_boards ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can select their own profile"
   ON public.users FOR SELECT
@@ -267,6 +275,23 @@ CREATE POLICY "Users can update their own profile"
   ON public.users FOR UPDATE
   USING ((SELECT auth.uid()) = id)
   WITH CHECK ((SELECT auth.uid()) = id);
+
+CREATE POLICY "Users can read their own summer bingo board"
+  ON public.summer_bingo_boards FOR SELECT TO authenticated
+  USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can insert their own summer bingo board"
+  ON public.summer_bingo_boards FOR INSERT TO authenticated
+  WITH CHECK ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can update their own summer bingo board"
+  ON public.summer_bingo_boards FOR UPDATE TO authenticated
+  USING ((SELECT auth.uid()) = user_id)
+  WITH CHECK ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can delete their own summer bingo board"
+  ON public.summer_bingo_boards FOR DELETE TO authenticated
+  USING ((SELECT auth.uid()) = user_id);
 
 CREATE OR REPLACE FUNCTION public.current_user_is_active_admin()
 RETURNS boolean

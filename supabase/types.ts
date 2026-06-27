@@ -68,6 +68,31 @@ export interface Database {
           }
         ];
       };
+      summer_bingo_boards: {
+        Row: {
+          user_id: string;
+          board: Json;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          board: Json;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["summer_bingo_boards"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "summer_bingo_boards_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       schedules: {
         Row: {
           id: string;
