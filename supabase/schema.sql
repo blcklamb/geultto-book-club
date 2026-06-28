@@ -282,12 +282,39 @@ CREATE POLICY "Users can read their own summer palette board"
 
 CREATE POLICY "Users can insert their own summer palette board"
   ON public.summer_palette_boards FOR INSERT TO authenticated
-  WITH CHECK ((SELECT auth.uid()) = user_id);
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  );
 
 CREATE POLICY "Users can update their own summer palette board"
   ON public.summer_palette_boards FOR UPDATE TO authenticated
-  USING ((SELECT auth.uid()) = user_id)
-  WITH CHECK ((SELECT auth.uid()) = user_id);
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  )
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  );
 
 CREATE POLICY "Users can delete their own summer palette board"
   ON public.summer_palette_boards FOR DELETE TO authenticated

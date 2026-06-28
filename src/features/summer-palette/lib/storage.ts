@@ -4,10 +4,33 @@ import type { PaletteBoard, PaletteCell, CellPhoto } from "../types";
 
 export const SUMMER_PALETTE_STORAGE_KEY = "summer-book-palette:v1";
 
+/**
+ * 로컬 보드 캐시는 로그인한 사용자별로 분리해 저장한다.
+ * 같은 브라우저를 공유할 때 다른 계정/익명 세션의 보드(사진 포함)가
+ * 다음 사용자 계정으로 새어 나가는 것을 방지한다.
+ */
+export function getBoardStorageKey(userId?: string | null) {
+  return userId
+    ? `${SUMMER_PALETTE_STORAGE_KEY}:user:${userId}`
+    : SUMMER_PALETTE_STORAGE_KEY;
+}
+
 export function loadBoardFromStorage(
-  storage: Storage = window.localStorage,
+  key: string = SUMMER_PALETTE_STORAGE_KEY,
+  storage: Storage | null = getDefaultStorage(),
 ): PaletteBoard | null {
-  const raw = storage.getItem(SUMMER_PALETTE_STORAGE_KEY);
+  if (!storage) {
+    return null;
+  }
+
+  let raw: string | null;
+  try {
+    raw = storage.getItem(key);
+  } catch {
+    // 사생활 보호 모드 등 localStorage 접근이 차단된 환경에서는 빈 보드로 폴백한다.
+    return null;
+  }
+
   if (!raw) {
     return null;
   }
@@ -21,13 +44,35 @@ export function loadBoardFromStorage(
 
 export function saveBoardToStorage(
   board: PaletteBoard,
-  storage: Storage = window.localStorage,
+  key: string = SUMMER_PALETTE_STORAGE_KEY,
+  storage: Storage | null = getDefaultStorage(),
 ) {
-  storage.setItem(SUMMER_PALETTE_STORAGE_KEY, JSON.stringify(board));
+  if (!storage) {
+    return;
+  }
+  storage.setItem(key, JSON.stringify(board));
 }
 
-export function clearBoardStorage(storage: Storage = window.localStorage) {
-  storage.removeItem(SUMMER_PALETTE_STORAGE_KEY);
+export function clearBoardStorage(
+  key: string = SUMMER_PALETTE_STORAGE_KEY,
+  storage: Storage | null = getDefaultStorage(),
+) {
+  if (!storage) {
+    return;
+  }
+  try {
+    storage.removeItem(key);
+  } catch {
+    // 저장소 접근이 차단된 환경에서는 조용히 무시한다.
+  }
+}
+
+function getDefaultStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function normalizeBoard(value: unknown): PaletteBoard | null {

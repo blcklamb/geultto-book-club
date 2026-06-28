@@ -47,7 +47,7 @@
 
 **현상:** `LocalizedDate`가 `ko-KR` locale을 사용하지만 `timeZone`을 명시하지 않아 클라이언트 시스템 시간대에 의존한다. 해외 또는 UTC 환경에서 UTC 시각이 그대로 출력된다.
 
-**수정 파일:** [src/components/LocalizedDate.tsx](src/components/LocalizedDate.tsx)
+**수정 파일:** [src/components/LocalizedDate.tsx](../src/components/LocalizedDate.tsx)
 
 **방법:** `formatLocalizedDate` 함수의 기본 options에 `timeZone: 'Asia/Seoul'`을 병합한다.
 
@@ -71,8 +71,8 @@ return new Intl.DateTimeFormat(locale, merged).format(date);
 
 **수정 파일:**
 
-- [src/components/ReviewCard.tsx](src/components/ReviewCard.tsx) — `options`에 `timeStyle: "short"` 추가
-- [src/app/topics/page.tsx](src/app/topics/page.tsx) — 동일하게 시각 추가
+- [src/components/ReviewCard.tsx](../src/components/ReviewCard.tsx) — `options`에 `timeStyle: "short"` 추가
+- [src/app/topics/page.tsx](../src/app/topics/page.tsx) — 동일하게 시각 추가
 
 **방법:**
 
@@ -102,8 +102,8 @@ options={{ year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", m
 
 **수정 파일:**
 
-- [src/app/reviews/page.tsx](src/app/reviews/page.tsx) — 독후감별 댓글/대댓글 수를 집계하고 `ReviewCard`에 `commentCount` prop 전달
-- [src/components/ReviewCard.tsx](src/components/ReviewCard.tsx) — `commentCount?: number` prop 추가, 카드 하단에 `💬 N` 표시
+- [src/app/reviews/page.tsx](../src/app/reviews/page.tsx) — 독후감별 댓글/대댓글 수를 집계하고 `ReviewCard`에 `commentCount` prop 전달
+- [src/components/ReviewCard.tsx](../src/components/ReviewCard.tsx) — `commentCount?: number` prop 추가, 카드 하단에 `💬 N` 표시
 
 **집계 방법:**
 
@@ -131,8 +131,8 @@ options={{ year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", m
 
 **수정 파일:**
 
-- [src/components/ReviewEditor.tsx](src/components/ReviewEditor.tsx) — TipTap 에디터 하단에 `현재 글자 수 / 최소 N자` 카운터 표시, 최솟값 미달 시 submit 버튼 disabled
-- [src/app/api/reviews/route.ts](src/app/api/reviews/route.ts) — 서버 측에서도 `content_markdown` 길이 검증
+- [src/components/ReviewEditor.tsx](../src/components/ReviewEditor.tsx) — TipTap 에디터 하단에 `현재 글자 수 / 최소 N자` 카운터 표시, 최솟값 미달 시 submit 버튼 disabled
+- [src/app/api/reviews/route.ts](../src/app/api/reviews/route.ts) — 서버 측에서도 `content_markdown` 길이 검증
 
 **확정 정책:**
 
@@ -200,8 +200,8 @@ export function LinkedText({ text }: { text: string }) {
 
 **적용 위치:**
 
-- [src/components/CommentThread.tsx](src/components/CommentThread.tsx) — `comment.body` / `reply.body` 렌더링
-- [src/components/HighlightCommentPanel.tsx](src/components/HighlightCommentPanel.tsx) — 동일
+- [src/components/CommentThread.tsx](../src/components/CommentThread.tsx) — `comment.body` / `reply.body` 렌더링
+- [src/components/HighlightCommentPanel.tsx](../src/components/HighlightCommentPanel.tsx) — 동일
 
 **정책:**
 
@@ -226,7 +226,7 @@ export function LinkedText({ text }: { text: string }) {
 
 **현상:** 하이라이트 텍스트에 개행이 포함되어 있어도 `HighlightCommentPanel`의 blockquote에서 줄바꿈이 렌더링되지 않는다.
 
-**수정 파일:** [src/components/HighlightCommentPanel.tsx](src/components/HighlightCommentPanel.tsx)
+**수정 파일:** [src/components/HighlightCommentPanel.tsx](../src/components/HighlightCommentPanel.tsx)
 
 **방법:** blockquote에 `whitespace-pre-wrap` 클래스 추가.
 
@@ -248,7 +248,7 @@ export function LinkedText({ text }: { text: string }) {
 
 **현상:** `HighlightCommentPanel`이 `Sheet` 컴포넌트를 사용하는데, `SheetOverlay`가 `bg-black/80`으로 전체 화면을 어둡게 덮어 독후감 본문을 가린다.
 
-**수정 파일:** [src/components/HighlightCommentPanel.tsx](src/components/HighlightCommentPanel.tsx)
+**수정 파일:** [src/components/HighlightCommentPanel.tsx](../src/components/HighlightCommentPanel.tsx)
 
 **방법:** `SheetContent`에 `overlayClassName` prop을 전달하거나, `HighlightCommentPanel`에서 `SheetOverlay`를 비활성화한다. Radix Dialog/Sheet는 `SheetPortal` + `SheetContent` 조합으로 오버레이 없이 렌더링 가능.
 
@@ -283,7 +283,7 @@ export function LinkedText({ text }: { text: string }) {
 
 **원인:** `SheetContent`가 `fixed` + `z-50`으로 본문 위에 overlay됨.
 
-**방법:** 독후감 상세 페이지([src/app/reviews/[id]/page.tsx](src/app/reviews/%5Bid%5D/page.tsx))의 레이아웃을 수정하여, 데스크톱에서는 패널이 열리면 본문 영역이 좁아지는 side-by-side 레이아웃으로 전환한다. 모바일에서는 항목 13의 정책에 따라 bottom sheet를 사용한다.
+**방법:** 독후감 상세 페이지([src/app/reviews/[id]/page.tsx](../src/app/reviews/%5Bid%5D/page.tsx))의 레이아웃을 수정하여, 데스크톱에서는 패널이 열리면 본문 영역이 좁아지는 side-by-side 레이아웃으로 전환한다. 모바일에서는 항목 13의 정책에 따라 bottom sheet를 사용한다.
 
 ```tsx
 // ReviewViewerInteractive 컴포넌트 감싸는 div에 조건부 클래스
@@ -332,15 +332,15 @@ export function LinkedText({ text }: { text: string }) {
 
 **현상:** 한 사용자가 하이라이트를 추가해도 다른 사용자 화면에 실시간으로 반영되지 않는다. 페이지를 새로고침해야 확인 가능.
 
-**수정 파일:** [src/components/ReviewViewerInteractive.tsx](src/components/ReviewViewerInteractive.tsx)
+**수정 파일:** [src/components/ReviewViewerInteractive.tsx](../src/components/ReviewViewerInteractive.tsx)
 
 **방법:** `useEffect`에서 Supabase Realtime 채널을 구독한다.
 
 ```ts
-import { createSupabaseBrowserClient } from "@supabase/client";
+import { createClient } from "@supabase/client";
 
 useEffect(() => {
-  const supabase = createSupabaseBrowserClient();
+  const supabase = createClient();
   const channel = supabase
     .channel(`review-highlights-${reviewId}`)
     .on(
@@ -411,7 +411,7 @@ supabase
 
 `CommentThread`를 Client Component로 유지하되 Supabase Realtime으로 댓글 변경을 구독한다. 댓글 state를 서버에서 초기화하고 클라이언트에서 업데이트한다.
 
-**수정:** 독후감 상세([src/app/reviews/[id]/page.tsx](src/app/reviews/%5Bid%5D/page.tsx))에 Realtime 구독 wrapper를 추가하거나, `CommentThread`에 `reviewId` prop을 추가해 내부에서 구독한다.
+**수정:** 독후감 상세([src/app/reviews/[id]/page.tsx](../src/app/reviews/%5Bid%5D/page.tsx))에 Realtime 구독 wrapper를 추가하거나, `CommentThread`에 `reviewId` prop을 추가해 내부에서 구독한다.
 
 ```ts
 // review_comments 테이블 구독
@@ -438,7 +438,7 @@ supabase
 
 **현상:** 토론 상세 페이지의 댓글이 `ascending: true` (오래된 순)로 조회된다. 독후감은 이미 `ascending: false`.
 
-**수정 파일:** [src/app/topics/[id]/page.tsx](src/app/topics/%5Bid%5D/page.tsx)
+**수정 파일:** [src/app/topics/[id]/page.tsx](../src/app/topics/%5Bid%5D/page.tsx)
 
 ```ts
 // before
@@ -468,7 +468,7 @@ supabase
 
 **원인:** `SheetContent`가 `overflow-y-auto`로 설정되어 있어 헤더도 스크롤 영역에 포함됨. 또한 모바일에서 `w-full`이지만 높이가 뷰포트를 초과하면 헤더가 가려짐.
 
-**수정 파일:** [src/components/HighlightCommentPanel.tsx](src/components/HighlightCommentPanel.tsx)
+**수정 파일:** [src/components/HighlightCommentPanel.tsx](../src/components/HighlightCommentPanel.tsx)
 
 **방법:**
 
@@ -515,9 +515,9 @@ supabase
 
 **현상:** 메인 페이지의 "다음 독서모임 일정" 영역에서 일정 상세로 이동하는 명시적인 동선이 부족하다.
 
-**현재 코드:** [src/app/schedule/page.tsx](src/app/schedule/page.tsx)는 이미 `<Link href={`/schedule/${schedule.id}`}>` 로 카드를 래핑 중.
+**현재 코드:** [src/app/schedule/page.tsx](../src/app/schedule/page.tsx)는 이미 `<Link href={`/schedule/${schedule.id}`}>` 로 카드를 래핑 중.
 
-**수정 파일:** 홈페이지([src/app/(public)/page.tsx](src/app/%28public%29/page.tsx) 또는 유사 파일)
+**수정 파일:** 홈페이지([src/app/(public)/page.tsx](../src/app/%28public%29/page.tsx) 또는 유사 파일)
 
 **방법:** 메인 페이지의 "다음 독서모임 일정" 영역에 `일정 상세 보기` 버튼을 추가하고 `/schedule/{schedule.id}`로 연결한다.
 

@@ -122,6 +122,7 @@ export function SummerPalettePage() {
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <PaletteBoard
           board={board}
+          highlightedCellIndexes={stats.highlightedCellIndexes}
           onSelectCell={(cell) => setSelectedCellIndex(cell.index)}
         />
 

@@ -5,11 +5,13 @@ import type { PaletteBoard as PaletteBoardType, PaletteCell } from "../types";
 
 type PaletteBoardProps = {
   board: PaletteBoardType;
+  highlightedCellIndexes?: Set<number>;
   onSelectCell: (cell: PaletteCell) => void;
 };
 
 export function PaletteBoard({
   board,
+  highlightedCellIndexes,
   onSelectCell,
 }: PaletteBoardProps) {
   return (
@@ -20,6 +22,7 @@ export function PaletteBoard({
             <PaletteCellItem
               key={cell.id}
               cell={cell}
+              isHighlighted={highlightedCellIndexes?.has(cell.index) ?? false}
               onSelect={onSelectCell}
             />
           ))}

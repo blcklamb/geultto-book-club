@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "@/components/SessionProvider";
 import {
   createInitialBoard,
@@ -14,6 +14,7 @@ import {
 } from "../lib/paletteLogic";
 import {
   clearBoardStorage,
+  getBoardStorageKey,
   loadBoardFromStorage,
   normalizeBoard,
   saveBoardToStorage,
@@ -30,16 +31,24 @@ export function usePaletteBoard() {
   const canSyncToServer = Boolean(
     sessionUser && sessionUser.role !== "pending" && !sessionUser.isDeactivated,
   );
+  const storageKey = useMemo(
+    () => getBoardStorageKey(sessionUser?.id),
+    [sessionUser?.id],
+  );
   const [board, setBoard] = useState(() => createInitialBoard());
   const [isLoaded, setIsLoaded] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("loading");
+  // 사용자가 직접 칸을 편집했을 때만 true가 되어, 단순 하이드레이션 후
+  // 변경 없는 보드를 서버에 다시 저장(=updated_at 갱신으로 갤러리 순서가 바뀜)하지 않도록 한다.
+  const isDirtyRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    const localBoard = loadBoardFromStorage();
+    const localBoard = loadBoardFromStorage(storageKey);
 
+    isDirtyRef.current = false;
     setIsLoaded(false);
     setServerError(null);
     setStorageError(null);
@@ -98,7 +107,7 @@ export function usePaletteBoard() {
     return () => {
       cancelled = true;
     };
-  }, [canSyncToServer, sessionUser?.id]);
+  }, [canSyncToServer, sessionUser?.id, storageKey]);
 
   useEffect(() => {
     if (!isLoaded) {
@@ -108,7 +117,7 @@ export function usePaletteBoard() {
     let cancelled = false;
     const timeoutId = window.setTimeout(() => {
       try {
-        saveBoardToStorage(board);
+        saveBoardToStorage(board, storageKey);
         setStorageError(null);
       } catch (err) {
         console.error(err);
@@ -117,8 +126,9 @@ export function usePaletteBoard() {
         );
       }
 
-      if (!canSyncToServer) {
-        setSyncState("local");
+      // 사용자가 편집하지 않은 채 페이지만 열어본 경우에는 서버에 다시 쓰지 않는다.
+      if (!canSyncToServer || !isDirtyRef.current) {
+        setSyncState(canSyncToServer ? "synced" : "local");
         return;
       }
 
@@ -145,20 +155,23 @@ export function usePaletteBoard() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [board, canSyncToServer, isLoaded]);
+  }, [board, canSyncToServer, isLoaded, storageKey]);
 
   const updatePhoto = useCallback((cellIndex: number, photo: CellPhoto) => {
+    isDirtyRef.current = true;
     setBoard((current) => withUpdatedCellPhoto(current, cellIndex, photo));
   }, []);
 
   const clearPhoto = useCallback((cellIndex: number) => {
+    isDirtyRef.current = true;
     setBoard((current) => withClearedCellPhoto(current, cellIndex));
   }, []);
 
   const resetBoard = useCallback(() => {
-    clearBoardStorage();
+    isDirtyRef.current = true;
+    clearBoardStorage(storageKey);
     setBoard(createInitialBoard());
-  }, []);
+  }, [storageKey]);
 
   const stats = useMemo(() => {
     const completedLines = getCompletedLines(board);
@@ -210,14 +223,18 @@ function selectPreferredBoard(
     return localBoard;
   }
 
-  const localFilledCount = getFilledCount(localBoard);
-  const serverFilledCount = getFilledCount(serverBoard);
+  // 최신성(updatedAt)을 우선으로 비교한다. 다른 기기에서 사진을 지워
+  // 채워진 칸 수가 줄었더라도 더 최근에 갱신된 상태가 정답이므로,
+  // 오래된 로컬 사본이 최신 서버 변경을 덮어쓰지 않게 한다.
+  const localTime = getUpdatedAtTime(localBoard);
+  const serverTime = getUpdatedAtTime(serverBoard);
 
-  if (localFilledCount !== serverFilledCount) {
-    return localFilledCount > serverFilledCount ? localBoard : serverBoard;
+  if (localTime !== serverTime) {
+    return localTime > serverTime ? localBoard : serverBoard;
   }
 
-  return getUpdatedAtTime(localBoard) >= getUpdatedAtTime(serverBoard)
+  // 타임스탬프가 같거나 비교 불가하면 더 많이 채운 보드를 보존한다.
+  return getFilledCount(localBoard) >= getFilledCount(serverBoard)
     ? localBoard
     : serverBoard;
 }

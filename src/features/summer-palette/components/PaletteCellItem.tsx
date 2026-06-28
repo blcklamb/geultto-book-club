@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 
 type PaletteCellItemProps = {
   cell: PaletteCell;
+  isHighlighted?: boolean;
   onSelect: (cell: PaletteCell) => void;
 };
 
 export function PaletteCellItem({
   cell,
+  isHighlighted = false,
   onSelect,
 }: PaletteCellItemProps) {
   const filled = isCellFilled(cell);
@@ -29,8 +31,12 @@ export function PaletteCellItem({
         filled
           ? "border-orange-200"
           : "border-slate-200 hover:border-orange-300 hover:bg-orange-50",
+        // 완성된 라인(가로/세로/대각)에 속한 칸을 시각적으로 강조한다. (FR-8)
+        isHighlighted &&
+          "z-20 border-emerald-400 ring-2 ring-inset ring-emerald-400",
       )}
       aria-label={`${cell.title} 칸 편집`}
+      data-line-completed={isHighlighted ? "true" : undefined}
     >
       {cell.photo ? (
         <img
