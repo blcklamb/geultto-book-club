@@ -18,7 +18,7 @@ import { useProfileImage } from "./DetailHeader";
 
 const navItems = [
   { href: "/schedule", label: "일정" },
-  { href: "/summer-bingo", label: "여름 팔레트" },
+  { href: "/summer-palette", label: "여름 팔레트" },
   { href: "/reviews", label: "독후감" },
   { href: "/quotes", label: "인상 깊은 구절" },
   { href: "/topics", label: "토론" },

@@ -68,7 +68,7 @@ export interface Database {
           }
         ];
       };
-      summer_bingo_boards: {
+      summer_palette_boards: {
         Row: {
           user_id: string;
           board: Json;
@@ -82,11 +82,11 @@ export interface Database {
           updated_at?: string | null;
         };
         Update: Partial<
-          Database["public"]["Tables"]["summer_bingo_boards"]["Insert"]
+          Database["public"]["Tables"]["summer_palette_boards"]["Insert"]
         >;
         Relationships: [
           {
-            foreignKeyName: "summer_bingo_boards_user_id_fkey";
+            foreignKeyName: "summer_palette_boards_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
