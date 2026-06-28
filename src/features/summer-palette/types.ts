@@ -24,3 +24,14 @@ export interface PaletteBoard {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PaletteGalleryItem {
+  userId: string;
+  nickname: string;
+  profileImageUrl: string | null;
+  profileDecoration: string | null;
+  board: PaletteBoard;
+  filledCount: number;
+  isFullClear: boolean;
+  updatedAt: string | null;
+}

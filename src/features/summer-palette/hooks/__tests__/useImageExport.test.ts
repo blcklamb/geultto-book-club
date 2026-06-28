@@ -61,7 +61,7 @@ describe("summer palette image export", () => {
     expect(ctx.drawImage).toHaveBeenCalledTimes(9);
     expect(maxSaveDepth).toBeLessThanOrEqual(2);
     expect(ctx.fillText).toHaveBeenCalledWith(
-      "06.28.01.41",
+      "06.28 01:41",
       expect.any(Number),
       expect.any(Number),
     );
@@ -70,7 +70,7 @@ describe("summer palette image export", () => {
       expect.any(Number),
       expect.any(Number),
     );
-    expect(ctx.stroke).toHaveBeenCalledTimes(18);
+    expect(ctx.stroke).toHaveBeenCalledTimes(27);
   });
 
   it("renders the board to a PNG blob for reliable downloads", async () => {

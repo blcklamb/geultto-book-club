@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SUMMER_PALETTE_CELL_ACCENTS } from "../data/themes";
 import { isCellFilled } from "../lib/paletteLogic";
-import { formatPhotoTimestamp } from "./useImageResize";
+import { formatPaletteTimestamp } from "./useImageResize";
 import type { PaletteBoard, PaletteCell } from "../types";
 
 const CANVAS_WIDTH = 1200;
@@ -173,10 +173,6 @@ async function drawCell(
   ctx.fillStyle = accent;
   ctx.fillRect(x + 28, y + 28, 58, 8);
 
-  if (image) {
-    drawPhotoTimestampPill(ctx, cell, x, y);
-  }
-
   if (isCellFilled(cell)) {
     ctx.beginPath();
     ctx.arc(x + CELL_SIZE - 52, y + 52, 30, 0, Math.PI * 2);
@@ -199,6 +195,10 @@ async function drawCell(
   ctx.strokeStyle = isCellFilled(cell) ? "#fdba74" : "#fed7aa";
   ctx.lineWidth = 5;
   ctx.stroke();
+
+  if (isCellFilled(cell)) {
+    drawBoardTimestampBadge(ctx, cell, x, y);
+  }
 }
 
 function drawImageCover(
@@ -218,7 +218,7 @@ function drawImageCover(
   ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
-function drawPhotoTimestampPill(
+function drawBoardTimestampBadge(
   ctx: CanvasRenderingContext2D,
   cell: PaletteCell,
   x: number,
@@ -232,8 +232,8 @@ function drawPhotoTimestampPill(
   const fontSize = 22;
   const paddingX = 14;
   const height = 34;
-  const timestampX = x + 28;
-  const timestampY = y + 48;
+  const timestampX = x + 14;
+  const timestampY = y + 14;
 
   ctx.save();
   ctx.font =
@@ -241,11 +241,19 @@ function drawPhotoTimestampPill(
   ctx.textBaseline = "middle";
 
   const width = Math.ceil(ctx.measureText(timestamp).width) + paddingX * 2;
-  ctx.fillStyle = "rgba(15, 23, 42, 0.68)";
+  ctx.shadowColor = "rgba(15, 23, 42, 0.18)";
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
   drawRoundedRect(ctx, timestampX, timestampY, width, height, height / 2);
   ctx.fill();
 
-  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "rgba(251, 146, 60, 0.9)";
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, timestampX, timestampY, width, height, height / 2);
+  ctx.stroke();
+
+  ctx.fillStyle = "#0f172a";
   ctx.fillText(timestamp, timestampX + paddingX, timestampY + height / 2);
   ctx.restore();
 }
@@ -260,7 +268,7 @@ function formatCellTimestamp(cell: PaletteCell) {
     return null;
   }
 
-  return formatPhotoTimestamp(date);
+  return formatPaletteTimestamp(date);
 }
 
 function buildLines(

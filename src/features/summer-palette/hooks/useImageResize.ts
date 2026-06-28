@@ -7,7 +7,6 @@ export async function resizeImageFile(
   file: File,
   maxSize = DEFAULT_MAX_SIZE,
   quality = DEFAULT_QUALITY,
-  now = new Date(),
 ): Promise<CellPhoto> {
   const sourceDataUrl = await readFileAsDataUrl(file);
   const image = await loadImage(sourceDataUrl);
@@ -26,7 +25,6 @@ export async function resizeImageFile(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
   ctx.drawImage(image, 0, 0, width, height);
-  drawPhotoTimestamp(ctx, width, height, formatPhotoTimestamp(now));
 
   return {
     dataUrl: canvas.toDataURL("image/jpeg", quality),
@@ -36,90 +34,15 @@ export async function resizeImageFile(
   };
 }
 
-export function formatPhotoTimestamp(date = new Date()) {
-  return [
+export function formatPaletteTimestamp(date = new Date()) {
+  const [month, day, hours, minutes] = [
     date.getMonth() + 1,
     date.getDate(),
     date.getHours(),
     date.getMinutes(),
-  ]
-    .map((part) => String(part).padStart(2, "0"))
-    .join(".");
-}
+  ].map((part) => String(part).padStart(2, "0"));
 
-function drawPhotoTimestamp(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  timestamp: string,
-) {
-  ctx.save();
-
-  let fontSize = Math.max(
-    12,
-    Math.min(44, Math.round(Math.min(width, height) * 0.07)),
-  );
-  let box = measureTimestampBox(ctx, timestamp, fontSize);
-
-  while (fontSize > 10 && box.width > width - fontSize) {
-    fontSize -= 1;
-    box = measureTimestampBox(ctx, timestamp, fontSize);
-  }
-
-  const margin = Math.max(6, Math.round(fontSize * 0.7));
-  const x = Math.max(4, width - box.width - margin);
-  const y = Math.max(4, height - box.height - margin);
-
-  ctx.shadowColor = "rgba(15, 23, 42, 0.35)";
-  ctx.shadowBlur = Math.round(fontSize * 0.45);
-  ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
-  drawRoundedRect(ctx, x, y, box.width, box.height, Math.round(box.height / 2));
-  ctx.fill();
-
-  ctx.shadowColor = "transparent";
-  ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.fillText(timestamp, x + box.paddingX, y + box.height / 2);
-
-  ctx.restore();
-}
-
-function measureTimestampBox(
-  ctx: CanvasRenderingContext2D,
-  timestamp: string,
-  fontSize: number,
-) {
-  ctx.font =
-    `700 ${fontSize}px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif`;
-  const paddingX = Math.round(fontSize * 0.65);
-  const paddingY = Math.round(fontSize * 0.38);
-
-  return {
-    width: Math.ceil(ctx.measureText(timestamp).width) + paddingX * 2,
-    height: fontSize + paddingY * 2,
-    paddingX,
-  };
-}
-
-function drawRoundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
+  return `${month}.${day} ${hours}:${minutes}`;
 }
 
 function readFileAsDataUrl(file: File) {

@@ -9,16 +9,16 @@
 
 구현 전에 아래 항목을 확정해야 한다. 본 문서는 각 항목에 **MVP 기본값(가정)**을 두고 작성했으며, 답변에 따라 수정한다.
 
-| # | 결정 사항 | 확정 | 비고 |
-|---|-----------|------|------|
-| Q1 | **팔레트 크기 / 주제 개수** | ✅ 3×3 (9칸), **9칸 모두 주제** | FREE 칸 없음. 현재 7개 주제 + 추가 2개 필요 |
-| Q2 | **"완성"의 정의** | ✅ **9칸 모두 완료** | 한 줄(라인) 완성은 시각적 강조하되, 저장·완성 기준은 9칸 전부 |
-| Q3 | **"저장"의 의미** | ✅ **서버 진행 저장 + PNG 이미지 다운로드/공유** | 로그인 사용자별 저장 |
-| Q4 | **로그인/사용자별 저장** | ✅ 필요 | Supabase DB에 사용자별 팔레트 저장, localStorage는 백업 |
-| Q5 | **로그인/사용자별 저장** | 필요 (같은 계정이면 기기 간 복원) | 비로그인 상태는 브라우저 localStorage 백업만 |
-| Q6 | **칸당 사진** | 사진 1장 | 여러 장 허용할지 |
-| Q7 | **주제 편집/셔플** | 주제는 고정 프리셋 | 사용자가 칸 텍스트 수정·셔플 허용은 Phase 3 |
-| Q8 | **운영 기간** | 상시 (여름 시즌 한정 노출은 후순위) | 시즌 배너/마감일 필요 여부 |
+| #   | 결정 사항                   | 확정                                             | 비고                                                          |
+| --- | --------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| Q1  | **팔레트 크기 / 주제 개수** | ✅ 3×3 (9칸), **9칸 모두 주제**                  | FREE 칸 없음. 현재 7개 주제 + 추가 2개 필요                   |
+| Q2  | **"완성"의 정의**           | ✅ **9칸 모두 완료**                             | 한 줄(라인) 완성은 시각적 강조하되, 저장·완성 기준은 9칸 전부 |
+| Q3  | **"저장"의 의미**           | ✅ **서버 진행 저장 + PNG 이미지 다운로드/공유** | 로그인 사용자별 저장                                          |
+| Q4  | **로그인/사용자별 저장**    | ✅ 필요                                          | Supabase DB에 사용자별 팔레트 저장, localStorage는 백업       |
+| Q5  | **로그인/사용자별 저장**    | 필요 (같은 계정이면 기기 간 복원)                | 비로그인 상태는 브라우저 localStorage 백업만                  |
+| Q6  | **칸당 사진**               | 사진 1장                                         | 여러 장 허용할지                                              |
+| Q7  | **주제 편집/셔플**          | 주제는 고정 프리셋                               | 사용자가 칸 텍스트 수정·셔플 허용은 Phase 3                   |
+| Q8  | **운영 기간**               | 상시 (여름 시즌 한정 노출은 후순위)              | 시즌 배너/마감일 필요 여부                                    |
 
 > 위 기본값으로 진행해도 무방하면 그대로, 바꿀 항목만 알려주면 해당 섹션을 갱신한다.
 
@@ -31,6 +31,7 @@
 - 완성한 팔레트를 **이미지로 저장/공유**해 모임 안에서 자랑하거나 SNS에 올릴 수 있다.
 
 성공 기준(MVP):
+
 1. 멤버가 9칸짜리 팔레트에서 각 칸에 사진을 첨부할 수 있다.
 2. 로그인한 멤버의 진행 상태가 서버에 저장되어 다른 기기에서도 복원된다.
 3. 완성된 팔레트를 PNG 한 장으로 내려받을 수 있다.
@@ -55,19 +56,20 @@
 - **FR-4** 편집 시트에서 사진을 첨부(갤러리 선택 또는 카메라 촬영)할 수 있다.
 - **FR-5** 사진 첨부 시 칸은 "완료" 상태로 바뀌고 썸네일과 체크 표시가 보인다.
 - **FR-6** 칸의 사진을 교체/삭제할 수 있다. 삭제 시 완료 상태가 해제된다.
-- **FR-7** 사진에는 `MM.DD.hh.MM` 형식의 타임스탬프를 남긴다.
+- **FR-7** 팔레트 칸에는 `MM.DD hh:MM` 형식의 타임스탬프 배지를 표시한다. 원본/리사이즈 사진 데이터에는 타임스탬프를 합성하지 않는다.
 - **FR-8** 라인이 완성되면 라인을 시각적으로 강조한다. 9칸 모두 완료 시 축하 피드백을 보여준다.
 - **FR-9** "팔레트 저장" 버튼으로 현재 판 전체를 PNG로 다운로드한다. (9칸 모두 완료했을 때만 다운로드 가능, 미완성 클릭 시 안내 alert)
+- **FR-10** 승인된 로그인 회원은 하단 리스트에서 다른 사람들의 팔레트를 확인한다. 미완성 팔레트는 사진 원본을 내려주지 않고 흐린 미리보기만 표시한다.
 
 ---
 
 ## 4. 데이터 모델
 
 ```ts
-type CellType = 'theme'; // FREE 칸 없음: 모든 칸이 주제
+type CellType = "theme"; // FREE 칸 없음: 모든 칸이 주제
 
 interface CellPhoto {
-  dataUrl: string;   // base64 data URL (이미지 export·복원 위해 objectURL 대신 base64 사용)
+  dataUrl: string; // base64 data URL (이미지 export·복원 위해 objectURL 대신 base64 사용)
   fileName?: string;
   width: number;
   height: number;
@@ -75,18 +77,18 @@ interface CellPhoto {
 
 interface PaletteCell {
   id: string;
-  index: number;        // 0~8 (좌상단부터 행 우선)
+  index: number; // 0~8 (좌상단부터 행 우선)
   type: CellType;
-  title: string;        // 주제 텍스트 (FREE는 "FREE")
+  title: string; // 주제 텍스트 (FREE는 "FREE")
   photo?: CellPhoto;
   completedAt?: string; // ISO 8601
 }
 
 interface PaletteBoard {
   id: string;
-  title: string;        // "여름 책 팔레트"
+  title: string; // "여름 책 팔레트"
   size: 3;
-  cells: PaletteCell[];   // length 9
+  cells: PaletteCell[]; // length 9
   createdAt: string;
   updatedAt: string;
 }
@@ -104,19 +106,24 @@ const isCellFilled = (cell: PaletteCell) => Boolean(cell.photo);
 
 // 8개 라인 인덱스
 const LINES: number[][] = [
-  [0,1,2],[3,4,5],[6,7,8],   // 가로
-  [0,3,6],[1,4,7],[2,5,8],   // 세로
-  [0,4,8],[2,4,6],           // 대각
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // 가로
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // 세로
+  [0, 4, 8],
+  [2, 4, 6], // 대각
 ];
 
 const getCompletedLines = (board: PaletteBoard) =>
-  LINES.filter(line => line.every(i => isCellFilled(board.cells[i])));
+  LINES.filter((line) => line.every((i) => isCellFilled(board.cells[i])));
 
-const hasCompletedPaletteLine = (board: PaletteBoard) => getCompletedLines(board).length > 0;
+const hasCompletedPaletteLine = (board: PaletteBoard) =>
+  getCompletedLines(board).length > 0;
 
 // 전체 채움 (9칸 모두 완료 = 완성)
-const isFullClear = (board: PaletteBoard) =>
-  board.cells.every(isCellFilled);
+const isFullClear = (board: PaletteBoard) => board.cells.every(isCellFilled);
 ```
 
 ---
@@ -125,12 +132,14 @@ const isFullClear = (board: PaletteBoard) =>
 
 1. **진입**: 팔레트 페이지 → 저장된 진행 복원 → 3×3 격자 표시.
 2. **칸 탭**: 편집 시트 오픈 (주제 제목, 사진 첨부 영역, 삭제).
-3. **사진 첨부**: 갤러리 선택 또는 카메라(`capture`) → 타임스탬프 각인 → 미리보기 → 확인 시 칸 완료.
+3. **사진 첨부**: 갤러리 선택 또는 카메라(`capture`) → 사진 리사이즈 → 팔레트 칸에 타임스탬프 배지 표시 → 확인 시 칸 완료.
 4. **완료 표시**: 칸에 썸네일 + 체크 오버레이.
 5. **팔레트 완성**: 9칸을 모두 채우면 가벼운 축하 연출(토스트/컨페티).
 6. **저장**: 하단 고정 "팔레트 저장" 버튼 → PNG 다운로드 (+ 공유 옵션).
+7. **다른 팔레트 보기**: 페이지 하단 리스트에서 다른 회원의 팔레트를 확인한다. 미완성 팔레트는 흐린 상태로 표시한다.
 
 **모바일 고려**
+
 - 카메라 촬영: `<input type="file" accept="image/*" capture="environment">`
 - 편집 UI는 바텀시트 권장.
 - 격자는 정사각 비율 유지(`aspect-ratio: 1`), 터치 타깃 충분히 크게.
@@ -193,7 +202,8 @@ features/summer-palette/
 ## 10. 주제 프리셋 (9칸 확정)
 
 **최종 9개 주제:**
-1. 수박 주스 마시면서 책 읽기
+
+1. 제철 주스 마시면서 책 읽기
 2. 여름 제철 책 읽기
 3. 책에서 '여름' 단어 발견하기
 4. 바다가 생각나는 음악 추천하기
@@ -208,16 +218,19 @@ features/summer-palette/
 ## 11. 구현 단계 (Phases)
 
 **Phase 1 — MVP**
+
 - 고정 3×3 보드 렌더링, 칸별 사진 첨부/삭제, 업로드 이미지 리사이즈.
 - 서버 진행 저장/복원 + localStorage 백업.
 - "팔레트 저장"(PNG 다운로드).
 
 **Phase 2 — 팔레트 경험 강화**
+
 - 라인 완성 감지 + 하이라이트 + 축하 연출.
 - 완료 진행률 표시.
 - 공유(Web Share API).
 
 **Phase 3 — 확장 (백엔드/소셜)**
+
 - 계정 연동 + 서버 저장, 모임 갤러리(다른 멤버 팔레트 구경).
 - 주제 셔플/커스텀, 시즌(여름) 한정 노출·마감일.
 

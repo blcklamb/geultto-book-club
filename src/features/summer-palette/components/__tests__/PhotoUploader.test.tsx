@@ -36,4 +36,37 @@ describe("PhotoUploader", () => {
     });
     container.remove();
   });
+
+  it("blocks upload and shows login dialog when upload is not allowed", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const onPhotoReady = vi.fn();
+
+    act(() => {
+      root.render(
+        <PhotoUploader
+          onPhotoReady={onPhotoReady}
+          isUploadAllowed={false}
+        />,
+      );
+    });
+
+    const galleryButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("갤러리 선택"),
+    );
+
+    act(() => {
+      galleryButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain("로그인이 필요합니다");
+    expect(document.body.textContent).toContain("로그인");
+    expect(onPhotoReady).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+  });
 });

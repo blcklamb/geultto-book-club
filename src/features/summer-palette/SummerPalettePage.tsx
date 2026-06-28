@@ -9,10 +9,13 @@ import { PaletteBoard } from "./components/PaletteBoard";
 import { PaletteCompletionNotice } from "./components/PaletteCompletionNotice";
 import { CellEditSheet } from "./components/CellEditSheet";
 import { SaveBoardButton } from "./components/SaveBoardButton";
+import { PaletteGallerySection } from "./components/PaletteGallerySection";
+import { useSession } from "@/components/SessionProvider";
 import { usePaletteBoard } from "./hooks/usePaletteBoard";
 import { useImageExport } from "./hooks/useImageExport";
 
 export function SummerPalettePage() {
+  const { session } = useSession();
   const {
     board,
     isLoaded,
@@ -34,6 +37,12 @@ export function SummerPalettePage() {
   );
   const selectedCell =
     selectedCellIndex === null ? null : board.cells[selectedCellIndex] ?? null;
+  const isUploadAllowed = Boolean(session.user);
+  const canViewGallery = Boolean(
+    session.user &&
+      session.user.role !== "pending" &&
+      !session.user.isDeactivated,
+  );
 
   function handleReset() {
     if (window.confirm("현재 팔레트 진행 상태를 모두 비울까요?")) {
@@ -158,6 +167,8 @@ export function SummerPalettePage() {
         </aside>
       </div>
 
+      <PaletteGallerySection canView={canViewGallery} />
+
       <div className="sticky bottom-4 z-30 lg:hidden">
         <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
           <SaveBoardButton
@@ -179,6 +190,7 @@ export function SummerPalettePage() {
         }}
         onPhotoChange={updatePhoto}
         onPhotoRemove={clearPhoto}
+        isUploadAllowed={isUploadAllowed}
       />
     </div>
   );

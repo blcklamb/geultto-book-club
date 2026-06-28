@@ -804,6 +804,19 @@ export interface Database {
     };
     Views: {};
     Functions: {
+      list_summer_palette_boards: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          user_id: string;
+          nickname: string;
+          profile_image_url: string | null;
+          profile_decoration: string | null;
+          board: Json;
+          filled_count: number;
+          is_full_clear: boolean;
+          updated_at: string | null;
+        }>;
+      };
       delete_point_transactions_for_source: {
         Args: {
           p_source_type: string;

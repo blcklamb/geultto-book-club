@@ -20,6 +20,7 @@ type CellEditSheetProps = {
   onOpenChange: (open: boolean) => void;
   onPhotoChange: (cellIndex: number, photo: CellPhoto) => void;
   onPhotoRemove: (cellIndex: number) => void;
+  isUploadAllowed: boolean;
 };
 
 export function CellEditSheet({
@@ -28,6 +29,7 @@ export function CellEditSheet({
   onOpenChange,
   onPhotoChange,
   onPhotoRemove,
+  isUploadAllowed,
 }: CellEditSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -62,6 +64,7 @@ export function CellEditSheet({
 
               <PhotoUploader
                 onPhotoReady={(photo) => onPhotoChange(cell.index, photo)}
+                isUploadAllowed={isUploadAllowed}
               />
             </div>
 

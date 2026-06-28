@@ -3,6 +3,7 @@
 import { Check, ImagePlus } from "lucide-react";
 import { SUMMER_PALETTE_CELL_ACCENTS } from "../data/themes";
 import { isCellFilled } from "../lib/paletteLogic";
+import { formatPaletteTimestamp } from "../hooks/useImageResize";
 import type { PaletteCell } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export function PaletteCellItem({
 }: PaletteCellItemProps) {
   const filled = isCellFilled(cell);
   const accent = SUMMER_PALETTE_CELL_ACCENTS[cell.index] ?? "#f97316";
+  const timestamp = formatCellTimestamp(cell);
 
   return (
     <button
@@ -47,7 +49,19 @@ export function PaletteCellItem({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/78 via-slate-950/20 to-transparent" />
       ) : null}
 
-      <div className="absolute left-3 top-3 h-1.5 w-10 rounded-full bg-current opacity-80" style={{ color: accent }} />
+      {timestamp ? (
+        <span className="absolute left-2 top-2 rounded-full border border-orange-300/80 bg-white/90 px-2 py-0.5 text-[10px] font-bold leading-none text-slate-900 shadow-sm sm:text-xs">
+          {timestamp}
+        </span>
+      ) : null}
+
+      <div
+        className={cn(
+          "absolute left-3 h-1.5 w-10 rounded-full bg-current opacity-80",
+          timestamp ? "top-9 sm:top-10" : "top-3",
+        )}
+        style={{ color: accent }}
+      />
 
       {filled ? (
         <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow">
@@ -73,4 +87,17 @@ export function PaletteCellItem({
       </div>
     </button>
   );
+}
+
+function formatCellTimestamp(cell: PaletteCell) {
+  if (!cell.completedAt) {
+    return null;
+  }
+
+  const date = new Date(cell.completedAt);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return formatPaletteTimestamp(date);
 }
