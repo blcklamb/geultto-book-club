@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
+  const origin =
+    process.env.NODE_ENV === "development"
+      ? getRequestOrigin(req.headers, req.nextUrl.origin)
+      : process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "kakao",
     options: {

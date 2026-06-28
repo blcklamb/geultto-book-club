@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 // The client you created from the Server-Side Auth instructions
 import { createSupabaseServerClient } from "@supabase/server";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const requestOrigin = getRequestOrigin(request.headers, origin);
   const code = searchParams.get("code");
   // if "next" is in param, use it as the redirect URL
   let next = searchParams.get("next") ?? "/";
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {
         // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`);
+        return NextResponse.redirect(`${requestOrigin}${next}`);
       } else if (forwardedHost) {
         return NextResponse.redirect(`https://${forwardedHost}${next}`);
       } else {
@@ -38,5 +40,5 @@ export async function GET(request: Request) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  return NextResponse.redirect(`${requestOrigin}/auth/auth-code-error`);
 }

@@ -68,6 +68,31 @@ export interface Database {
           }
         ];
       };
+      summer_palette_boards: {
+        Row: {
+          user_id: string;
+          board: Json;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          board: Json;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["summer_palette_boards"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "summer_palette_boards_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       schedules: {
         Row: {
           id: string;
@@ -779,6 +804,19 @@ export interface Database {
     };
     Views: {};
     Functions: {
+      list_summer_palette_boards: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{
+          user_id: string;
+          nickname: string;
+          profile_image_url: string | null;
+          profile_decoration: string | null;
+          board: Json;
+          filled_count: number;
+          is_full_clear: boolean;
+          updated_at: string | null;
+        }>;
+      };
       delete_point_transactions_for_source: {
         Args: {
           p_source_type: string;

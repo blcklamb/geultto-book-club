@@ -232,6 +232,13 @@ CREATE TABLE IF NOT EXISTS public.point_transactions (
   idempotency_key text NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS public.summer_palette_boards (
+  user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  board jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
 -- Row Level Security policies (conceptual)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
@@ -256,6 +263,7 @@ ALTER TABLE public.topic_comment_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.topic_comment_reply_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.point_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.summer_palette_boards ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can select their own profile"
   ON public.users FOR SELECT
@@ -267,6 +275,136 @@ CREATE POLICY "Users can update their own profile"
   ON public.users FOR UPDATE
   USING ((SELECT auth.uid()) = id)
   WITH CHECK ((SELECT auth.uid()) = id);
+
+CREATE POLICY "Users can read their own summer palette board"
+  ON public.summer_palette_boards FOR SELECT TO authenticated
+  USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can insert their own summer palette board"
+  ON public.summer_palette_boards FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  );
+
+CREATE POLICY "Users can update their own summer palette board"
+  ON public.summer_palette_boards FOR UPDATE TO authenticated
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  )
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = (SELECT auth.uid())
+        AND role <> 'pending'
+        AND is_deactivated = false
+    )
+  );
+
+CREATE POLICY "Users can delete their own summer palette board"
+  ON public.summer_palette_boards FOR DELETE TO authenticated
+  USING ((SELECT auth.uid()) = user_id);
+
+CREATE OR REPLACE FUNCTION public.list_summer_palette_boards()
+RETURNS TABLE (
+  user_id uuid,
+  nickname text,
+  profile_image_url text,
+  profile_decoration text,
+  board jsonb,
+  filled_count integer,
+  is_full_clear boolean,
+  updated_at timestamptz
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_user_id uuid := auth.uid();
+  is_allowed boolean := false;
+BEGIN
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.users
+    WHERE id = current_user_id
+      AND role <> 'pending'
+      AND is_deactivated = false
+  )
+  INTO is_allowed;
+
+  IF NOT is_allowed THEN
+    RAISE EXCEPTION 'Only approved members can list summer palettes';
+  END IF;
+
+  RETURN QUERY
+  WITH board_stats AS (
+    SELECT
+      b.user_id AS board_user_id,
+      u.nickname,
+      up.profile_image_url,
+      COALESCE(up.profile_decoration, 'none') AS profile_decoration,
+      b.board,
+      b.updated_at,
+      COALESCE((
+        SELECT count(*)::integer
+        FROM jsonb_array_elements(COALESCE(b.board->'cells', '[]'::jsonb)) AS cell(value)
+        WHERE cell.value->'photo'->>'dataUrl' IS NOT NULL
+      ), 0) AS filled_count
+    FROM public.summer_palette_boards b
+    JOIN public.users u ON u.id = b.user_id
+    LEFT JOIN public.user_profiles up ON up.user_id = b.user_id
+    WHERE b.user_id <> current_user_id
+      AND u.role <> 'pending'
+      AND u.is_deactivated = false
+  )
+  SELECT
+    board_stats.board_user_id,
+    board_stats.nickname,
+    board_stats.profile_image_url,
+    board_stats.profile_decoration,
+    CASE
+      WHEN board_stats.filled_count >= 9 THEN board_stats.board
+      ELSE jsonb_set(
+        board_stats.board,
+        '{cells}',
+        COALESCE((
+          SELECT jsonb_agg(cell.value - 'photo' ORDER BY cell.ordinality)
+          FROM jsonb_array_elements(COALESCE(board_stats.board->'cells', '[]'::jsonb))
+            WITH ORDINALITY AS cell(value, ordinality)
+        ), '[]'::jsonb),
+        true
+      )
+    END AS board,
+    board_stats.filled_count,
+    board_stats.filled_count >= 9 AS is_full_clear,
+    board_stats.updated_at
+  FROM board_stats
+  ORDER BY board_stats.updated_at DESC NULLS LAST;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.list_summer_palette_boards() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.list_summer_palette_boards() TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.current_user_is_active_admin()
 RETURNS boolean

@@ -15,14 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { useSession } from "./SessionProvider";
 import { useProfileImage } from "./DetailHeader";
-
-const navItems = [
-  { href: "/schedule", label: "일정" },
-  { href: "/reviews", label: "독후감" },
-  { href: "/quotes", label: "인상 깊은 구절" },
-  { href: "/topics", label: "토론" },
-  { href: "/profile", label: "내 프로필" },
-];
+import { getVisibleNavItems } from "@/lib/navigation";
 
 const adminItems = [
   { href: "/admin/points", label: "포인트" },
@@ -36,6 +29,7 @@ export const Navbar: React.FC = () => {
   const profileImage = useProfileImage();
 
   const isAdmin = session.user?.role === "admin";
+  const visibleNavItems = getVisibleNavItems(!!session.user);
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -52,7 +46,7 @@ export const Navbar: React.FC = () => {
 
         {/* 데스크톱 네비게이션 */}
         <nav className="hidden gap-5 text-sm font-medium text-slate-600 md:flex">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -143,7 +137,7 @@ export const Navbar: React.FC = () => {
 
               {/* 메뉴 항목 */}
               <nav className="flex flex-col gap-1">
-                {navItems.map((item) => (
+                {visibleNavItems.map((item) => (
                   <SheetClose asChild key={item.href}>
                     <Link
                       href={item.href}
