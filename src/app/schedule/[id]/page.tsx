@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DetailHeader from "@/components/DetailHeader";
-import { LocalizedDate } from "@/components/LocalizedDate";
+import { ScheduleDate } from "@/components/ScheduleDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ScheduleTimetableEditor } from "@/components/ScheduleTimetableEditor";
 import { profileImagesByUserId } from "@/lib/profile-image";
@@ -101,7 +101,7 @@ export default async function ScheduleDetailPage({
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-slate-600">
             <p>
-              <LocalizedDate
+              <ScheduleDate
                 value={schedule.date}
                 options={{ dateStyle: "medium", timeStyle: "short" }}
               />

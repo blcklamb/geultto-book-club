@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import DetailHeader from "@/components/DetailHeader";
 import { CohortFilter } from "@/components/CohortFilter";
-import { LocalizedDate } from "@/components/LocalizedDate";
+import { ScheduleDate } from "@/components/ScheduleDate";
 
 // Schedules list page accessible to everyone including pending users.
 export default async function SchedulePage({
@@ -58,7 +58,7 @@ export default async function SchedulePage({
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-slate-600">
                   <p>
-                    <LocalizedDate
+                    <ScheduleDate
                       value={schedule.date}
                       options={{ dateStyle: "medium", timeStyle: "short" }}
                     />
