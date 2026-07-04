@@ -6,7 +6,6 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { HorizontalRule } from "./editor-extension/horizontal-rule";
 import { Image } from "./editor-extension/image";
-import { ListItem, OrderedList, BulletList } from "./editor-extension/list";
 import { Strike } from "./editor-extension/strike";
 import { ReviewHighlightMark } from "./editor-extension/highlight";
 import type { JSONContent } from "@tiptap/core";
@@ -61,16 +60,23 @@ export function ReviewViewerInteractive({
     extensions: [
       StarterKit.configure({
         horizontalRule: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
+        bulletList: {
+          keepMarks: true,
+          HTMLAttributes: {
+            class: "tiptap-bullet-list",
+          },
+        },
+        orderedList: {
+          keepMarks: true,
+          HTMLAttributes: {
+            class: "tiptap-ordered-list",
+          },
+        },
+        listItem: {},
         strike: false,
       }),
       HorizontalRule,
       Image,
-      ListItem,
-      OrderedList,
-      BulletList,
       Strike,
       ReviewHighlightMark.configure({
         multicolor: true,

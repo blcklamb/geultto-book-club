@@ -74,7 +74,7 @@ export function TopicDetailActions({
       </DropdownMenu>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] w-[calc(100%-1rem)] !max-w-[calc(100vw-1rem)] overflow-y-auto sm:!max-w-5xl xl:!max-w-6xl">
           <DialogHeader>
             <DialogTitle>발제 수정</DialogTitle>
             <DialogDescription>
