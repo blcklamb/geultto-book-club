@@ -95,6 +95,7 @@ export function TopicDetailActions({
                     name="bodyRich"
                     defaultContent={initialContent}
                     entityName="발제"
+                    minChars={null}
                   />
                 </div>
               </label>

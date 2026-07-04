@@ -67,6 +67,7 @@ export default async function TopicCreatePage() {
             name="bodyRich"
             placeholder="토론 발제를 작성해주세요…"
             entityName="발제"
+            minChars={null}
           />
         </div>
         <Button type="submit">발제 등록</Button>
