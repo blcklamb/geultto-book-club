@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import DetailHeader from "@/components/DetailHeader";
-import { LocalizedDate } from "@/components/LocalizedDate";
+import { ScheduleDate } from "@/components/ScheduleDate";
 
 // Topic creation page shares editor with reviews.
 export default async function TopicCreatePage() {
@@ -38,7 +38,7 @@ export default async function TopicCreatePage() {
               {schedules?.map((schedule) => (
                 <SelectItem key={schedule.id} value={schedule.id}>
                   {schedule.book_title} ·{" "}
-                  <LocalizedDate
+                  <ScheduleDate
                     value={schedule.date}
                     options={{
                       year: "numeric",

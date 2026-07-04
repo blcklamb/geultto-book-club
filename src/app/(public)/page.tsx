@@ -6,6 +6,8 @@ import { NaverMapCopyButton } from "@/components/NaverMapCopyButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LocalizedDate } from "@/components/LocalizedDate";
+import { ScheduleDate } from "@/components/ScheduleDate";
+import { SummerPaletteViewerCard } from "@/features/summer-palette/components/SummerPaletteViewerCard";
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
@@ -41,6 +43,14 @@ export default async function HomePage() {
         .order("created_at", { ascending: false })
         .limit(3)
     : { data: [] };
+
+  const { data: summerPaletteRow } = sessionUser
+    ? await supabase
+        .from("summer_palette_boards")
+        .select("updated_at")
+        .eq("user_id", sessionUser.id)
+        .maybeSingle()
+    : { data: null };
 
   let bookCoverUrl: string | undefined;
   if (schedules?.[0]?.book_link) {
@@ -85,6 +95,11 @@ export default async function HomePage() {
             nextSchedule={nextSchedule}
             bookCoverUrl={bookCoverUrl}
           />
+          {sessionUser ? (
+            <SummerPaletteViewerCard
+              updatedAt={summerPaletteRow?.updated_at}
+            />
+          ) : null}
         </div>
         <div className="space-y-4">
           <Card>
@@ -102,7 +117,7 @@ export default async function HomePage() {
               {nextSchedule ? (
                 <>
                   <p>
-                    <LocalizedDate
+                    <ScheduleDate
                       value={nextSchedule.date}
                       options={{
                         month: "long",

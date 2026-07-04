@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LocalizedDate } from "@/components/LocalizedDate";
+import { ScheduleDate } from "@/components/ScheduleDate";
 
 // Admin schedule management: create/update events.
 // Access: admin only enforced via ensureRole.
@@ -78,7 +78,7 @@ export default async function AdminSchedulePage() {
                 {schedule.book_title}
               </p>
               <p>
-                <LocalizedDate
+                <ScheduleDate
                   value={schedule.date}
                   options={{ dateStyle: "medium", timeStyle: "short" }}
                 />
