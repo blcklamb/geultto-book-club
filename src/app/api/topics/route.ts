@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { awardTopicSubmissionPoints } from "@/lib/points";
-import {
-  extractPlainText,
-  MIN_RICH_TEXT_CHARS,
-  richTextMinCharsMessage,
-} from "@/lib/rich-text";
 import type { Json } from "@supabase/types";
 
 export async function POST(req: NextRequest) {
@@ -33,15 +28,6 @@ export async function POST(req: NextRequest) {
   let parsedBody: Json;
   try {
     parsedBody = JSON.parse(bodyRich);
-    const plainText = extractPlainText(parsedBody);
-    if (plainText.length < MIN_RICH_TEXT_CHARS) {
-      const url = new URL("/topics/new", req.url);
-      url.searchParams.set(
-        "error",
-        richTextMinCharsMessage("발제", plainText.length),
-      );
-      return NextResponse.redirect(url, 303);
-    }
   } catch {
     const url = new URL("/topics/new", req.url);
     url.searchParams.set("error", "본문 형식이 올바르지 않습니다.");
