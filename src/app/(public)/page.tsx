@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { ScheduleDate } from "@/components/ScheduleDate";
 import { SummerPaletteViewerCard } from "@/features/summer-palette/components/SummerPaletteViewerCard";
-import { createInitialBoard } from "@/features/summer-palette/lib/paletteLogic";
-import { normalizeBoard } from "@/features/summer-palette/lib/storage";
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
@@ -49,13 +47,10 @@ export default async function HomePage() {
   const { data: summerPaletteRow } = sessionUser
     ? await supabase
         .from("summer_palette_boards")
-        .select("board, updated_at")
+        .select("updated_at")
         .eq("user_id", sessionUser.id)
         .maybeSingle()
     : { data: null };
-
-  const summerPaletteBoard =
-    normalizeBoard(summerPaletteRow?.board) ?? createInitialBoard();
 
   let bookCoverUrl: string | undefined;
   if (schedules?.[0]?.book_link) {
@@ -102,7 +97,6 @@ export default async function HomePage() {
           />
           {sessionUser ? (
             <SummerPaletteViewerCard
-              board={summerPaletteBoard}
               updatedAt={summerPaletteRow?.updated_at}
             />
           ) : null}

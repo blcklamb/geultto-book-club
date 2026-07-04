@@ -2,30 +2,20 @@ import { act } from "react";
 import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
-import {
-  createInitialBoard,
-  withUpdatedCellPhoto,
-} from "../../lib/paletteLogic";
-import type { CellPhoto } from "../../types";
 import { SummerPaletteViewerCard } from "../SummerPaletteViewerCard";
 
-const PHOTO: CellPhoto = {
-  dataUrl: "data:image/jpeg;base64,photo",
-  fileName: "photo.jpg",
-  width: 640,
-  height: 480,
-};
-
 describe("SummerPaletteViewerCard", () => {
-  it("renders an empty palette in viewer mode", () => {
+  it("renders an empty palette summary", () => {
     const { container, unmount } = renderViewer(
-      <SummerPaletteViewerCard board={createInitialBoard()} updatedAt={null} />,
+      <SummerPaletteViewerCard updatedAt={null} />,
     );
 
     expect(container.textContent).toContain("나의 여름 팔레트");
-    expect(container.textContent).toContain("0/9칸 완료");
+    expect(container.textContent).toContain("미시작");
+    expect(container.textContent).toContain("아직 저장한 팔레트가 없습니다");
     expect(container.textContent).toContain("아직 저장된 기록 없음");
     expect(container.textContent).toContain("팔레트 시작하기");
+    expect(container.querySelectorAll("img")).toHaveLength(0);
     expect(container.querySelectorAll("button")).toHaveLength(0);
     expect(container.querySelector("a")?.getAttribute("href")).toBe(
       "/summer-palette",
@@ -34,25 +24,18 @@ describe("SummerPaletteViewerCard", () => {
     unmount();
   });
 
-  it("renders a completed palette with photos and saved time", () => {
-    let board = createInitialBoard();
-    const completedAt = new Date(2026, 6, 4, 10, 5);
-    board.cells.forEach((cell) => {
-      board = withUpdatedCellPhoto(board, cell.index, PHOTO, completedAt);
-    });
+  it("renders a saved palette summary with app timezone", () => {
+    const updatedAt = "2026-07-04T10:05:00.000Z";
 
     const { container, unmount } = renderViewer(
-      <SummerPaletteViewerCard
-        board={board}
-        updatedAt={completedAt.toISOString()}
-      />,
+      <SummerPaletteViewerCard updatedAt={updatedAt} />,
     );
 
-    expect(container.textContent).toContain("완성");
-    expect(container.textContent).toContain("9/9칸 완료");
-    expect(container.textContent).toContain("07.04 10:05");
+    expect(container.textContent).toContain("저장됨");
+    expect(container.textContent).toContain("저장한 팔레트가 있습니다");
+    expect(container.textContent).toContain("07.04 19:05");
     expect(container.textContent).toContain("팔레트 보러가기");
-    expect(container.querySelectorAll("img")).toHaveLength(9);
+    expect(container.querySelectorAll("img")).toHaveLength(0);
 
     unmount();
   });
