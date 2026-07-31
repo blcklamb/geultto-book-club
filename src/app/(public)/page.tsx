@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
-import { HomeScene3D } from "@/components/HomeScene3D";
+import { HomeScene3DLazy } from "@/components/HomeScene3DLazy";
 import { NaverMapCopyButton } from "@/components/NaverMapCopyButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,29 +52,13 @@ export default async function HomePage() {
         .maybeSingle()
     : { data: null };
 
-  let bookCoverUrl: string | undefined;
-  if (schedules?.[0]?.book_link) {
-    try {
-      const res = await fetch(schedules[0].book_link, {
-        headers: { "User-Agent": "Mozilla/5.0" },
-        next: { revalidate: 3600 },
-      });
-      const html = await res.text();
-      const match = html.match(
-        /property="og:image"[^>]*content="([^"]+)"|content="([^"]+)"[^>]*property="og:image"/,
-      );
-      bookCoverUrl = match?.[1] ?? match?.[2];
-    } catch {
-      // og:image 파싱 실패 시 기본 표지 사용
-    }
-  }
-
   const nextSchedule = schedules?.[0]
     ? {
         id: schedules[0].id,
         date: schedules[0].date,
         place: schedules[0].place,
         book: schedules[0].book_title,
+        bookLink: schedules[0].book_link,
       }
     : undefined;
 
@@ -91,9 +75,9 @@ export default async function HomePage() {
               이어가요.
             </p>
           </div>
-          <HomeScene3D
+          <HomeScene3DLazy
             nextSchedule={nextSchedule}
-            bookCoverUrl={bookCoverUrl}
+            bookCoverUrl={nextSchedule?.bookLink}
           />
           {sessionUser ? (
             <SummerPaletteViewerCard

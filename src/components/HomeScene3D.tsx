@@ -11,7 +11,7 @@ interface HomeScene3DProps {
     place: any;
     book: any;
   };
-  bookCoverUrl?: string;
+  bookCoverUrl?: string | null;
 }
 
 const BACK_COLOR = new THREE.Color("#9A5A10");

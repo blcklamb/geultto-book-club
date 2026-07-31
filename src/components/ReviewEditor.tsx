@@ -1,7 +1,7 @@
 "use client";
 import "@/styles/tiptap.css";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -206,6 +206,22 @@ type ReviewEditorProps = {
   minChars?: number | null;
 };
 
+const EMPTY_DOC: JSONContent = {
+  type: "doc",
+  content: [{ type: "paragraph" }],
+};
+
+function parseInitialContent(defaultContent?: JSONContent | string): JSONContent {
+  if (!defaultContent) return EMPTY_DOC;
+  if (typeof defaultContent !== "string") return defaultContent;
+
+  try {
+    return JSON.parse(defaultContent);
+  } catch {
+    return EMPTY_DOC;
+  }
+}
+
 export function ReviewEditor({
   name = "contentRich",
   defaultContent,
@@ -213,20 +229,48 @@ export function ReviewEditor({
   entityName = "독후감",
   minChars = MIN_RICH_TEXT_CHARS,
 }: ReviewEditorProps) {
-  const [serializedContent, setSerializedContent] = useState(
-    typeof defaultContent === "string"
-      ? defaultContent
-      : JSON.stringify(
-          defaultContent ?? { type: "doc", content: [{ type: "paragraph" }] },
-        ),
+  const initialContent = useMemo<JSONContent>(
+    () => parseInitialContent(defaultContent),
+    [defaultContent],
+  );
+  const initialSerializedContent = useMemo(
+    () => JSON.stringify(initialContent),
+    [initialContent],
   );
   const [charCount, setCharCount] = useState(0);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const effectiveMinChars =
     typeof minChars === "number" && minChars > 0 ? minChars : null;
+  const latestEditorRef = useRef<Editor | null>(null);
+  const serializeTimerRef = useRef<number | null>(null);
 
-  const editor = useEditor({
-    extensions: [
+  const flushSerializedContent = (editorInstance?: Editor | null) => {
+    const nextEditor = editorInstance ?? latestEditorRef.current;
+    if (!nextEditor || !hiddenInputRef.current) return;
+    hiddenInputRef.current.value = JSON.stringify(nextEditor.getJSON());
+  };
+
+  const scheduleSerializedContent = (editorInstance: Editor) => {
+    latestEditorRef.current = editorInstance;
+    if (serializeTimerRef.current != null) {
+      window.clearTimeout(serializeTimerRef.current);
+    }
+    serializeTimerRef.current = window.setTimeout(() => {
+      flushSerializedContent(editorInstance);
+      serializeTimerRef.current = null;
+    }, 180);
+  };
+
+  const syncEditorMetadata = (editorInstance: Editor) => {
+    const nextCharCount = editorInstance.getText().length;
+    startTransition(() => {
+      setCharCount((prev) => (prev === nextCharCount ? prev : nextCharCount));
+    });
+    scheduleSerializedContent(editorInstance);
+  };
+
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         horizontalRule: false,
         bulletList: {
@@ -249,7 +293,12 @@ export function ReviewEditor({
       Strike,
       Placeholder.configure({ placeholder }),
     ],
-    content: defaultContent ?? { type: "doc", content: [{ type: "paragraph" }] },
+    [placeholder],
+  );
+
+  const editor = useEditor({
+    extensions,
+    content: initialContent,
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -257,16 +306,36 @@ export function ReviewEditor({
       },
     },
     onUpdate({ editor }) {
-      setSerializedContent(JSON.stringify(editor.getJSON()));
-      setCharCount(editor.getText().length);
+      syncEditorMetadata(editor);
+    },
+    onBlur({ editor }) {
+      flushSerializedContent(editor);
     },
   });
 
   useEffect(() => {
     if (!editor) return;
-    setSerializedContent(JSON.stringify(editor.getJSON()));
-    setCharCount(editor.getText().length);
+    latestEditorRef.current = editor;
+    syncEditorMetadata(editor);
+
+    const form = hiddenInputRef.current?.form;
+    if (!form) return;
+
+    const handleSubmit = () => flushSerializedContent(editor);
+    form.addEventListener("submit", handleSubmit);
+
+    return () => {
+      form.removeEventListener("submit", handleSubmit);
+    };
   }, [editor]);
+
+  useEffect(() => {
+    return () => {
+      if (serializeTimerRef.current != null) {
+        window.clearTimeout(serializeTimerRef.current);
+      }
+    };
+  }, []);
 
   // 최소 글자 수 미만이면 native form 제출과 submit 버튼을 함께 차단한다.
   useEffect(() => {
@@ -341,8 +410,7 @@ export function ReviewEditor({
         ref={hiddenInputRef}
         type="hidden"
         name={name}
-        value={serializedContent}
-        readOnly
+        defaultValue={initialSerializedContent}
       />
     </>
   );
