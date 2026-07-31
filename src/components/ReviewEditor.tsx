@@ -321,13 +321,30 @@ export function ReviewEditor({
     const form = hiddenInputRef.current?.form;
     if (!form) return;
 
-    const handleSubmit = () => flushSerializedContent(editor);
+    const handleSubmit = (event: SubmitEvent) => {
+      flushSerializedContent(editor);
+      if (effectiveMinChars === null) return;
+
+      const latestCharCount = editor.getText().length;
+      if (latestCharCount >= effectiveMinChars) return;
+
+      event.preventDefault();
+      hiddenInputRef.current?.setCustomValidity(
+        richTextMinCharsMessage(
+          entityName,
+          latestCharCount,
+          effectiveMinChars,
+        ),
+      );
+      setCharCount(latestCharCount);
+      editor.commands.focus();
+    };
     form.addEventListener("submit", handleSubmit);
 
     return () => {
       form.removeEventListener("submit", handleSubmit);
     };
-  }, [editor]);
+  }, [editor, effectiveMinChars, entityName]);
 
   useEffect(() => {
     return () => {
