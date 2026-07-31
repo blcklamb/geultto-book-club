@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return NextResponse.json({ error: "fetch failed" }, { status: 502 });
 
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
     const imageRes = await fetch(imageUrl, {
       headers: { "User-Agent": "Mozilla/5.0" },
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!imageRes.ok) return NextResponse.json({ error: "image fetch failed" }, { status: 502 });
 
