@@ -23,6 +23,7 @@ type FakeEditor = {
   chain: () => FakeChain;
   can: () => { chain: () => FakeChain };
   isActive: (name: string, attrs?: Record<string, unknown>) => boolean;
+  commands: { focus: () => void };
 };
 
 type FakeChain = {
@@ -55,6 +56,7 @@ let editorOptions: UseEditorOptions | undefined;
 let commandSpy: ReturnType<typeof vi.fn>;
 let activeState: ActiveState;
 let canRunByCommand: Partial<Record<CommandName, boolean>>;
+let focusSpy: ReturnType<typeof vi.fn>;
 
 function makeChain(mode: "command" | "can"): FakeChain {
   let lastCommand: CommandName | null = null;
@@ -113,6 +115,7 @@ function makeEditor(): FakeEditor {
       }
       return activeState[name as keyof ActiveState] ?? false;
     },
+    commands: { focus: focusSpy },
   };
 }
 
@@ -123,6 +126,7 @@ describe("ReviewEditor", () => {
     commandSpy = vi.fn();
     activeState = {};
     canRunByCommand = {};
+    focusSpy = vi.fn();
     vi.mocked(useEditor).mockImplementation((options: unknown) => {
       editorOptions = options as UseEditorOptions;
       return makeEditor() as never;
@@ -160,6 +164,26 @@ describe("ReviewEditor", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Submit" })).not.toBeDisabled(),
     );
+  });
+
+  it("blocks submission using the latest editor length", async () => {
+    currentText = "12345";
+    const { container } = render(
+      <form>
+        <ReviewEditor minChars={5} />
+        <button type="submit">Submit</button>
+      </form>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Submit" })).not.toBeDisabled(),
+    );
+
+    currentText = "1";
+    const submitted = fireEvent.submit(container.querySelector("form")!);
+
+    expect(submitted).toBe(false);
+    expect(focusSpy).toHaveBeenCalled();
   });
 
   it("renders editor toolbar controls", () => {

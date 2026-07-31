@@ -1,12 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { QuoteListToggle, QuoteViewMode } from "@/components/QuoteListToggle";
-import { QuotesFloatingScene3D } from "@/components/QuotesFloatingScene3D";
 import { QuoteCard } from "@/components/QuoteCard";
 import DetailHeader from "@/components/DetailHeader";
 import { QuoteCreateDialog } from "@/components/QuoteCreateDialog";
 import { CohortFilter } from "@/components/CohortFilter";
+
+const QuotesFloatingScene3D = dynamic(
+  () =>
+    import("@/components/QuotesFloatingScene3D").then(
+      (mod) => mod.QuotesFloatingScene3D,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[340px] w-full rounded-xl border border-slate-200 bg-slate-900/95" />
+    ),
+  },
+);
 
 export type QuotesClientProps = {
   quotes: Array<{

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useMemo, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Html, useTexture } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 interface HomeScene3DProps {
@@ -11,7 +11,7 @@ interface HomeScene3DProps {
     place: any;
     book: any;
   };
-  bookCoverUrl?: string;
+  bookCoverUrl?: string | null;
 }
 
 const BACK_COLOR = new THREE.Color("#9A5A10");
@@ -65,17 +65,11 @@ function BookMeshPlain({ bookTitle }: { bookTitle?: string }) {
 }
 
 function BookMeshWithCover({
-  proxiedUrl,
-  bookTitle,
+  coverTexture,
 }: {
-  proxiedUrl: string;
-  bookTitle?: string;
+  coverTexture: THREE.Texture;
 }) {
   const groupRef = useBookAnimation();
-  const coverTexture = useTexture(proxiedUrl);
-
-  // Three.js는 기본적으로 Y축 뒤집기 — 이미지 방향 보정
-  coverTexture.flipY = true;
 
   const materials = useMemo(
     () => [
@@ -98,6 +92,52 @@ function BookMeshWithCover({
   );
 }
 
+function BookMeshWithFallback({
+  proxiedUrl,
+  bookTitle,
+}: {
+  proxiedUrl: string;
+  bookTitle?: string;
+}) {
+  const [coverTexture, setCoverTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let loadedTexture: THREE.Texture | null = null;
+    setCoverTexture(null);
+
+    new THREE.TextureLoader().load(
+      proxiedUrl,
+      (texture) => {
+        if (!active) {
+          texture.dispose();
+          return;
+        }
+
+        // Three.js는 기본적으로 Y축을 뒤집으므로 표지 방향을 보정한다.
+        texture.flipY = true;
+        loadedTexture = texture;
+        setCoverTexture(texture);
+      },
+      undefined,
+      () => {
+        if (active) setCoverTexture(null);
+      },
+    );
+
+    return () => {
+      active = false;
+      loadedTexture?.dispose();
+    };
+  }, [proxiedUrl]);
+
+  return coverTexture ? (
+    <BookMeshWithCover coverTexture={coverTexture} />
+  ) : (
+    <BookMeshPlain bookTitle={bookTitle} />
+  );
+}
+
 export function HomeScene3D({ nextSchedule, bookCoverUrl }: HomeScene3DProps) {
   const proxiedUrl = bookCoverUrl
     ? `/api/book-cover?url=${encodeURIComponent(bookCoverUrl)}`
@@ -109,13 +149,14 @@ export function HomeScene3D({ nextSchedule, bookCoverUrl }: HomeScene3DProps) {
         <ambientLight intensity={0.9} />
         <directionalLight position={[3, 4, 3]} intensity={1.3} castShadow />
         <pointLight position={[-2, 2, 2]} intensity={0.4} color="#FFD580" />
-        <Suspense fallback={null}>
-          {proxiedUrl ? (
-            <BookMeshWithCover proxiedUrl={proxiedUrl} bookTitle={nextSchedule?.book} />
-          ) : (
-            <BookMeshPlain bookTitle={nextSchedule?.book} />
-          )}
-        </Suspense>
+        {proxiedUrl ? (
+          <BookMeshWithFallback
+            proxiedUrl={proxiedUrl}
+            bookTitle={nextSchedule?.book}
+          />
+        ) : (
+          <BookMeshPlain bookTitle={nextSchedule?.book} />
+        )}
         <OrbitControls
           enableZoom={false}
           enablePan={false}
