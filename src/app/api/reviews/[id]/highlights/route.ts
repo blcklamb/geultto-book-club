@@ -12,17 +12,18 @@ export async function GET(
   const sessionUser = await getSessionUser();
   const supabase = await createSupabaseServerClient();
 
-  const { data: highlightRows } = await supabase
+  const { data: highlightRows, error: highlightError } = await supabase
     .from("review_highlights")
     .select(
       `id, author_id, highlight_text, start_pos, end_pos,
        author:users!review_highlights_author_id_fkey(nickname),
+       highlight_reactions(emoji, user_id, user:users(nickname)),
        highlight_comments(
-         id, body, author_id, created_at,
+         id, body, image_paths, author_id, created_at,
          author:users!highlight_comments_author_id_fkey(nickname),
          highlight_comment_reactions(emoji, user_id, user:users(nickname)),
          highlight_comment_replies(
-           id, body, author_id, created_at,
+           id, body, image_paths, author_id, created_at,
            author:users!highlight_comment_replies_author_id_fkey(nickname)
          )
        )`,
@@ -30,6 +31,11 @@ export async function GET(
     .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
 
+  if (highlightError)
+    return NextResponse.json(
+      { message: "하이라이트를 불러오지 못했습니다." },
+      { status: 500 },
+    );
   if (!highlightRows) return NextResponse.json([]);
 
   const authorIds = [
@@ -69,6 +75,13 @@ export async function GET(
       id: h.id,
       authorId: h.author_id ?? "",
       highlightText: h.highlight_text,
+      reactions: summarizeReactions(
+        (h.highlight_reactions ?? []).map((r) => ({
+          ...r,
+          user: Array.isArray(r.user) ? r.user[0] : r.user,
+        })),
+        sessionUser?.id,
+      ),
       startPos: h.start_pos!,
       endPos: h.end_pos!,
       authorNickname:
@@ -84,6 +97,7 @@ export async function GET(
           const comment = c as {
             id: string;
             body: string;
+            image_paths?: string[];
             author_id: string | null;
             created_at: string | null;
             author: { nickname: string } | null;
@@ -98,17 +112,17 @@ export async function GET(
             highlight_comment_replies: Array<{
               id: string;
               body: string;
+              image_paths?: string[];
               author_id: string | null;
               created_at: string | null;
-              author:
-                | { nickname: string }
-                | Array<{ nickname: string }>
-                | null;
+              author: { nickname: string } | Array<{ nickname: string }> | null;
             }>;
           };
           return {
             id: comment.id,
             body: comment.body,
+            imagePaths: comment.image_paths ?? [],
+            authorId: comment.author_id ?? undefined,
             author: comment.author?.nickname ?? "익명",
             authorImageUrl: comment.author_id
               ? profileImageMap.get(comment.author_id)?.profileImageUrl
@@ -130,6 +144,7 @@ export async function GET(
               return {
                 id: r.id,
                 body: r.body,
+                imagePaths: r.image_paths ?? [],
                 author: author?.nickname ?? "익명",
                 authorImageUrl: r.author_id
                   ? profileImageMap.get(r.author_id)?.profileImageUrl
@@ -150,13 +165,17 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
+  ctx: { params: Promise<{ id: string }> },
 ) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role === "pending" || sessionUser.isDeactivated) {
+  if (
+    !sessionUser ||
+    sessionUser.role === "pending" ||
+    sessionUser.isDeactivated
+  ) {
     return NextResponse.json(
       { message: "승인된 회원만 작성할 수 있습니다." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -175,7 +194,7 @@ export async function POST(
   if (highlightText == null || startPos == null || endPos == null) {
     return NextResponse.json(
       { message: "필수 값이 누락되었습니다." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -190,7 +209,7 @@ export async function POST(
   ) {
     return NextResponse.json(
       { message: "하이라이트 입력값이 올바르지 않습니다." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -205,14 +224,14 @@ export async function POST(
       end_pos: endPos,
     })
     .select(
-      "id, highlight_text, start_pos, end_pos, author:users!review_highlights_author_id_fkey(nickname)"
+      "id, highlight_text, start_pos, end_pos, author:users!review_highlights_author_id_fkey(nickname)",
     )
     .single();
 
   if (error) {
     return NextResponse.json(
       { message: "하이라이트 저장 실패", error: error.message },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

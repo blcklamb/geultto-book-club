@@ -177,14 +177,14 @@ export function HighlightCommentPanel({
       );
       if (!res.ok) throw new Error("반응 저장 실패");
       const updated: ReactionSummary[] = await res.json();
-      setComments((prev) =>
+      commitComments((prev) =>
         prev.map((c) =>
           c.id === commentId ? { ...c, reactions: updated } : c,
         ),
       );
       return updated;
     },
-    [],
+    [commitComments],
   );
 
   const handleAddReply = async (
@@ -255,6 +255,29 @@ export function HighlightCommentPanel({
             />
             <span>{highlight.authorNickname} 님이 하이라이트함</span>
           </div>
+          <EmojiReactionBar
+            initialReactions={highlight.reactions ?? []}
+            currentUserNickname={currentUserNickname}
+            disabled={disabled}
+            toggleAction={async (emoji) => {
+              const res = await fetch(
+                `/api/highlights/${highlight.id}/reactions`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ emoji }),
+                },
+              );
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.message ?? "반응 저장 실패");
+              onCommentsUpdated({
+                ...highlightRef.current,
+                comments: commentsRef.current,
+                reactions: data,
+              });
+              return data;
+            }}
+          />
           {isHighlightAuthor && (
             <Button
               size="sm"
@@ -366,7 +389,10 @@ function CommentItem({
 
   return (
     <Card>
-      <CardContent className="space-y-2 p-3">
+      <CardContent
+        id={`highlight-comment-${comment.id}`}
+        className="space-y-2 p-3 scroll-mt-4"
+      >
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
             <UserAvatar
@@ -398,7 +424,11 @@ function CommentItem({
         {comment.replies.length > 0 && (
           <div className="ml-3 space-y-2 border-l-2 border-slate-100 pl-3">
             {comment.replies.map((reply) => (
-              <div key={reply.id} className="space-y-0.5">
+              <div
+                key={reply.id}
+                id={`highlight-reply-${reply.id}`}
+                className="space-y-0.5 scroll-mt-4"
+              >
                 <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
                   <UserAvatar
                     imageUrl={reply.authorImageUrl}
