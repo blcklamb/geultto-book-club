@@ -228,6 +228,29 @@ export interface Database {
           }
         ];
       };
+      review_spellcheck_uses: {
+        Row: {
+          review_id: string;
+          user_id: string;
+          used_at: string;
+        };
+        Insert: {
+          review_id: string;
+          user_id: string;
+          used_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["review_spellcheck_uses"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "review_spellcheck_uses_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       review_comments: {
         Row: {
           id: string;

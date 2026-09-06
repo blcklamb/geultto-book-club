@@ -94,6 +94,8 @@ export function ReviewDetailActions({
                   <ReviewEditor
                     name="contentRich"
                     defaultContent={initialContent}
+                    spellcheckEnabled
+                    spellcheckReviewId={reviewId}
                   />
                 </div>
               </label>

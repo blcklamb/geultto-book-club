@@ -8,6 +8,9 @@ import {
   richTextMinCharsMessage,
 } from "@/lib/rich-text";
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
   if (
@@ -23,10 +26,16 @@ export async function POST(req: NextRequest) {
   const scheduleId = formData.get("scheduleId")?.toString();
   const title = formData.get("title")?.toString();
   const contentRich = formData.get("contentRich")?.toString();
+  const reviewId = formData.get("reviewId")?.toString();
 
   if (!scheduleId || !title || !contentRich) {
     const url = new URL("/reviews/new", req.url);
     url.searchParams.set("error", "필수 정보가 누락되었습니다.");
+    return NextResponse.redirect(url, 303);
+  }
+  if (reviewId && !UUID_PATTERN.test(reviewId)) {
+    const url = new URL("/reviews/new", req.url);
+    url.searchParams.set("error", "독후감 식별 정보가 올바르지 않습니다.");
     return NextResponse.redirect(url, 303);
   }
 
@@ -52,6 +61,7 @@ export async function POST(req: NextRequest) {
     .from("reviews")
     .insert([
       {
+        ...(reviewId ? { id: reviewId } : {}),
         schedule_id: scheduleId,
         author_id: sessionUser.id,
         title,
