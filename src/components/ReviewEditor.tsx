@@ -2,6 +2,7 @@
 import "@/styles/tiptap.css";
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import type { SelectionBookmark } from "@tiptap/pm/state";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -32,6 +33,8 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { MIN_RICH_TEXT_CHARS, richTextMinCharsMessage } from "@/lib/rich-text";
+import { ImageAttachments } from "./ImageAttachments";
+import { useImageUploads } from "@/hooks/useImageUploads";
 import { cn } from "@/lib/utils";
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
@@ -242,6 +245,32 @@ export function ReviewEditor({
   const effectiveMinChars =
     typeof minChars === "number" && minChars > 0 ? minChars : null;
   const latestEditorRef = useRef<Editor | null>(null);
+  const imageBookmarks = useRef(new Map<string, SelectionBookmark>());
+  const uploads = useImageUploads({
+    onAdded: (id) => {
+      const selection = latestEditorRef.current?.state.selection;
+      if (selection) imageBookmarks.current.set(id, selection.getBookmark());
+    },
+    onRemoved: (id) => {
+      imageBookmarks.current.delete(id);
+    },
+    onUploaded: ({ url }, id) => {
+      const activeEditor = latestEditorRef.current;
+      if (!activeEditor || activeEditor.isDestroyed) return;
+      const bookmark = imageBookmarks.current.get(id);
+      imageBookmarks.current.delete(id);
+      if (bookmark) {
+        const selection = bookmark.resolve(activeEditor.state.doc);
+        activeEditor.view.dispatch(
+          activeEditor.state.tr.setSelection(selection),
+        );
+      }
+      activeEditor.chain().focus().setImage({ src: url }).run();
+      flushSerializedContent(activeEditor);
+    },
+  });
+  const uploadBlockedRef = useRef(uploads.isBlocked);
+  uploadBlockedRef.current = uploads.isBlocked;
   const serializeTimerRef = useRef<number | null>(null);
 
   const flushSerializedContent = (editorInstance?: Editor | null) => {
@@ -303,7 +332,15 @@ export function ReviewEditor({
     editorProps: {
       attributes: {
         class: "tiptap-editor tiptap-editor-editable",
+        role: "textbox",
+        "aria-label": `${entityName} 본문`,
+        "aria-multiline": "true",
       },
+    },
+    onTransaction({ transaction }) {
+      for (const [id, bookmark] of imageBookmarks.current) {
+        imageBookmarks.current.set(id, bookmark.map(transaction.mapping));
+      }
     },
     onUpdate({ editor }) {
       syncEditorMetadata(editor);
@@ -323,6 +360,10 @@ export function ReviewEditor({
 
     const handleSubmit = (event: SubmitEvent) => {
       flushSerializedContent(editor);
+      if (uploadBlockedRef.current()) {
+        event.preventDefault();
+        return;
+      }
       if (effectiveMinChars === null) return;
 
       const latestCharCount = editor.getText().length;
@@ -369,11 +410,13 @@ export function ReviewEditor({
     );
   }, [charCount, effectiveMinChars, entityName]);
 
-  const isUnder = effectiveMinChars !== null && charCount < effectiveMinChars;
+  const isUnder =
+    uploads.blocked ||
+    (effectiveMinChars !== null && charCount < effectiveMinChars);
 
   useEffect(() => {
     const form = hiddenInputRef.current?.form;
-    if (!form || effectiveMinChars === null) return;
+    if (!form) return;
 
     const submitControls = Array.from(
       form.querySelectorAll<SubmitControl>(
@@ -411,7 +454,20 @@ export function ReviewEditor({
     <>
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200">
         <EditorToolbar editor={editor} />
-        <EditorContent editor={editor} className="prose max-w-none" />
+        <ImageAttachments
+          uploads={uploads}
+          hideCompleted
+          onFileDrop={(event) => {
+            if (!editor) return;
+            const position = editor.view.posAtCoords({
+              left: event.clientX,
+              top: event.clientY,
+            });
+            if (position) editor.commands.setTextSelection(position.pos);
+          }}
+        >
+          <EditorContent editor={editor} className="prose max-w-none" />
+        </ImageAttachments>
         {effectiveMinChars !== null ? (
           <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
             <p

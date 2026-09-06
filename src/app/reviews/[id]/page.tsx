@@ -1,3 +1,5 @@
+import { HighlightNotifications } from "@/components/HighlightNotifications";
+import { parseComment } from "@/lib/content-images";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
@@ -68,12 +70,13 @@ export default async function ReviewDetailPage({
     .select(
       `id, author_id, highlight_text, start_pos, end_pos,
        author:users!review_highlights_author_id_fkey(nickname),
+       highlight_reactions(emoji, user_id, user:users(nickname)),
        highlight_comments(
-         id, body, author_id, created_at,
+         id, body, image_paths, author_id, created_at,
          author:users!highlight_comments_author_id_fkey(nickname),
          highlight_comment_reactions(emoji, user_id, user:users(nickname)),
          highlight_comment_replies(
-           id, body, author_id, created_at,
+           id, body, image_paths, author_id, created_at,
            author:users!highlight_comment_replies_author_id_fkey(nickname)
          )
        )`,
@@ -84,7 +87,7 @@ export default async function ReviewDetailPage({
   const { data: comments } = await supabase
     .from("review_comments")
     .select(
-      "id, body, author_id, created_at, author:users!review_comments_author_id_fkey(nickname)",
+      "id, body, image_paths, author_id, created_at, author:users!review_comments_author_id_fkey(nickname)",
     )
     .eq("review_id", reviewId)
     .order("created_at", { ascending: false });
@@ -95,7 +98,7 @@ export default async function ReviewDetailPage({
       ? await supabase
           .from("review_comment_replies")
           .select(
-            "id, comment_id, body, author_id, created_at, author:users!review_comment_replies_author_id_fkey(nickname)",
+            "id, comment_id, body, image_paths, author_id, created_at, author:users!review_comment_replies_author_id_fkey(nickname)",
           )
           .in("comment_id", commentIds)
           .order("created_at", { ascending: false })
@@ -206,6 +209,13 @@ export default async function ReviewDetailPage({
       id: h.id,
       authorId: h.author_id ?? "",
       highlightText: h.highlight_text,
+      reactions: summarizeReactions(
+        (h.highlight_reactions ?? []).map((r) => ({
+          ...r,
+          user: Array.isArray(r.user) ? r.user[0] : r.user,
+        })),
+        sessionUser?.id,
+      ),
       startPos: h.start_pos!,
       endPos: h.end_pos!,
       authorNickname:
@@ -221,6 +231,7 @@ export default async function ReviewDetailPage({
           const comment = c as {
             id: string;
             body: string;
+            image_paths?: string[];
             author_id: string | null;
             created_at: string | null;
             author: { nickname: string } | null;
@@ -235,6 +246,7 @@ export default async function ReviewDetailPage({
             highlight_comment_replies: Array<{
               id: string;
               body: string;
+              image_paths?: string[];
               author_id: string | null;
               created_at: string | null;
               author: { nickname: string } | Array<{ nickname: string }> | null;
@@ -243,6 +255,8 @@ export default async function ReviewDetailPage({
           return {
             id: comment.id,
             body: comment.body,
+            imagePaths: comment.image_paths ?? [],
+            authorId: comment.author_id ?? undefined,
             author: comment.author?.nickname ?? "익명",
             authorImageUrl: comment.author_id
               ? profileImageMap.get(comment.author_id)?.profileImageUrl
@@ -264,6 +278,7 @@ export default async function ReviewDetailPage({
               return {
                 id: r.id,
                 body: r.body,
+                imagePaths: r.image_paths ?? [],
                 author: author?.nickname ?? "익명",
                 authorImageUrl: r.author_id
                   ? profileImageMap.get(r.author_id)?.profileImageUrl
@@ -286,9 +301,8 @@ export default async function ReviewDetailPage({
     sessionUser?.id,
   );
 
-  async function handleCommentSubmit(body: string) {
+  async function handleCommentSubmit(body: string, imagePaths: string[] = []) {
     "use server";
-    if (!body) throw new Error("댓글 내용을 입력해주세요.");
     const supabase = await createSupabaseServerClient();
     const sessionUser = await getSessionUser();
 
@@ -306,7 +320,7 @@ export default async function ReviewDetailPage({
         {
           review_id: reviewId,
           author_id: sessionUser.id,
-          body,
+          ...parseComment(body, imagePaths, sessionUser.id),
         },
       ])
       .select("id")
@@ -332,7 +346,11 @@ export default async function ReviewDetailPage({
     revalidatePath(`/reviews/${reviewId}`);
   }
 
-  async function handleReplySubmit(commentId: string, body: string) {
+  async function handleReplySubmit(
+    commentId: string,
+    body: string,
+    imagePaths: string[] = [],
+  ) {
     "use server";
     const sessionUser = await getSessionUser();
     if (
@@ -342,12 +360,15 @@ export default async function ReviewDetailPage({
     ) {
       throw new Error("승인된 멤버만 답글을 작성할 수 있습니다.");
     }
-    if (!body.trim()) throw new Error("답글 내용을 입력해주세요.");
 
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase
-      .from("review_comment_replies")
-      .insert([{ comment_id: commentId, author_id: sessionUser.id, body }]);
+    const { error } = await supabase.from("review_comment_replies").insert([
+      {
+        comment_id: commentId,
+        author_id: sessionUser.id,
+        ...parseComment(body, imagePaths, sessionUser.id),
+      },
+    ]);
     if (error) throw new Error("답글 작성 실패: " + error.message);
     revalidatePath(`/reviews/${reviewId}`);
   }
@@ -620,6 +641,12 @@ export default async function ReviewDetailPage({
     <>
       <DetailHeader title="독후감 상세" />
       <div className="max-w-3xl mx-auto py-8">
+        {sessionUser && !sessionUser.isDeactivated && (
+          <HighlightNotifications
+            key={sessionUser.id}
+            userId={sessionUser.id}
+          />
+        )}
         <article className="space-y-6">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
@@ -693,6 +720,8 @@ export default async function ReviewDetailPage({
               comments?.map((comment) => ({
                 id: comment.id,
                 body: comment.body,
+                imagePaths: comment.image_paths ?? [],
+                authorId: comment.author_id ?? undefined,
                 author: comment.author?.nickname ?? "익명",
                 authorImageUrl: comment.author_id
                   ? profileImageMap.get(comment.author_id)?.profileImageUrl
@@ -711,7 +740,10 @@ export default async function ReviewDetailPage({
                     return {
                       id: r.id,
                       body: r.body,
-                      author: (author as { nickname?: string } | null)?.nickname ?? "익명",
+                      imagePaths: r.image_paths ?? [],
+                      author:
+                        (author as { nickname?: string } | null)?.nickname ??
+                        "익명",
                       authorImageUrl: r.author_id
                         ? profileImageMap.get(r.author_id)?.profileImageUrl
                         : undefined,

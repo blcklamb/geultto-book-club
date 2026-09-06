@@ -1,3 +1,4 @@
+import { parseComment } from "@/lib/content-images";
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
@@ -20,11 +21,18 @@ export async function POST(
   }
 
   const highlightId = (await ctx.params).id;
-  const { body } = (await req.json()) as { body: string };
-
-  if (!body?.trim()) {
+  let payload: ReturnType<typeof parseComment>;
+  try {
+    const { body, imagePaths } = await req.json();
+    payload = parseComment(body, imagePaths, sessionUser.id);
+  } catch (error) {
     return NextResponse.json(
-      { message: "댓글 내용을 입력해주세요." },
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "댓글 입력값이 올바르지 않습니다.",
+      },
       { status: 400 },
     );
   }
@@ -35,10 +43,10 @@ export async function POST(
     .insert({
       highlight_id: highlightId,
       author_id: sessionUser.id,
-      body: body.trim(),
+      ...payload,
     })
     .select(
-      "id, body, created_at, author:users!highlight_comments_author_id_fkey(nickname)",
+      "id, body, image_paths, created_at, author:users!highlight_comments_author_id_fkey(nickname)",
     )
     .single();
 
@@ -74,6 +82,8 @@ export async function POST(
   return NextResponse.json({
     id: data.id,
     body: data.body,
+    imagePaths: data.image_paths,
+    authorId: sessionUser.id,
     author: (data.author as { nickname: string } | null)?.nickname ?? "익명",
     createdAt: data.created_at,
     reactions: [],
