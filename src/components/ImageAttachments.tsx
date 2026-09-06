@@ -103,12 +103,12 @@ export function ImageAttachments({
                     variant="ghost"
                     disabled={disabled}
                     onClick={() =>
-                      item.path
+                      item.removalFailed
                         ? void uploads.remove(item.id)
                         : void uploads.retry(item)
                     }
                   >
-                    {item.path ? "제거 재시도" : "재시도"}
+                    {item.removalFailed ? "제거 재시도" : "재시도"}
                   </Button>
                 </div>
               )}

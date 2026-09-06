@@ -5,6 +5,8 @@ import { validateImageFile } from "@/lib/content-images";
 export type ImageUpload = {
   id: string;
   file: File;
+  uploadId?: string;
+  removalFailed?: boolean;
   preview: string;
   status: "uploading" | "removing" | "error" | "done";
   path?: string;
@@ -25,56 +27,67 @@ export function useImageUploads(options: UploadOptions = {}) {
   const itemsRef = useRef(items);
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const mounted = useRef(true);
   const controllers = useRef(new Map<string, AbortController>());
   const update = useCallback((next: ImageUpload[]) => {
     itemsRef.current = next;
-    setItems(next);
+    if (mounted.current) setItems(next);
   }, []);
+  const cancelUpload = async (id: string) => {
+    try {
+      await fetch("/api/images", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+        keepalive: true,
+      });
+    } catch { /* Expired drafts are retried by server cleanup. */ }
+  };
   const run = async (item: ImageUpload) => {
+    if (controllers.current.has(item.id)) return;
+    const uploadId = crypto.randomUUID();
     const controller = new AbortController();
     controllers.current.set(item.id, controller);
     update(
       itemsRef.current.map((i) =>
-        i.id === item.id ? { ...i, status: "uploading", error: undefined } : i,
+        i.id === item.id ? { ...i, status: "uploading", error: undefined, uploadId } : i,
       ),
     );
     try {
       validateImageFile(item.file);
-      const form = new FormData();
-      form.set("file", item.file);
-      const direct = item.file.size > 4 * 1024 * 1024;
-      const body = direct
-        ? JSON.stringify({
-            type: item.file.type,
-            size: item.file.size,
-            signature: Array.from(
-              new Uint8Array(await item.file.slice(0, 12).arrayBuffer()),
-            ),
-          })
-        : form;
+      const prepared = await fetch("/api/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "prepare", id: uploadId, type: item.file.type, size: item.file.size }),
+        signal: controller.signal,
+      });
+      const preparation = await prepared.json();
+      if (!prepared.ok) throw new Error(preparation.message ?? "이미지 업로드 실패");
+      if (controller.signal.aborted) return;
+      const uploaded = await fetch(preparation.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": item.file.type, "x-upsert": "false" },
+        body: item.file,
+        signal: controller.signal,
+      });
+      if (!uploaded.ok) throw new Error("이미지 업로드 실패. 다시 시도해주세요.");
+      if (controller.signal.aborted) return;
       const res = await fetch("/api/images", {
         method: "POST",
-        body,
-        ...(direct ? { headers: { "Content-Type": "application/json" } } : {}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "finalize", id: uploadId }),
         signal: controller.signal,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? "이미지 업로드 실패");
-      if (direct) {
-        const uploadResponse = await fetch(data.uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": item.file.type, "x-upsert": "false" },
-          body: item.file,
-          signal: controller.signal,
-        });
-        if (!uploadResponse.ok)
-          throw new Error("이미지 업로드 실패. 다시 시도해주세요.");
-      }
+      if (!res.ok) throw new Error(data.message ?? "이미지 검증 실패");
       if (
         controller.signal.aborted ||
+        !mounted.current ||
         !itemsRef.current.some((i) => i.id === item.id)
-      )
+      ) {
+        await cancelUpload(uploadId);
         return;
+      }
       optionsRef.current.onUploaded?.(data, item.id);
       update(
         itemsRef.current.map((i) =>
@@ -84,6 +97,7 @@ export function useImageUploads(options: UploadOptions = {}) {
         ),
       );
     } catch (error) {
+      void cancelUpload(uploadId);
       if (!controller.signal.aborted)
         update(
           itemsRef.current.map((i) =>
@@ -91,6 +105,7 @@ export function useImageUploads(options: UploadOptions = {}) {
               ? {
                   ...i,
                   status: "error",
+                  removalFailed: false,
                   error:
                     error instanceof Error
                       ? error.message
@@ -133,7 +148,7 @@ export function useImageUploads(options: UploadOptions = {}) {
     const item = itemsRef.current.find((i) => i.id === id);
     if (!item || item.status === "removing") return;
     controllers.current.get(id)?.abort();
-    if (item.path) {
+    if (item.uploadId || item.path) {
       update(
         itemsRef.current.map((current) =>
           current.id === id
@@ -145,7 +160,7 @@ export function useImageUploads(options: UploadOptions = {}) {
         const response = await fetch("/api/images", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: item.path }),
+          body: JSON.stringify({ id: item.uploadId, path: item.path }),
         });
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
@@ -158,6 +173,7 @@ export function useImageUploads(options: UploadOptions = {}) {
               ? {
                   ...current,
                   status: "error",
+                  removalFailed: true,
                   error:
                     error instanceof Error
                       ? error.message
@@ -186,18 +202,22 @@ export function useImageUploads(options: UploadOptions = {}) {
       update(itemsRef.current.filter((item) => !item.path));
   };
   useEffect(
-    () => () => {
+    () => {
+      mounted.current = true;
+      return () => {
+      mounted.current = false;
       for (const c of controllers.current.values()) c.abort();
       for (const item of itemsRef.current) {
         URL.revokeObjectURL(item.preview);
-        if (item.path)
+        if (item.uploadId || item.path)
           void fetch("/api/images", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ path: item.path }),
+            body: JSON.stringify({ id: item.uploadId, path: item.path }),
             keepalive: true,
-          });
+          }).catch(() => {});
       }
+      };
     },
     [],
   );

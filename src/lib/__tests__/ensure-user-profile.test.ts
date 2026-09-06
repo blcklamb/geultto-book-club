@@ -60,7 +60,7 @@ describe("ensure-user-profile", () => {
     const { supabase, usersUpsert, profilesUpsert } = makeSupabaseMock();
 
     await ensureUserProfile(
-      supabase as Parameters<typeof ensureUserProfile>[0],
+      supabase as unknown as Parameters<typeof ensureUserProfile>[0],
       makeUser({
         email: "user@example.com",
         user_metadata: { name: "신규 멤버" },

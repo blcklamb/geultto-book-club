@@ -242,6 +242,7 @@ export function ReviewEditor({
     [initialContent],
   );
   const [charCount, setCharCount] = useState(0);
+  const [imageCount, setImageCount] = useState(0);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const effectiveMinChars =
     typeof minChars === "number" && minChars > 0 ? minChars : null;
@@ -321,6 +322,11 @@ export function ReviewEditor({
   };
 
   const syncEditorMetadata = (editorInstance: Editor) => {
+    let nextImageCount = 0;
+    editorInstance.state.doc.descendants((node) => {
+      if (node.type.name === "image") nextImageCount += 1;
+    });
+    setImageCount(nextImageCount);
     const nextCharCount = editorInstance.getText().length;
     startTransition(() => {
       setCharCount((prev) => (prev === nextCharCount ? prev : nextCharCount));
@@ -390,7 +396,11 @@ export function ReviewEditor({
 
     const handleSubmit = (event: SubmitEvent) => {
       flushSerializedContent(editor);
-      if (uploadBlockedRef.current()) {
+      let count = 0;
+      editor.state.doc.descendants((node) => {
+        if (node.type.name === "image") count += 1;
+      });
+      if (count > MAX_POST_IMAGE_COUNT || uploadBlockedRef.current()) {
         event.preventDefault();
         return;
       }
@@ -447,6 +457,7 @@ export function ReviewEditor({
   }, [charCount, effectiveMinChars, entityName]);
 
   const isUnder =
+    imageCount > MAX_POST_IMAGE_COUNT ||
     uploads.blocked ||
     (effectiveMinChars !== null && charCount < effectiveMinChars);
 
@@ -490,6 +501,11 @@ export function ReviewEditor({
     <>
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200">
         <EditorToolbar editor={editor} />
+        {imageCount > MAX_POST_IMAGE_COUNT ? (
+          <p role="alert" className="px-3 py-2 text-sm text-red-600">
+            본문 이미지는 최대 3개까지 첨부할 수 있습니다. 초과한 이미지를 제거해주세요.
+          </p>
+        ) : null}
         <ImageAttachments
           uploads={uploads}
           maxImages={MAX_POST_IMAGE_COUNT}

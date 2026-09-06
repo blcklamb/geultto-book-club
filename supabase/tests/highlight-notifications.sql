@@ -34,14 +34,17 @@ DELETE FROM public.highlight_reactions WHERE id = 'f0000000-0000-4000-8000-00000
 DELETE FROM public.highlight_comment_reactions WHERE id = 'f0000000-0000-4000-8000-000000000003';
 SELECT pg_temp.assert_true((SELECT count(*) = 5 FROM public.highlight_notifications), 'reaction removal does not notify');
 
+SELECT pg_temp.assert_true(public.content_image_is_referenced('a0000000-0000-4000-8000-000000000003/e0000000-0000-4000-8000-000000000001.png'), 'cleanup preserves referenced images');
+SELECT pg_temp.assert_true(NOT public.content_image_is_referenced('unused.png'), 'cleanup detects unused images');
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', 'a0000000-0000-4000-8000-000000000002', true);
 SELECT pg_temp.assert_true((SELECT count(*) = 2 FROM public.highlight_notifications), 'recipient can only read own notifications');
 -- Storage and reaction writes are tied to the authenticated, active member.
-INSERT INTO storage.objects(id, bucket_id, name) VALUES (gen_random_uuid(),'content-images','a0000000-0000-4000-8000-000000000002/test.png');
-DELETE FROM storage.objects WHERE bucket_id = 'content-images' AND name = 'a0000000-0000-4000-8000-000000000002/test.png';
-SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM storage.objects WHERE name = 'a0000000-0000-4000-8000-000000000002/test.png'), 'member can remove own draft image');
 DO $$ BEGIN
+  BEGIN
+    INSERT INTO storage.objects(id, bucket_id, name) VALUES (gen_random_uuid(),'content-images','a0000000-0000-4000-8000-000000000002/own.png');
+    RAISE EXCEPTION 'Direct upload to own folder bypassed byte validation';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   BEGIN
     INSERT INTO storage.objects(id, bucket_id, name) VALUES (gen_random_uuid(),'content-images','a0000000-0000-4000-8000-000000000001/forged.png');
     RAISE EXCEPTION 'User was allowed to upload into another user directory';
@@ -52,6 +55,45 @@ DO $$ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 
+
+SAVEPOINT own_activity_probe;
+INSERT INTO public.review_highlights(review_id,author_id,highlight_text,start_pos,end_pos)
+  VALUES ('b0000000-0000-4000-8000-000000000001',auth.uid(),'own',1,2);
+INSERT INTO public.highlight_comments(highlight_id,author_id,body)
+  VALUES ('c0000000-0000-4000-8000-000000000001',auth.uid(),'own');
+INSERT INTO public.highlight_comment_replies(comment_id,author_id,body)
+  VALUES ('d0000000-0000-4000-8000-000000000001',auth.uid(),'own');
+INSERT INTO public.highlight_comment_reactions(comment_id,user_id,emoji)
+  VALUES ('d0000000-0000-4000-8000-000000000001',auth.uid(),'probe');
+INSERT INTO public.highlight_reactions(highlight_id,user_id,emoji)
+  VALUES ('c0000000-0000-4000-8000-000000000001',auth.uid(),'probe');
+ROLLBACK TO SAVEPOINT own_activity_probe;
+-- Each notification source rejects forged actors and actor reassignment.
+DO $$
+DECLARE tab text; actor text; parent_col text; parent_id uuid; affected integer;
+BEGIN
+  FOREACH tab IN ARRAY ARRAY['review_highlights','highlight_comments','highlight_comment_replies','highlight_comment_reactions','highlight_reactions'] LOOP
+    actor := CASE WHEN tab IN ('highlight_comment_reactions','highlight_reactions') THEN 'user_id' ELSE 'author_id' END;
+    parent_col := CASE WHEN tab = 'review_highlights' THEN 'review_id' WHEN tab IN ('highlight_comments','highlight_reactions') THEN 'highlight_id' ELSE 'comment_id' END;
+    parent_id := CASE WHEN tab = 'review_highlights' THEN 'b0000000-0000-4000-8000-000000000001'::uuid WHEN tab IN ('highlight_comments','highlight_reactions') THEN 'c0000000-0000-4000-8000-000000000001'::uuid ELSE 'd0000000-0000-4000-8000-000000000001'::uuid END;
+    BEGIN
+      IF tab = 'review_highlights' THEN
+        INSERT INTO public.review_highlights(review_id,author_id,highlight_text,start_pos,end_pos) VALUES (parent_id,'a0000000-0000-4000-8000-000000000003','forged',1,2);
+      ELSE
+        EXECUTE format('INSERT INTO public.%I (%I,%I,%I) VALUES ($1,$2,$3)',tab,parent_col,actor,CASE WHEN actor='user_id' THEN 'emoji' ELSE 'body' END)
+          USING parent_id,'a0000000-0000-4000-8000-000000000003'::uuid,'forged';
+      END IF;
+      RAISE EXCEPTION 'Actor forgery allowed on %',tab;
+    EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+    BEGIN
+      EXECUTE format('UPDATE public.%I SET %I = $1 WHERE %I = auth.uid()',tab,actor,actor)
+        USING 'a0000000-0000-4000-8000-000000000003'::uuid;
+      -- Zero affected rows is fine; any owned row must fail its new-row check.
+      GET DIAGNOSTICS affected = ROW_COUNT;
+      IF affected > 0 THEN RAISE EXCEPTION 'Actor reassignment allowed on %',tab; END IF;
+    EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  END LOOP;
+END $$;
 SELECT public.read_highlight_notifications(ARRAY[(SELECT id FROM public.highlight_notifications WHERE kind = 'comment')]);
 SELECT pg_temp.assert_true((SELECT count(*) = 1 FROM public.highlight_notifications WHERE read_at IS NOT NULL), 'individual read');
 SELECT public.read_highlight_notifications(NULL, now());

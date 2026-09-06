@@ -49,6 +49,7 @@ describe("image content validation", () => {
       content: [image("22222222-2222-4222-8222-222222222222")],
     };
     expect(parsePostImagePaths(content, user)).toEqual([path]);
+    expect(() => parsePostImagePaths({ type: "doc", content: Array(4).fill(content.content[0]) }, user)).toThrow("최대 3개");
     expect(() =>
       parsePostImagePaths(
         {

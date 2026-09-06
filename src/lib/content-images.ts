@@ -1,4 +1,5 @@
 export const CONTENT_IMAGE_BUCKET = "content-images";
+export const CONTENT_IMAGE_DRAFT_BUCKET = "content-image-drafts";
 export const MAX_CONTENT_IMAGE_SIZE = 5 * 1024 * 1024;
 export const MAX_POST_IMAGE_COUNT = 3;
 export const MAX_COMMENT_IMAGE_COUNT = 1;
@@ -75,6 +76,8 @@ export function parsePostImagePaths(content: unknown, userId: string) {
       if (!path || !path.startsWith(`${userId}/`))
         throw new Error("본문 이미지는 본인이 첨부한 이미지여야 합니다.");
       paths.push(path);
+      if (paths.length > MAX_POST_IMAGE_COUNT)
+        throw new Error("이미지는 최대 3개까지 첨부할 수 있습니다.");
     }
     if (Array.isArray(value.content)) value.content.forEach(visit);
   };

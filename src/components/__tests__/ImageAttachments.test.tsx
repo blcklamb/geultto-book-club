@@ -18,7 +18,7 @@ beforeEach(() => {
       .fn()
       .mockResolvedValue({
         ok: true,
-        json: async () => ({ path, url: "https://example.test/image.png" }),
+        json: async () => ({ path, url: "https://example.test/image.png", uploadUrl: "https://storage.test/private-upload" }),
       }),
   );
   URL.createObjectURL = vi.fn(() => "blob:preview");
@@ -52,6 +52,25 @@ describe("comment image attachments", () => {
       expect(screen.queryByAltText("image.png")).toBeNull();
     },
   );
+  it("uploads a 5MB file to private storage and finalizes it on the server", async () => {
+    render(<CommentThread comments={[]} submitAction={vi.fn()} />);
+    const file = new File([new Uint8Array(5 * 1024 * 1024)], "large.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("첨부할 이미지 선택"), { target: { files: [file] } });
+    await waitFor(() => expect(screen.getByRole("button", { name: "댓글 등록" })).toBeEnabled());
+    expect(fetch).toHaveBeenCalledWith("https://storage.test/private-upload", expect.objectContaining({ method: "PUT", body: file }));
+    expect(fetch).toHaveBeenCalledWith("/api/images", expect.objectContaining({
+      method: "POST", body: expect.stringContaining('"action":"finalize"'),
+    }));
+  });
+  it("cancels by upload ID on unmount before receiving the upload response", async () => {
+    vi.mocked(fetch).mockReturnValueOnce(new Promise(() => {}));
+    const { unmount } = render(<CommentThread comments={[]} submitAction={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("첨부할 이미지 선택"), { target: { files: [upload()] } });
+    unmount();
+    expect(fetch).toHaveBeenCalledWith("/api/images", expect.objectContaining({
+      method: "DELETE", keepalive: true, body: expect.stringContaining('"id":'),
+    }));
+  });
   it("keeps text on failure, blocks submit, retries and allows removing an attachment", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
@@ -100,11 +119,14 @@ describe("comment image attachments", () => {
     await act(async () =>
       resolve({
         ok: true,
-        json: async () => ({ path, url: "https://example.test/image.png" }),
+        json: async () => ({ path, url: "https://example.test/image.png", uploadUrl: "https://storage.test/private-upload" }),
       } as Response),
     );
     expect(screen.queryByAltText("image.png")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     expect(submit).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith("/api/images", expect.objectContaining({
+      method: "DELETE", body: expect.stringContaining('"id":'),
+    }));
   });
 });

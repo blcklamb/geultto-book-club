@@ -43,6 +43,12 @@ async function cursorAtEnd(el: HTMLElement) {
 }
 
 describe("real editor Enter", () => {
+  it("blocks saving four occurrences of the same image", async () => {
+    mount({ type: "doc", content: Array(4).fill({ type: "image", attrs: { src: "https://example.test/image.png" } }) });
+    await screen.findByRole("textbox");
+    expect(screen.getByRole("button", { name: "저장" })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("최대 3개");
+  });
   it("splits a paragraph on Enter and saves both paragraphs", async () => {
     const { container } = mount();
     const editor = await screen.findByRole("textbox", { name: "독후감 본문" });

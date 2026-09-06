@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const db = new PGlite();
-await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated;
+await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
 CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 GRANT USAGE ON SCHEMA auth TO authenticated;
@@ -43,6 +43,7 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(fs.readFileSync(root + "/supabase/migrations/202609070103_review_security_fixes.sql", "utf8"));
 await db.exec(
   fs.readFileSync(root + "/supabase/tests/highlight-notifications.sql", "utf8"),
 );
