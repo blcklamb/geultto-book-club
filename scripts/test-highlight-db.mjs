@@ -37,6 +37,13 @@ await db.exec(
   ),
 );
 await db.exec(
+  fs.readFileSync(
+    root +
+      "/supabase/migrations/202609070102_harden_content_image_attachments.sql",
+    "utf8",
+  ),
+);
+await db.exec(
   fs.readFileSync(root + "/supabase/tests/highlight-notifications.sql", "utf8"),
 );
 console.log(

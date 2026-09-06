@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { awardTopicSubmissionPoints } from "@/lib/points";
 import type { Json } from "@supabase/types";
+import { parsePostImagePaths } from "@/lib/content-images";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
   let parsedBody: Json;
   try {
     parsedBody = JSON.parse(bodyRich);
+    parsePostImagePaths(parsedBody, sessionUser.id);
   } catch {
     const url = new URL("/topics/new", req.url);
     url.searchParams.set("error", "본문 형식이 올바르지 않습니다.");

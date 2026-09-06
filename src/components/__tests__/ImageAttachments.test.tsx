@@ -77,6 +77,7 @@ describe("comment image attachments", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "image.png 첨부 제거" }),
     );
+    await waitFor(() => expect(screen.queryByAltText("image.png")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     await waitFor(() => expect(submit).toHaveBeenCalledWith("보존할 내용", []));
   });

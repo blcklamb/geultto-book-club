@@ -1,5 +1,5 @@
 "use client";
-import { useRef, type ReactNode, type DragEvent } from "react";
+import { useRef, useState, type ReactNode, type DragEvent } from "react";
 import { CONTENT_IMAGE_ACCEPT, contentImageUrl } from "@/lib/content-images";
 import type { ImageUploads } from "@/hooks/useImageUploads";
 import { Button } from "./ui/button";
@@ -10,14 +10,25 @@ export function ImageAttachments({
   children,
   hideCompleted = false,
   onFileDrop,
+  maxImages = 1,
 }: {
   onFileDrop?: (event: DragEvent<HTMLDivElement>) => void;
   uploads: ImageUploads;
   disabled?: boolean;
   children?: ReactNode;
   hideCompleted?: boolean;
+  maxImages?: number;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const [limitMessage, setLimitMessage] = useState("");
+  const add = (files: File[]) => {
+    const result = uploads.add(files);
+    setLimitMessage(
+      result.exceeded
+        ? `이미지는 최대 ${maxImages}개까지 첨부할 수 있습니다.`
+        : "",
+    );
+  };
   return (
     <div
       className="space-y-2"
@@ -26,7 +37,7 @@ export function ImageAttachments({
         if (!disabled && files.length) {
           event.preventDefault();
           event.stopPropagation();
-          uploads.add(files);
+          add(files);
         }
       }}
       onDragOver={(event) => {
@@ -39,7 +50,7 @@ export function ImageAttachments({
           event.preventDefault();
           event.stopPropagation();
           onFileDrop?.(event);
-          uploads.add(files);
+          add(files);
         }
       }}
     >
@@ -53,7 +64,7 @@ export function ImageAttachments({
         multiple
         disabled={disabled}
         onChange={(event) => {
-          uploads.add(Array.from(event.target.files ?? []));
+          add(Array.from(event.target.files ?? []));
           event.target.value = "";
         }}
       />
@@ -64,8 +75,13 @@ export function ImageAttachments({
         disabled={disabled}
         onClick={() => input.current?.click()}
       >
-        이미지 첨부
+        이미지 첨부 ({uploads.items.length}/{maxImages})
       </Button>
+      {limitMessage ? (
+        <p role="alert" className="text-xs text-red-600">
+          {limitMessage}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {uploads.items
           .filter((item) => !hideCompleted || item.status !== "done")
@@ -76,9 +92,8 @@ export function ImageAttachments({
                 alt={item.file.name}
                 className="h-20 w-28 object-contain"
               />
-              {item.status === "uploading" && (
-                <span role="status">업로드 중…</span>
-              )}
+              {item.status === "uploading" && <span role="status">업로드 중…</span>}
+              {item.status === "removing" && <span role="status">제거 중…</span>}
               {item.error && (
                 <div role="alert">
                   {item.error}
@@ -87,9 +102,13 @@ export function ImageAttachments({
                     size="sm"
                     variant="ghost"
                     disabled={disabled}
-                    onClick={() => void uploads.retry(item)}
+                    onClick={() =>
+                      item.path
+                        ? void uploads.remove(item.id)
+                        : void uploads.retry(item)
+                    }
                   >
-                    재시도
+                    {item.path ? "제거 재시도" : "재시도"}
                   </Button>
                 </div>
               )}
@@ -97,9 +116,9 @@ export function ImageAttachments({
                 type="button"
                 size="sm"
                 variant="ghost"
-                disabled={disabled}
+                disabled={disabled || item.status === "removing"}
                 aria-label={`${item.file.name} 첨부 제거`}
-                onClick={() => uploads.remove(item.id)}
+                onClick={() => void uploads.remove(item.id)}
               >
                 제거
               </Button>

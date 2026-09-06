@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { File as NodeFile } from "node:buffer";
-import { POST } from "../route";
+import { DELETE, POST } from "../route";
 import type { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
   upload: vi.fn(),
-  signed: vi.fn(),
+  remove: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.user }));
 vi.mock("@supabase/server", () => ({
@@ -13,7 +13,7 @@ vi.mock("@supabase/server", () => ({
     storage: {
       from: () => ({
         upload: mocks.upload,
-        createSignedUploadUrl: mocks.signed,
+        remove: mocks.remove,
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://storage.test/${path}` },
         }),
@@ -31,16 +31,30 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.user.mockResolvedValue(user);
   mocks.upload.mockResolvedValue({ error: null });
-  mocks.signed.mockResolvedValue({
-    data: { signedUrl: "https://storage.test/signed" },
-    error: null,
-  });
+  mocks.remove.mockResolvedValue({ error: null });
 });
-function metadata(type = "image/png", size = 5 * 1024 * 1024, signature = png) {
-  return {
-    headers: new Headers({ "Content-Type": "application/json" }),
-    json: async () => ({ type, size, signature }),
-  } as NextRequest;
+
+async function postFile(
+  type = "image/png",
+  bytes = new Uint8Array(png),
+) {
+  const old = globalThis.File;
+  Object.defineProperty(globalThis, "File", {
+    value: NodeFile,
+    configurable: true,
+  });
+  try {
+    const file = new NodeFile([bytes], "test.png", { type });
+    const req = {
+      formData: async () => ({ get: () => file }),
+    } as unknown as NextRequest;
+    return await POST(req);
+  } finally {
+    Object.defineProperty(globalThis, "File", {
+      value: old,
+      configurable: true,
+    });
+  }
 }
 describe("image upload API", () => {
   it.each([
@@ -49,51 +63,41 @@ describe("image upload API", () => {
     { ...user, isDeactivated: true },
   ])("requires an approved active member", async (session) => {
     mocks.user.mockResolvedValue(session);
-    expect((await POST(metadata())).status).toBe(403);
-    expect(mocks.signed).not.toHaveBeenCalled();
+    expect((await POST({} as NextRequest)).status).toBe(403);
+    expect(mocks.upload).not.toHaveBeenCalled();
   });
-  it("creates a signed upload for a 5MB image in the authenticated user's directory", async () => {
-    const response = await POST(metadata());
+  it("inspects and stores a 5MB image in the authenticated user's directory", async () => {
+    const bytes = new Uint8Array(5 * 1024 * 1024);
+    bytes.set(png);
+    const response = await postFile("image/png", bytes);
     const data = await response.json();
     expect(response.status).toBe(201);
     expect(data.path).toMatch(new RegExp(`^${user.id}/.*\\.png$`));
-    expect(data.uploadUrl).toBe("https://storage.test/signed");
+    expect(mocks.upload).toHaveBeenCalled();
   });
-  it("rejects oversized images, unsupported formats and mismatched signatures", async () => {
-    for (const req of [
-      metadata("image/png", 5 * 1024 * 1024 + 1),
-      metadata("image/svg+xml"),
-      metadata("image/jpeg"),
-      metadata("image/png", -1),
-      metadata("image/png", 1, [0, 1]),
+  it("rejects oversized images, unsupported formats and mismatched bytes", async () => {
+    const tooLarge = new Uint8Array(5 * 1024 * 1024 + 1);
+    tooLarge.set(png);
+    for (const response of [
+      await postFile("image/png", tooLarge),
+      await postFile("image/svg+xml"),
+      await postFile("image/jpeg"),
+      await postFile("image/png", new Uint8Array([0, 1])),
     ])
-      expect((await POST(req)).status).toBe(400);
-    expect(mocks.signed).not.toHaveBeenCalled();
+      expect(response.status).toBe(400);
+    expect(mocks.upload).not.toHaveBeenCalled();
   });
-  it("uploads smaller multipart files after inspecting their header", async () => {
-    // Route handlers use Node's File, unlike jsdom's legacy File implementation.
-    const old = globalThis.File;
-    Object.defineProperty(globalThis, "File", {
-      value: NodeFile,
-      configurable: true,
-    });
-    try {
-      const file = new NodeFile([new Uint8Array(png)], "test.png", {
-        type: "image/png",
-      });
-      const req = {
-        headers: new Headers(),
-        formData: async () => ({ get: () => file }),
-      } as unknown as NextRequest;
-      expect((await POST(req)).status).toBe(201);
-      expect(mocks.upload).toHaveBeenCalled();
-      mocks.upload.mockResolvedValue({ error: { message: "network" } });
-      expect((await POST(req)).status).toBe(500);
-    } finally {
-      Object.defineProperty(globalThis, "File", {
-        value: old,
-        configurable: true,
-      });
-    }
+  it("does not trust JSON metadata or leave deletion unauthenticated", async () => {
+    const claimed = {
+      formData: async () => {
+        throw new Error("multipart required");
+      },
+    } as unknown as NextRequest;
+    expect((await POST(claimed)).status).toBe(400);
+    expect(mocks.upload).not.toHaveBeenCalled();
+    const path = `${user.id}/22222222-2222-4222-8222-222222222222.png`;
+    const req = { json: async () => ({ path }) } as NextRequest;
+    expect((await DELETE(req)).status).toBe(204);
+    expect(mocks.remove).toHaveBeenCalledWith([path]);
   });
 });

@@ -1,4 +1,4 @@
-import { parseComment } from "@/lib/content-images";
+import { parseComment, parsePostImagePaths } from "@/lib/content-images";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { PageRealtime } from "@/components/PageRealtime";
@@ -289,6 +289,7 @@ export default async function TopicDetailPage({
     let parsedBodyRich: Json;
     try {
       parsedBodyRich = JSON.parse(bodyRich);
+      parsePostImagePaths(parsedBodyRich, sessionUser.id);
     } catch {
       redirectTopicWithMessage(
         submittedTopicId,

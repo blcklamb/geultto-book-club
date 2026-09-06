@@ -4,6 +4,7 @@ import {
   validateImageFile,
   MAX_CONTENT_IMAGE_SIZE,
   contentImageUrl,
+  parsePostImagePaths,
 } from "../content-images";
 const user = "11111111-1111-4111-8111-111111111111";
 const path = `${user}/22222222-2222-4222-8222-222222222222.png`;
@@ -31,7 +32,37 @@ describe("image content validation", () => {
     ])
       expect(() => parseComment("", paths, user)).toThrow();
     expect(() => parseComment({}, [], user)).toThrow();
+    expect(() =>
+      parseComment("", [path, path.replace("22222222", "33333333")], user),
+    ).toThrow("최대 1개");
     expect(contentImageUrl("javascript:alert(1)")).toBe("");
+  });
+  it("allows at most three owned images in post content", () => {
+    const image = (id: string) => ({
+      type: "image",
+      attrs: {
+        src: `https://storage.test/storage/v1/object/public/content-images/${user}/${id}.png`,
+      },
+    });
+    const content = {
+      type: "doc",
+      content: [image("22222222-2222-4222-8222-222222222222")],
+    };
+    expect(parsePostImagePaths(content, user)).toEqual([path]);
+    expect(() =>
+      parsePostImagePaths(
+        {
+          type: "doc",
+          content: [
+            image("22222222-2222-4222-8222-222222222222"),
+            image("33333333-3333-4333-8333-333333333333"),
+            image("44444444-4444-4444-8444-444444444444"),
+            image("55555555-5555-4555-8555-555555555555"),
+          ],
+        },
+        user,
+      ),
+    ).toThrow("최대 3개");
   });
   it("enforces format and file size", () => {
     for (const type of ["image/jpeg", "image/png", "image/webp", "image/gif"])

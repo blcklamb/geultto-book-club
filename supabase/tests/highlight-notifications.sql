@@ -39,6 +39,8 @@ SELECT set_config('request.jwt.claim.sub', 'a0000000-0000-4000-8000-000000000002
 SELECT pg_temp.assert_true((SELECT count(*) = 2 FROM public.highlight_notifications), 'recipient can only read own notifications');
 -- Storage and reaction writes are tied to the authenticated, active member.
 INSERT INTO storage.objects(id, bucket_id, name) VALUES (gen_random_uuid(),'content-images','a0000000-0000-4000-8000-000000000002/test.png');
+DELETE FROM storage.objects WHERE bucket_id = 'content-images' AND name = 'a0000000-0000-4000-8000-000000000002/test.png';
+SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM storage.objects WHERE name = 'a0000000-0000-4000-8000-000000000002/test.png'), 'member can remove own draft image');
 DO $$ BEGIN
   BEGIN
     INSERT INTO storage.objects(id, bucket_id, name) VALUES (gen_random_uuid(),'content-images','a0000000-0000-4000-8000-000000000001/forged.png');

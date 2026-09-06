@@ -14,6 +14,7 @@ import { LinkedText } from "@/components/LinkedText";
 import type { ReactionSummary } from "@/lib/reactions";
 import { ImageAttachments, CommentImages } from "./ImageAttachments";
 import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_COMMENT_IMAGE_COUNT } from "@/lib/content-images";
 import { toast } from "sonner";
 
 export type CommentReply = {
@@ -67,7 +68,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   disabled,
 }) => {
   const router = useRouter();
-  const uploads = useImageUploads();
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [value, setValue] = useState("");
   const [feedback, setFeedback] = useState<{
     type: "error" | "success";
@@ -86,7 +87,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
     setFeedback(null);
     try {
       await submitAction(value, uploads.paths);
-      uploads.clear();
+      uploads.clear({ preserveUploaded: true });
       router.refresh();
       setValue("");
       setFeedback({ type: "success", message: "댓글이 등록되었습니다." });
@@ -123,6 +124,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           <ImageAttachments
             uploads={uploads}
             disabled={disabled || isSubmitting}
+            maxImages={MAX_COMMENT_IMAGE_COUNT}
           >
             <Textarea
               placeholder="느낀 점을 남겨보세요"
@@ -188,7 +190,7 @@ function CommentItem({
 }: CommentItemProps) {
   const router = useRouter();
   const [showReplyForm, setShowReplyForm] = useState(false);
-  const uploads = useImageUploads();
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -203,7 +205,7 @@ function CommentItem({
     setIsSubmitting(true);
     try {
       await onAddReply(replyBody.trim(), uploads.paths);
-      uploads.clear();
+      uploads.clear({ preserveUploaded: true });
       router.refresh();
       setReplyBody("");
       setShowReplyForm(false);
@@ -301,6 +303,7 @@ function CommentItem({
                 <ImageAttachments
                   uploads={uploads}
                   disabled={disabled || isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
                 >
                   <Textarea
                     placeholder="답글을 입력하세요"

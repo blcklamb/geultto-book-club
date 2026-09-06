@@ -1,5 +1,5 @@
 import { HighlightNotifications } from "@/components/HighlightNotifications";
-import { parseComment } from "@/lib/content-images";
+import { parseComment, parsePostImagePaths } from "@/lib/content-images";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
@@ -407,6 +407,7 @@ export default async function ReviewDetailPage({
       const parsed = JSON.parse(contentRich);
       const plainText = extractPlainText(parsed);
       plainTextLength = plainText.length;
+      parsePostImagePaths(parsed, sessionUser.id);
     } catch {
       redirectReviewWithMessage(
         submittedReviewId,

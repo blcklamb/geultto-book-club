@@ -35,6 +35,7 @@ import {
 import { MIN_RICH_TEXT_CHARS, richTextMinCharsMessage } from "@/lib/rich-text";
 import { ImageAttachments } from "./ImageAttachments";
 import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_POST_IMAGE_COUNT } from "@/lib/content-images";
 import { cn } from "@/lib/utils";
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
@@ -247,12 +248,41 @@ export function ReviewEditor({
   const latestEditorRef = useRef<Editor | null>(null);
   const imageBookmarks = useRef(new Map<string, SelectionBookmark>());
   const uploads = useImageUploads({
+    maxItems: (items) => {
+      let imageCount = 0;
+      latestEditorRef.current?.state.doc.descendants((node) => {
+        if (node.type.name === "image") imageCount += 1;
+      });
+      const uploadedCount = items.filter(
+        (item) => item.status === "done",
+      ).length;
+      return Math.max(0, MAX_POST_IMAGE_COUNT - imageCount + uploadedCount);
+    },
     onAdded: (id) => {
       const selection = latestEditorRef.current?.state.selection;
       if (selection) imageBookmarks.current.set(id, selection.getBookmark());
     },
-    onRemoved: (id) => {
-      imageBookmarks.current.delete(id);
+    onRemoved: (item) => {
+      imageBookmarks.current.delete(item.id);
+      const activeEditor = latestEditorRef.current;
+      if (!item.url || !activeEditor || activeEditor.isDestroyed) return;
+      let imagePosition: number | null = null;
+      let imageNodeSize = 0;
+      activeEditor.state.doc.descendants((node, position) => {
+        if (node.type.name === "image" && node.attrs.src === item.url) {
+          imagePosition = position;
+          imageNodeSize = node.nodeSize;
+          return false;
+        }
+      });
+      if (imagePosition === null) return;
+      activeEditor.view.dispatch(
+        activeEditor.state.tr.delete(
+          imagePosition,
+          imagePosition + imageNodeSize,
+        ),
+      );
+      flushSerializedContent(activeEditor);
     },
     onUploaded: ({ url }, id) => {
       const activeEditor = latestEditorRef.current;
@@ -364,10 +394,16 @@ export function ReviewEditor({
         event.preventDefault();
         return;
       }
-      if (effectiveMinChars === null) return;
+      if (effectiveMinChars === null) {
+        uploads.clear({ preserveUploaded: true });
+        return;
+      }
 
       const latestCharCount = editor.getText().length;
-      if (latestCharCount >= effectiveMinChars) return;
+      if (latestCharCount >= effectiveMinChars) {
+        uploads.clear({ preserveUploaded: true });
+        return;
+      }
 
       event.preventDefault();
       hiddenInputRef.current?.setCustomValidity(
@@ -456,7 +492,7 @@ export function ReviewEditor({
         <EditorToolbar editor={editor} />
         <ImageAttachments
           uploads={uploads}
-          hideCompleted
+          maxImages={MAX_POST_IMAGE_COUNT}
           onFileDrop={(event) => {
             if (!editor) return;
             const position = editor.view.posAtCoords({

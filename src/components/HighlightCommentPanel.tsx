@@ -14,6 +14,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { LinkedText } from "@/components/LinkedText";
 import { ImageAttachments, CommentImages } from "./ImageAttachments";
 import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_COMMENT_IMAGE_COUNT } from "@/lib/content-images";
 import { toast } from "sonner";
 import type {
   HighlightWithComments,
@@ -94,7 +95,7 @@ export function HighlightCommentPanel({
     },
     [onCommentsUpdated],
   );
-  const uploads = useImageUploads();
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -140,7 +141,7 @@ export function HighlightCommentPanel({
         created,
       ]);
       setNewCommentBody("");
-      uploads.clear();
+      uploads.clear({ preserveUploaded: true });
       toast.success("댓글이 등록되었습니다.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "댓글 작성 실패");
@@ -316,7 +317,11 @@ export function HighlightCommentPanel({
 
             {!disabled && (
               <div className="space-y-2 border-t pt-4">
-                <ImageAttachments uploads={uploads} disabled={isSubmitting}>
+                <ImageAttachments
+                  uploads={uploads}
+                  disabled={isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
+                >
                   <Textarea
                     placeholder="이 구절에 대한 생각을 남겨보세요"
                     disabled={isSubmitting}
@@ -363,7 +368,7 @@ function CommentItem({
   onAddReply,
 }: CommentItemProps) {
   const [showReplyForm, setShowReplyForm] = useState(false);
-  const uploads = useImageUploads();
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -377,7 +382,7 @@ function CommentItem({
     setIsSubmitting(true);
     try {
       await onAddReply(replyBody.trim(), uploads.paths);
-      uploads.clear();
+      uploads.clear({ preserveUploaded: true });
       setReplyBody("");
       setShowReplyForm(false);
     } catch (e) {
@@ -456,7 +461,11 @@ function CommentItem({
           <div>
             {showReplyForm ? (
               <div className="mt-2 space-y-1.5">
-                <ImageAttachments uploads={uploads} disabled={isSubmitting}>
+                <ImageAttachments
+                  uploads={uploads}
+                  disabled={isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
+                >
                   <Textarea
                     placeholder="답글을 입력하세요"
                     disabled={isSubmitting}
