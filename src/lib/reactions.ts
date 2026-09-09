@@ -9,13 +9,19 @@ export type ReactionSummary = {
 };
 
 type ReactionTable =
+  | "highlight_reactions"
   | "quote_reactions"
   | "review_reactions"
   | "review_comment_reactions"
   | "topic_comment_reactions"
   | "review_comment_reply_reactions"
   | "topic_comment_reply_reactions";
-type ReactionColumn = "quote_id" | "review_id" | "comment_id" | "reply_id";
+type ReactionColumn =
+  | "highlight_id"
+  | "quote_id"
+  | "review_id"
+  | "comment_id"
+  | "reply_id";
 
 type ReactionRow = {
   emoji: string;
@@ -35,14 +41,14 @@ export const sortReactions = (reactions: ReactionSummary[]) =>
 
 export function summarizeReactions(
   rows: ReactionRow[],
-  userId?: string | null
+  userId?: string | null,
 ): ReactionSummary[] {
   const counts = new Map<string, number>();
   const names = new Map<string, Set<string>>();
   const userReactions = new Set(
     rows
       .filter((row) => row.user_id && row.user_id === userId)
-      .map((row) => row.emoji)
+      .map((row) => row.emoji),
   );
 
   rows.forEach((row) => {
@@ -61,7 +67,7 @@ export function summarizeReactions(
       count,
       reactedByUser: userReactions.has(emoji),
       nicknames: Array.from(names.get(emoji) ?? []),
-    }))
+    })),
   );
 }
 
@@ -70,7 +76,7 @@ export async function fetchReactionSummary(
   table: ReactionTable,
   contentColumn: ReactionColumn,
   contentId: string,
-  userId?: string | null
+  userId?: string | null,
 ): Promise<ReactionSummary[]> {
   const { data, error } = await supabase
     .from(table)

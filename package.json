@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:db": "node scripts/test-highlight-db.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -54,6 +55,7 @@
     "@tiptap/pm": "3.11.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

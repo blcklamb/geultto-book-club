@@ -7,6 +7,7 @@ import {
   MIN_RICH_TEXT_CHARS,
   richTextMinCharsMessage,
 } from "@/lib/rich-text";
+import { parsePostImagePaths } from "@/lib/content-images";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
   try {
     const parsed = JSON.parse(contentRich);
     const plainText = extractPlainText(parsed);
+    parsePostImagePaths(parsed, sessionUser.id);
     if (plainText.length < MIN_RICH_TEXT_CHARS) {
       const url = new URL("/reviews/new", req.url);
       url.searchParams.set(

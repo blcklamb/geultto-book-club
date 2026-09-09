@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import type { EmojiClickData } from "emoji-picker-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,7 @@ export function EmojiReactionBar({
   currentUserNickname,
 }: EmojiReactionBarProps) {
   const [reactions, setReactions] = useState(initialReactions);
+  useEffect(() => { setReactions(initialReactions); }, [initialReactions]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

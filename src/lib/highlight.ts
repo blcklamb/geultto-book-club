@@ -3,6 +3,8 @@ import type { ReactionSummary } from "./reactions";
 export type HighlightReply = {
   id: string;
   body: string;
+  imagePaths?: string[];
+  authorId?: string;
   author: string;
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
@@ -12,6 +14,8 @@ export type HighlightReply = {
 export type HighlightComment = {
   id: string;
   body: string;
+  imagePaths?: string[];
+  authorId?: string;
   author: string;
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
@@ -23,6 +27,7 @@ export type HighlightComment = {
 export type HighlightWithComments = {
   id: string;
   highlightText: string;
+  reactions?: ReactionSummary[];
   authorId: string;
   authorNickname: string;
   authorImageUrl?: string | null;

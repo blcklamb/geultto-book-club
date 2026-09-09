@@ -7,7 +7,7 @@ import {
   loadBoardFromStorage,
   saveBoardToStorage,
 } from "../storage";
-import type { CellPhoto } from "../types";
+import type { CellPhoto } from "../../types";
 
 const PHOTO: CellPhoto = {
   dataUrl: "data:image/jpeg;base64,secret-photo",

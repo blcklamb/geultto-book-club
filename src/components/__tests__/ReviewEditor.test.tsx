@@ -18,6 +18,7 @@ type CommandName =
   | "clearNodes";
 
 type FakeEditor = {
+  state: { doc: { descendants: () => void } };
   getJSON: () => object;
   getText: () => string;
   chain: () => FakeChain;
@@ -53,10 +54,10 @@ vi.mock("@tiptap/react", () => ({
 
 let currentText = "";
 let editorOptions: UseEditorOptions | undefined;
-let commandSpy: ReturnType<typeof vi.fn>;
+let commandSpy: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
 let activeState: ActiveState;
 let canRunByCommand: Partial<Record<CommandName, boolean>>;
-let focusSpy: ReturnType<typeof vi.fn>;
+let focusSpy: ReturnType<typeof vi.fn<() => void>>;
 
 function makeChain(mode: "command" | "can"): FakeChain {
   let lastCommand: CommandName | null = null;
@@ -102,6 +103,7 @@ function makeChain(mode: "command" | "can"): FakeChain {
 
 function makeEditor(): FakeEditor {
   return {
+    state: { doc: { descendants: () => {} } },
     getJSON: () => ({ type: "doc", content: [{ type: "paragraph" }] }),
     getText: () => currentText,
     chain: () => makeChain("command"),

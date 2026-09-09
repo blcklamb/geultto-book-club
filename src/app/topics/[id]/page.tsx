@@ -1,3 +1,4 @@
+import { parseComment, parsePostImagePaths } from "@/lib/content-images";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { PageRealtime } from "@/components/PageRealtime";
@@ -51,7 +52,7 @@ export default async function TopicDetailPage({
   const { data: comments } = await supabase
     .from("topic_comments")
     .select(
-      "id, body, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)",
+      "id, body, image_paths, author_id, created_at, author:users!topic_comments_author_id_fkey(nickname)",
     )
     .eq("topic_id", topicId)
     .order("created_at", { ascending: false });
@@ -62,7 +63,7 @@ export default async function TopicDetailPage({
       ? await supabase
           .from("topic_comment_replies")
           .select(
-            "id, comment_id, body, author_id, created_at, author:users!topic_comment_replies_author_id_fkey(nickname)",
+            "id, comment_id, body, image_paths, author_id, created_at, author:users!topic_comment_replies_author_id_fkey(nickname)",
           )
           .in("comment_id", commentIds)
           .order("created_at", { ascending: false })
@@ -201,7 +202,7 @@ export default async function TopicDetailPage({
     );
   }
 
-  async function handleCommentSubmit(body: string) {
+  async function handleCommentSubmit(body: string, imagePaths: string[] = []) {
     "use server";
     const sessionUser = await getSessionUser();
     if (
@@ -211,16 +212,13 @@ export default async function TopicDetailPage({
     ) {
       throw new Error("승인된 회원만 댓글을 작성할 수 있습니다.");
     }
-    if (!body.trim()) {
-      throw new Error("댓글 내용을 입력해주세요.");
-    }
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.from("topic_comments").insert([
       {
         topic_id: topicId,
         author_id: sessionUser.id,
-        body,
+        ...parseComment(body, imagePaths, sessionUser.id),
       },
     ]);
 
@@ -230,7 +228,11 @@ export default async function TopicDetailPage({
     revalidatePath(`/topics/${topicId}`);
   }
 
-  async function handleReplySubmit(commentId: string, body: string) {
+  async function handleReplySubmit(
+    commentId: string,
+    body: string,
+    imagePaths: string[] = [],
+  ) {
     "use server";
     const sessionUser = await getSessionUser();
     if (
@@ -240,12 +242,17 @@ export default async function TopicDetailPage({
     ) {
       throw new Error("승인된 멤버만 답글을 작성할 수 있습니다.");
     }
-    if (!body.trim()) throw new Error("답글 내용을 입력해주세요.");
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
       .from("topic_comment_replies")
-      .insert([{ comment_id: commentId, author_id: sessionUser.id, body }]);
+      .insert([
+        {
+          comment_id: commentId,
+          author_id: sessionUser.id,
+          ...parseComment(body, imagePaths, sessionUser.id),
+        },
+      ]);
     if (error) throw new Error("답글 작성 실패: " + error.message);
     revalidatePath(`/topics/${topicId}`);
   }
@@ -282,6 +289,7 @@ export default async function TopicDetailPage({
     let parsedBodyRich: Json;
     try {
       parsedBodyRich = JSON.parse(bodyRich);
+      parsePostImagePaths(parsedBodyRich, sessionUser.id);
     } catch {
       redirectTopicWithMessage(
         submittedTopicId,
@@ -430,6 +438,7 @@ export default async function TopicDetailPage({
             comments?.map((comment) => ({
               id: comment.id,
               body: comment.body,
+              imagePaths: comment.image_paths ?? [],
               author: comment.author?.nickname ?? "익명",
               authorImageUrl: comment.author_id
                 ? profileImageMap.get(comment.author_id)?.profileImageUrl
@@ -448,7 +457,10 @@ export default async function TopicDetailPage({
                   return {
                     id: r.id,
                     body: r.body,
-                    author: (author as { nickname?: string } | null)?.nickname ?? "익명",
+                    imagePaths: r.image_paths ?? [],
+                    author:
+                      (author as { nickname?: string } | null)?.nickname ??
+                      "익명",
                     authorImageUrl: r.author_id
                       ? profileImageMap.get(r.author_id)?.profileImageUrl
                       : undefined,
