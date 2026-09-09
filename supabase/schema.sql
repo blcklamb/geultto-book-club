@@ -72,6 +72,38 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   updated_at timestamptz DEFAULT timezone('utc', now())
 );
 
+-- One spellcheck request is allowed for each review/user pair. A new review's
+-- UUID is generated in the write form before the review row is submitted.
+CREATE TABLE IF NOT EXISTS public.review_spellcheck_uses (
+  review_id uuid NOT NULL,
+  user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  used_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  PRIMARY KEY (review_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.review_spellcheck_drafts (
+  review_id uuid PRIMARY KEY,
+  user_id uuid NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE OR REPLACE FUNCTION public.remove_submitted_review_spellcheck_draft()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  DELETE FROM public.review_spellcheck_drafts
+  WHERE review_id = NEW.id AND user_id = NEW.author_id;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.remove_submitted_review_spellcheck_draft() FROM PUBLIC;
+CREATE TRIGGER remove_submitted_review_spellcheck_draft
+AFTER INSERT ON public.reviews
+FOR EACH ROW EXECUTE FUNCTION public.remove_submitted_review_spellcheck_draft();
+
 CREATE TABLE IF NOT EXISTS public.review_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   review_id uuid REFERENCES public.reviews(id) ON DELETE CASCADE,
@@ -246,6 +278,8 @@ ALTER TABLE public.schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_timetable_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_spellcheck_uses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_spellcheck_drafts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_highlights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.highlight_comments ENABLE ROW LEVEL SECURITY;
@@ -545,6 +579,11 @@ CREATE POLICY "members can delete their topic comment reply reactions"
 
 GRANT SELECT ON public.schedule_timetable_items TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.schedule_timetable_items TO authenticated;
+
+REVOKE ALL ON public.review_spellcheck_uses FROM anon, authenticated;
+GRANT ALL ON public.review_spellcheck_uses TO service_role;
+REVOKE ALL ON public.review_spellcheck_drafts FROM anon, authenticated;
+GRANT ALL ON public.review_spellcheck_drafts TO service_role;
 
 GRANT SELECT ON public.review_comment_replies TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.review_comment_replies TO authenticated;

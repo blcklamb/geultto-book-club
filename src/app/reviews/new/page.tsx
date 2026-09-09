@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { ensureRole } from "@/lib/auth";
 import { createSupabaseServerClient } from "@supabase/server";
 import { ReviewEditor } from "@/components/ReviewEditor";
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import DetailHeader from "@/components/DetailHeader";
 import { ScheduleDate } from "@/components/ScheduleDate";
+import { getOrCreateReviewSpellcheckDraft } from "@/lib/review-spellcheck-draft";
+import { isSpellcheckLimitExempt } from "@/lib/spellcheck-limit";
 
 // Review creation page (member/admin only)
 // Props: none
@@ -20,6 +23,9 @@ import { ScheduleDate } from "@/components/ScheduleDate";
 // Access control: enforced by ensureRole in server component and AuthGuard in client if needed
 export default async function ReviewCreatePage() {
   const user = await ensureRole(["member", "admin"]);
+  const reviewId = isSpellcheckLimitExempt(user.id)
+    ? randomUUID()
+    : await getOrCreateReviewSpellcheckDraft(user.id);
   const supabase = await createSupabaseServerClient();
   const { data: schedules } = await supabase
     .from("schedules")
@@ -32,6 +38,7 @@ export default async function ReviewCreatePage() {
       <div className="p-8">
         <form action="/api/reviews" method="post" className="space-y-6">
           <input type="hidden" name="authorId" value={user.id} />
+          <input type="hidden" name="reviewId" value={reviewId} />
           <div className="space-y-2">
             <Label htmlFor="scheduleId">어떤 모임인가요?</Label>
             <Select name="scheduleId" defaultValue={schedules?.[0]?.id}>
@@ -61,7 +68,10 @@ export default async function ReviewCreatePage() {
           </div>
           <div className="space-y-2">
             <Label>본문</Label>
-            <ReviewEditor />
+            <ReviewEditor
+              spellcheckEnabled
+              spellcheckReviewId={reviewId}
+            />
           </div>
           <Button type="submit">독후감 등록</Button>
         </form>

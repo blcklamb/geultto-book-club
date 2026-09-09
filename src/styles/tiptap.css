@@ -142,3 +142,18 @@
 .tiptap-editor-editable:focus {
   outline: none;
 }
+
+.spellcheck-error {
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-color: #ef4444;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+
+.spellcheck-error:focus {
+  border-radius: 0.125rem;
+  outline: 2px solid #fca5a5;
+  outline-offset: 2px;
+}

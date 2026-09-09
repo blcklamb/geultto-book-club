@@ -199,6 +199,20 @@ describe("ReviewEditor", () => {
     expect(screen.getByRole("button", { name: "구분선" })).toBeInTheDocument();
   });
 
+  it("shows the spellcheck action only when enabled", () => {
+    const { rerender } = render(<ReviewEditor minChars={null} />);
+
+    expect(
+      screen.queryByRole("button", { name: "맞춤법 검사하기" }),
+    ).not.toBeInTheDocument();
+
+    rerender(<ReviewEditor minChars={null} spellcheckEnabled />);
+
+    expect(
+      screen.getByRole("button", { name: "맞춤법 검사하기" }),
+    ).toBeInTheDocument();
+  });
+
   it("runs the matching TipTap command when a toolbar button is clicked", () => {
     render(<ReviewEditor minChars={null} />);
 

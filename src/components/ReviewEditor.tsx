@@ -1,7 +1,14 @@
 "use client";
 import "@/styles/tiptap.css";
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type { SelectionBookmark } from "@tiptap/pm/state";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -18,6 +25,7 @@ import {
   Minus,
   Quote,
   Redo2,
+  SpellCheck,
   Strikethrough,
   Undo2,
   type LucideIcon,
@@ -37,6 +45,15 @@ import { ImageAttachments } from "./ImageAttachments";
 import { useImageUploads } from "@/hooks/useImageUploads";
 import { MAX_POST_IMAGE_COUNT } from "@/lib/content-images";
 import { cn } from "@/lib/utils";
+import {
+  type SpellcheckIssue,
+  type SpellcheckSegment,
+} from "@/lib/spellcheck";
+import {
+  SpellcheckDecorations,
+  getSpellcheckDecorationRange,
+  type SpellcheckDecorationIssue,
+} from "./editor-extension/spellcheck";
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
 
@@ -151,7 +168,17 @@ const toolbarGroups: ToolbarButton[][] = [
   ],
 ];
 
-function EditorToolbar({ editor }: { editor: Editor | null }) {
+function EditorToolbar({
+  editor,
+  spellcheckEnabled = false,
+  isSpellchecking = false,
+  onSpellcheck,
+}: {
+  editor: Editor | null;
+  spellcheckEnabled?: boolean;
+  isSpellchecking?: boolean;
+  onSpellcheck?: () => void;
+}) {
   if (!editor) return null;
 
   return (
@@ -197,6 +224,19 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
             })}
           </div>
         ))}
+        {spellcheckEnabled ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-1 h-8 gap-1.5 bg-white text-slate-700"
+            disabled={isSpellchecking}
+            onClick={onSpellcheck}
+          >
+            <SpellCheck className="h-4 w-4" />
+            {isSpellchecking ? "검사 중…" : "맞춤법 검사하기"}
+          </Button>
+        ) : null}
       </div>
     </TooltipProvider>
   );
@@ -208,6 +248,8 @@ type ReviewEditorProps = {
   placeholder?: string;
   entityName?: string;
   minChars?: number | null;
+  spellcheckEnabled?: boolean;
+  spellcheckReviewId?: string;
 };
 
 const EMPTY_DOC: JSONContent = {
@@ -226,12 +268,228 @@ function parseInitialContent(defaultContent?: JSONContent | string): JSONContent
   }
 }
 
+type SpellcheckSegmentMapping = {
+  segment: SpellcheckSegment;
+  positions: number[];
+};
+
+type EditorSpellcheckIssue = Omit<SpellcheckIssue, "from" | "to"> & {
+  from: number;
+  to: number;
+};
+
+type ActiveSpellcheckIssue = {
+  id: string;
+  anchor: HTMLElement;
+};
+
+function buildSpellcheckSegments(editor: Editor): SpellcheckSegmentMapping[] {
+  const segments: SpellcheckSegmentMapping[] = [];
+  let blockIndex = 0;
+
+  editor.state.doc.descendants((node, blockPosition) => {
+    if (!node.isTextblock) return true;
+
+    let text = "";
+    const positions: number[] = [];
+    node.descendants((child, offset) => {
+      const docPosition = blockPosition + 1 + offset;
+      if (child.isText) {
+        const content = child.text ?? "";
+        const sourceStart = text.length;
+        for (let index = 0; index <= content.length; index += 1) {
+          positions[sourceStart + index] = docPosition + index;
+        }
+        text += content;
+        return false;
+      }
+
+      if (child.type.name === "hardBreak") {
+        const sourceStart = text.length;
+        positions[sourceStart] = docPosition;
+        positions[sourceStart + 1] = docPosition + 1;
+        text += "\n";
+        return false;
+      }
+
+      return true;
+    });
+
+    if (text.trim()) {
+      segments.push({
+        segment: { id: `block-${blockIndex}`, text },
+        positions,
+      });
+      blockIndex += 1;
+    }
+    return true;
+  });
+
+  return segments;
+}
+
+function mapSpellcheckIssues(
+  mappings: SpellcheckSegmentMapping[],
+  issues: SpellcheckIssue[],
+): EditorSpellcheckIssue[] {
+  const mappingById = new Map(
+    mappings.map((mapping) => [mapping.segment.id, mapping]),
+  );
+
+  return issues.flatMap((issue) => {
+    const mapping = mappingById.get(issue.blockId);
+    if (!mapping) return [];
+    const from = mapping.positions[issue.from];
+    const to = mapping.positions[issue.to];
+    if (
+      typeof from !== "number" ||
+      typeof to !== "number" ||
+      from >= to
+    ) {
+      return [];
+    }
+    return [{ ...issue, from, to }];
+  });
+}
+
+function isSpellcheckIssue(value: unknown): value is SpellcheckIssue {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const issue = value as Record<string, unknown>;
+  return (
+    typeof issue.id === "string" &&
+    typeof issue.blockId === "string" &&
+    typeof issue.from === "number" &&
+    typeof issue.to === "number" &&
+    typeof issue.original === "string" &&
+    typeof issue.suggestion === "string" &&
+    typeof issue.category === "string" &&
+    (typeof issue.explanation === "string" || issue.explanation === null)
+  );
+}
+
+function SpellcheckPopover({
+  issue,
+  anchor,
+  onApply,
+  onIgnore,
+  onClose,
+}: {
+  issue: EditorSpellcheckIssue;
+  anchor: HTMLElement;
+  onApply: () => void;
+  onIgnore: () => void;
+  onClose: () => void;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node) || contentRef.current?.contains(target)) {
+        return;
+      }
+      onCloseRef.current();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!anchor.isConnected || !contentRef.current) {
+        onCloseRef.current();
+        return;
+      }
+      const padding = 8;
+      const gap = 8;
+      const anchorRect = anchor.getBoundingClientRect();
+      const popoverRect = contentRef.current.getBoundingClientRect();
+      const maxLeft = Math.max(padding, window.innerWidth - popoverRect.width - padding);
+      const left = Math.min(Math.max(padding, anchorRect.left), maxLeft);
+      const below = anchorRect.bottom + gap;
+      const above = anchorRect.top - popoverRect.height - gap;
+      const top =
+        below + popoverRect.height <= window.innerHeight - padding
+          ? below
+          : Math.max(padding, above);
+      setPosition({ left, top });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchor]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={contentRef}
+      role="dialog"
+      aria-label="맞춤법 변경 제안"
+      className="fixed z-50 w-72 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-xl"
+      style={{
+        left: position?.left ?? 0,
+        top: position?.top ?? 0,
+        visibility: position ? "visible" : "hidden",
+      }}
+    >
+      <p className="text-xs font-medium text-slate-500">{issue.category}</p>
+      <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
+        <span className="text-slate-400">원문</span>
+        <span className="break-words line-through decoration-rose-400">
+          {issue.original}
+        </span>
+        <span className="text-slate-400">제안</span>
+        <span className="break-words font-medium text-emerald-700">
+          {issue.suggestion}
+        </span>
+      </div>
+      {issue.explanation ? (
+        <p className="mt-2 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">
+          {issue.explanation}
+        </p>
+      ) : null}
+      <div className="mt-3 flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onIgnore}>
+          무시
+        </Button>
+        <Button type="button" size="sm" onClick={onApply}>
+          변경 적용
+        </Button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function ReviewEditor({
   name = "contentRich",
   defaultContent,
   placeholder = "독후감을 작성해주세요…",
   entityName = "독후감",
   minChars = MIN_RICH_TEXT_CHARS,
+  spellcheckEnabled = false,
+  spellcheckReviewId,
 }: ReviewEditorProps) {
   const initialContent = useMemo<JSONContent>(
     () => parseInitialContent(defaultContent),
@@ -303,6 +561,15 @@ export function ReviewEditor({
   const uploadBlockedRef = useRef(uploads.isBlocked);
   uploadBlockedRef.current = uploads.isBlocked;
   const serializeTimerRef = useRef<number | null>(null);
+  const [spellcheckIssues, setSpellcheckIssues] = useState<
+    EditorSpellcheckIssue[]
+  >([]);
+  const [isSpellchecking, setIsSpellchecking] = useState(false);
+  const [spellcheckMessage, setSpellcheckMessage] = useState<string | null>(
+    null,
+  );
+  const [activeSpellcheckIssue, setActiveSpellcheckIssue] =
+    useState<ActiveSpellcheckIssue | null>(null);
 
   const flushSerializedContent = (editorInstance?: Editor | null) => {
     const nextEditor = editorInstance ?? latestEditorRef.current;
@@ -357,8 +624,9 @@ export function ReviewEditor({
       Image,
       Strike,
       Placeholder.configure({ placeholder }),
+      ...(spellcheckEnabled ? [SpellcheckDecorations] : []),
     ],
-    [placeholder],
+    [placeholder, spellcheckEnabled],
   );
 
   const editor = useEditor({
@@ -379,12 +647,159 @@ export function ReviewEditor({
       }
     },
     onUpdate({ editor }) {
+      setActiveSpellcheckIssue(null);
       syncEditorMetadata(editor);
     },
     onBlur({ editor }) {
       flushSerializedContent(editor);
     },
   });
+
+  const runSpellcheck = async () => {
+    if (!editor || isSpellchecking) return;
+    if (!spellcheckReviewId) {
+      setSpellcheckMessage("독후감 식별 정보를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.");
+      return;
+    }
+
+    const mappings = buildSpellcheckSegments(editor);
+    const requestDocument = editor.state.doc;
+    if (mappings.length === 0) {
+      editor.commands.clearSpellcheckIssues();
+      setSpellcheckIssues([]);
+      setActiveSpellcheckIssue(null);
+      setSpellcheckMessage("검사할 본문이 없습니다.");
+      return;
+    }
+
+    setIsSpellchecking(true);
+    setSpellcheckMessage(null);
+    setActiveSpellcheckIssue(null);
+    try {
+      const response = await fetch("/api/spellcheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewId: spellcheckReviewId,
+          segments: mappings.map((mapping) => mapping.segment),
+        }),
+      });
+      const data: unknown = await response.json();
+      const record =
+        data !== null && typeof data === "object" && !Array.isArray(data)
+          ? (data as Record<string, unknown>)
+          : null;
+      if (!response.ok) {
+        throw new Error(
+          typeof record?.error === "string"
+            ? record.error
+            : "맞춤법 검사에 실패했습니다. 다시 시도해주세요.",
+        );
+      }
+
+      const responseIssues = Array.isArray(record?.issues)
+        ? record.issues.filter(isSpellcheckIssue)
+        : null;
+      if (!responseIssues) {
+        throw new Error("맞춤법 검사 결과를 읽지 못했습니다. 다시 시도해주세요.");
+      }
+      if (!editor.state.doc.eq(requestDocument)) {
+        throw new Error("검사 중 본문이 변경되어 결과를 표시하지 않았습니다.");
+      }
+
+      const mappedIssues = mapSpellcheckIssues(mappings, responseIssues);
+      editor.commands.setSpellcheckIssues(
+        mappedIssues.map(
+          (issue): SpellcheckDecorationIssue => ({
+            id: issue.id,
+            from: issue.from,
+            to: issue.to,
+            label: `${issue.original}: ${issue.suggestion}으로 변경 제안`,
+          }),
+        ),
+      );
+      setSpellcheckIssues(mappedIssues);
+      setSpellcheckMessage(
+        mappedIssues.length > 0
+          ? `${mappedIssues.length}개의 맞춤법 제안을 찾았습니다.`
+          : "맞춤법 오류를 찾지 못했습니다.",
+      );
+    } catch (error) {
+      setSpellcheckMessage(
+        error instanceof Error
+          ? error.message
+          : "맞춤법 검사에 실패했습니다. 다시 시도해주세요.",
+      );
+    } finally {
+      setIsSpellchecking(false);
+    }
+  };
+
+  const activateSpellcheckIssue = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return;
+    const marker = target.closest<HTMLElement>("[data-spellcheck-id]");
+    const id = marker?.dataset.spellcheckId;
+    if (!marker || !id) return;
+    if (!spellcheckIssues.some((issue) => issue.id === id)) return;
+    setActiveSpellcheckIssue({ id, anchor: marker });
+  };
+
+  const activeIssue = activeSpellcheckIssue
+    ? spellcheckIssues.find((issue) => issue.id === activeSpellcheckIssue.id) ??
+      null
+    : null;
+
+  const ignoreSpellcheckIssue = (id: string) => {
+    editor?.commands.removeSpellcheckIssue(id);
+    setSpellcheckIssues((issues) => issues.filter((issue) => issue.id !== id));
+    setActiveSpellcheckIssue(null);
+  };
+
+  const applySpellcheckIssue = (issue: EditorSpellcheckIssue) => {
+    if (!editor) return;
+    const range = getSpellcheckDecorationRange(editor.state, issue.id);
+    if (!range) {
+      setSpellcheckIssues((issues) =>
+        issues.filter((candidate) => candidate.id !== issue.id),
+      );
+      setActiveSpellcheckIssue(null);
+      return;
+    }
+    const currentText = editor.state.doc.textBetween(range.from, range.to, "");
+    if (currentText !== issue.original) {
+      ignoreSpellcheckIssue(issue.id);
+      setSpellcheckMessage("본문이 변경되어 이 제안을 적용할 수 없습니다. 다시 검사해주세요.");
+      return;
+    }
+
+    let prefixLength = 0;
+    while (
+      prefixLength < issue.original.length &&
+      prefixLength < issue.suggestion.length &&
+      issue.original[prefixLength] === issue.suggestion[prefixLength]
+    ) {
+      prefixLength += 1;
+    }
+    let suffixLength = 0;
+    while (
+      suffixLength < issue.original.length - prefixLength &&
+      suffixLength < issue.suggestion.length - prefixLength &&
+      issue.original[issue.original.length - 1 - suffixLength] ===
+        issue.suggestion[issue.suggestion.length - 1 - suffixLength]
+    ) {
+      suffixLength += 1;
+    }
+    const replaceFrom = range.from + prefixLength;
+    const replaceTo = range.to - suffixLength;
+    const replacement = issue.suggestion.slice(
+      prefixLength,
+      issue.suggestion.length - suffixLength,
+    );
+    editor.view.dispatch(
+      editor.state.tr.insertText(replacement, replaceFrom, replaceTo),
+    );
+    ignoreSpellcheckIssue(issue.id);
+  };
 
   useEffect(() => {
     if (!editor) return;
@@ -500,7 +915,12 @@ export function ReviewEditor({
   return (
     <>
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200">
-        <EditorToolbar editor={editor} />
+        <EditorToolbar
+          editor={editor}
+          spellcheckEnabled={spellcheckEnabled}
+          isSpellchecking={isSpellchecking}
+          onSpellcheck={runSpellcheck}
+        />
         {imageCount > MAX_POST_IMAGE_COUNT ? (
           <p role="alert" className="px-3 py-2 text-sm text-red-600">
             본문 이미지는 최대 3개까지 첨부할 수 있습니다. 초과한 이미지를 제거해주세요.
@@ -518,7 +938,19 @@ export function ReviewEditor({
             if (position) editor.commands.setTextSelection(position.pos);
           }}
         >
-          <EditorContent editor={editor} className="prose max-w-none" />
+          <EditorContent
+            editor={editor}
+            className="prose max-w-none"
+            onClick={(event) => activateSpellcheckIssue(event.target)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              const target = event.target;
+              if (!(target instanceof Element)) return;
+              if (!target.closest("[data-spellcheck-id]")) return;
+              event.preventDefault();
+              activateSpellcheckIssue(target);
+            }}
+          />
         </ImageAttachments>
         {effectiveMinChars !== null ? (
           <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
@@ -531,6 +963,24 @@ export function ReviewEditor({
           </div>
         ) : null}
       </div>
+      {spellcheckEnabled && spellcheckMessage ? (
+        <p
+          className="mt-2 text-xs text-slate-500"
+          role="status"
+          aria-live="polite"
+        >
+          {spellcheckMessage}
+        </p>
+      ) : null}
+      {spellcheckEnabled && activeIssue && activeSpellcheckIssue ? (
+        <SpellcheckPopover
+          issue={activeIssue}
+          anchor={activeSpellcheckIssue.anchor}
+          onApply={() => applySpellcheckIssue(activeIssue)}
+          onIgnore={() => ignoreSpellcheckIssue(activeIssue.id)}
+          onClose={() => setActiveSpellcheckIssue(null)}
+        />
+      ) : null}
       <input
         ref={hiddenInputRef}
         type="hidden"
