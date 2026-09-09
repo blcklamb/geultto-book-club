@@ -58,14 +58,16 @@ export interface Database {
           created_at?: string | null;
           updated_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["user_profiles"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["user_profiles"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "user_profiles_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       summer_palette_boards: {
@@ -90,7 +92,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       schedules: {
@@ -153,7 +155,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       schedule_timetable_items: {
@@ -186,7 +188,7 @@ export interface Database {
             columns: ["schedule_id"];
             referencedRelation: "schedules";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       reviews: {
@@ -194,24 +196,24 @@ export interface Database {
           id: string;
           schedule_id: string | null;
           author_id: string | null;
-      title: string;
-      content_rich: string;
-      content_markdown: string | null;
-      view_count: number;
-      created_at: string | null;
-      updated_at: string | null;
-    };
+          title: string;
+          content_rich: string;
+          content_markdown: string | null;
+          view_count: number;
+          created_at: string | null;
+          updated_at: string | null;
+        };
         Insert: {
           id?: string;
-      schedule_id?: string | null;
-      author_id?: string | null;
-      title: string;
-      content_rich: string;
-      content_markdown?: string | null;
-      view_count?: number;
-      created_at?: string | null;
-      updated_at?: string | null;
-    };
+          schedule_id?: string | null;
+          author_id?: string | null;
+          title: string;
+          content_rich: string;
+          content_markdown?: string | null;
+          view_count?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
         Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
         Relationships: [
           {
@@ -225,7 +227,7 @@ export interface Database {
             columns: ["schedule_id"];
             referencedRelation: "schedules";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_comments: {
@@ -234,6 +236,7 @@ export interface Database {
           review_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -241,6 +244,7 @@ export interface Database {
           review_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
         Update: Partial<
@@ -258,7 +262,7 @@ export interface Database {
             columns: ["review_id"];
             referencedRelation: "reviews";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_highlights: {
@@ -299,7 +303,7 @@ export interface Database {
             columns: ["review_id"];
             referencedRelation: "reviews";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       highlight_comments: {
@@ -308,6 +312,7 @@ export interface Database {
           highlight_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -315,9 +320,12 @@ export interface Database {
           highlight_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["highlight_comments"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["highlight_comments"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "highlight_comments_highlight_id_fkey";
@@ -330,7 +338,7 @@ export interface Database {
             columns: ["author_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       highlight_comment_replies: {
@@ -339,6 +347,7 @@ export interface Database {
           comment_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -346,9 +355,12 @@ export interface Database {
           comment_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["highlight_comment_replies"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["highlight_comment_replies"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "highlight_comment_replies_comment_id_fkey";
@@ -361,7 +373,66 @@ export interface Database {
             columns: ["author_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
+        ];
+      };
+      highlight_notifications: {
+        Row: {
+          id: string;
+          recipient_id: string;
+          actor_id: string | null;
+          actor_nickname: string;
+          kind:
+            | "highlight"
+            | "comment"
+            | "reply"
+            | "highlight_reaction"
+            | "comment_reaction";
+          review_id: string | null;
+          highlight_id: string | null;
+          comment_id: string | null;
+          reply_id: string | null;
+          excerpt: string;
+          source_table: string;
+          source_id: string;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      highlight_reactions: {
+        Row: {
+          id: string;
+          highlight_id: string | null;
+          user_id: string | null;
+          emoji: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          highlight_id?: string | null;
+          user_id?: string | null;
+          emoji: string;
+          created_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["highlight_reactions"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "highlight_reactions_highlight_id_fkey";
+            columns: ["highlight_id"];
+            referencedRelation: "review_highlights";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "highlight_reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
       highlight_comment_reactions: {
@@ -379,7 +450,9 @@ export interface Database {
           emoji: string;
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["highlight_comment_reactions"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["highlight_comment_reactions"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "highlight_comment_reactions_comment_id_fkey";
@@ -392,7 +465,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_reactions: {
@@ -425,7 +498,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       quotes: {
@@ -458,7 +531,7 @@ export interface Database {
             columns: ["schedule_id"];
             referencedRelation: "schedules";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       quote_reactions: {
@@ -491,7 +564,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       topics: {
@@ -528,7 +601,7 @@ export interface Database {
             columns: ["schedule_id"];
             referencedRelation: "schedules";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       topic_comments: {
@@ -537,6 +610,7 @@ export interface Database {
           topic_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -544,6 +618,7 @@ export interface Database {
           topic_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
         Update: Partial<
@@ -561,7 +636,7 @@ export interface Database {
             columns: ["topic_id"];
             referencedRelation: "topics";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_comment_replies: {
@@ -570,6 +645,7 @@ export interface Database {
           comment_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -577,9 +653,12 @@ export interface Database {
           comment_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["review_comment_replies"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["review_comment_replies"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "review_comment_replies_comment_id_fkey";
@@ -592,7 +671,7 @@ export interface Database {
             columns: ["author_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       topic_comment_replies: {
@@ -601,6 +680,7 @@ export interface Database {
           comment_id: string | null;
           author_id: string | null;
           body: string;
+          image_paths: string[];
           created_at: string | null;
         };
         Insert: {
@@ -608,9 +688,12 @@ export interface Database {
           comment_id?: string | null;
           author_id?: string | null;
           body: string;
+          image_paths?: string[];
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["topic_comment_replies"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["topic_comment_replies"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "topic_comment_replies_comment_id_fkey";
@@ -623,7 +706,7 @@ export interface Database {
             columns: ["author_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_comment_reply_reactions: {
@@ -641,7 +724,9 @@ export interface Database {
           emoji: string;
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["review_comment_reply_reactions"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["review_comment_reply_reactions"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "review_comment_reply_reactions_reply_id_fkey";
@@ -654,7 +739,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       topic_comment_reply_reactions: {
@@ -672,7 +757,9 @@ export interface Database {
           emoji: string;
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["topic_comment_reply_reactions"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["topic_comment_reply_reactions"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "topic_comment_reply_reactions_reply_id_fkey";
@@ -685,7 +772,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       review_comment_reactions: {
@@ -703,7 +790,9 @@ export interface Database {
           emoji: string;
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["review_comment_reactions"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["review_comment_reactions"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "review_comment_reactions_comment_id_fkey";
@@ -716,7 +805,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       topic_comment_reactions: {
@@ -734,7 +823,9 @@ export interface Database {
           emoji: string;
           created_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["topic_comment_reactions"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["topic_comment_reactions"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "topic_comment_reactions_comment_id_fkey";
@@ -747,7 +838,7 @@ export interface Database {
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       point_transactions: {
@@ -798,12 +889,16 @@ export interface Database {
             columns: ["created_by"];
             referencedRelation: "users";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
     };
     Views: {};
     Functions: {
+      read_highlight_notifications: {
+        Args: { p_ids?: string[]; p_before?: string };
+        Returns: undefined;
+      };
       list_summer_palette_boards: {
         Args: Record<PropertyKey, never>;
         Returns: Array<{

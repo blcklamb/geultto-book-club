@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Sheet, SheetPortal } from "@/components/ui/sheet";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -12,6 +12,9 @@ import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { LinkedText } from "@/components/LinkedText";
+import { ImageAttachments, CommentImages } from "./ImageAttachments";
+import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_COMMENT_IMAGE_COUNT } from "@/lib/content-images";
 import { toast } from "sonner";
 import type {
   HighlightWithComments,
@@ -79,6 +82,20 @@ export function HighlightCommentPanel({
   const [comments, setComments] = useState<HighlightComment[]>(
     highlight.comments,
   );
+  const commentsRef = useRef(comments);
+  commentsRef.current = comments;
+  const highlightRef = useRef(highlight);
+  highlightRef.current = highlight;
+  const commitComments = useCallback(
+    (change: (current: HighlightComment[]) => HighlightComment[]) => {
+      const next = change(commentsRef.current);
+      commentsRef.current = next;
+      setComments(next);
+      onCommentsUpdated({ ...highlightRef.current, comments: next });
+    },
+    [onCommentsUpdated],
+  );
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [newCommentBody, setNewCommentBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -98,24 +115,34 @@ export function HighlightCommentPanel({
   }, []);
 
   const handleSubmitComment = async () => {
-    if (!newCommentBody.trim()) return;
+    if (
+      isSubmitting ||
+      uploads.isBlocked() ||
+      (!newCommentBody.trim() && !uploads.paths.length)
+    )
+      return;
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/highlights/${highlight.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: newCommentBody.trim() }),
+        body: JSON.stringify({
+          body: newCommentBody.trim(),
+          imagePaths: uploads.paths,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message ?? "댓글 작성 실패");
       }
       const created: HighlightComment = await res.json();
-      const updated = [...comments, created];
-      setComments(updated);
+      commitComments((current) => [
+        ...current.filter((comment) => comment.id !== created.id),
+        created,
+      ]);
       setNewCommentBody("");
+      uploads.clear({ preserveUploaded: true });
       toast.success("댓글이 등록되었습니다.");
-      onCommentsUpdated({ ...highlight, comments: updated });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "댓글 작성 실패");
     } finally {
@@ -151,30 +178,42 @@ export function HighlightCommentPanel({
       );
       if (!res.ok) throw new Error("반응 저장 실패");
       const updated: ReactionSummary[] = await res.json();
-      setComments((prev) =>
+      commitComments((prev) =>
         prev.map((c) =>
           c.id === commentId ? { ...c, reactions: updated } : c,
         ),
       );
       return updated;
     },
-    [],
+    [commitComments],
   );
 
-  const handleAddReply = async (commentId: string, body: string) => {
+  const handleAddReply = async (
+    commentId: string,
+    body: string,
+    imagePaths: string[] = [],
+  ) => {
     const res = await fetch(`/api/highlights/comments/${commentId}/replies`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, imagePaths }),
     });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message ?? "답글 작성 실패");
     }
     const created: HighlightReply = await res.json();
-    setComments((prev) =>
+    commitComments((prev) =>
       prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, created] } : c,
+        c.id === commentId
+          ? {
+              ...c,
+              replies: [
+                ...c.replies.filter((reply) => reply.id !== created.id),
+                created,
+              ],
+            }
+          : c,
       ),
     );
     toast.success("답글이 등록되었습니다.");
@@ -217,6 +256,29 @@ export function HighlightCommentPanel({
             />
             <span>{highlight.authorNickname} 님이 하이라이트함</span>
           </div>
+          <EmojiReactionBar
+            initialReactions={highlight.reactions ?? []}
+            currentUserNickname={currentUserNickname}
+            disabled={disabled}
+            toggleAction={async (emoji) => {
+              const res = await fetch(
+                `/api/highlights/${highlight.id}/reactions`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ emoji }),
+                },
+              );
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.message ?? "반응 저장 실패");
+              onCommentsUpdated({
+                ...highlightRef.current,
+                comments: commentsRef.current,
+                reactions: data,
+              });
+              return data;
+            }}
+          />
           {isHighlightAuthor && (
             <Button
               size="sm"
@@ -246,24 +308,38 @@ export function HighlightCommentPanel({
                   onToggleReaction={(emoji) =>
                     handleToggleReaction(comment.id, emoji)
                   }
-                  onAddReply={(body) => handleAddReply(comment.id, body)}
+                  onAddReply={(body, imagePaths) =>
+                    handleAddReply(comment.id, body, imagePaths)
+                  }
                 />
               ))
             )}
 
             {!disabled && (
               <div className="space-y-2 border-t pt-4">
-                <Textarea
-                  placeholder="이 구절에 대한 생각을 남겨보세요"
-                  value={newCommentBody}
-                  onChange={(e) => setNewCommentBody(e.target.value)}
-                  className="text-sm"
-                  rows={3}
-                />
+                <ImageAttachments
+                  uploads={uploads}
+                  disabled={isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
+                >
+                  <Textarea
+                    placeholder="이 구절에 대한 생각을 남겨보세요"
+                    disabled={isSubmitting}
+                    value={newCommentBody}
+                    onChange={(e) => setNewCommentBody(e.target.value)}
+                    className="text-sm"
+                    rows={3}
+                  />
+                </ImageAttachments>
                 <Button
+                  type="button"
                   size="sm"
                   onClick={handleSubmitComment}
-                  disabled={isSubmitting || !newCommentBody.trim()}
+                  disabled={
+                    isSubmitting ||
+                    uploads.blocked ||
+                    (!newCommentBody.trim() && !uploads.paths.length)
+                  }
                 >
                   댓글 등록
                 </Button>
@@ -281,7 +357,7 @@ type CommentItemProps = {
   disabled?: boolean;
   currentUserNickname?: string;
   onToggleReaction: (emoji: string) => Promise<ReactionSummary[]>;
-  onAddReply: (body: string) => Promise<void>;
+  onAddReply: (body: string, imagePaths?: string[]) => Promise<void>;
 };
 
 function CommentItem({
@@ -292,14 +368,21 @@ function CommentItem({
   onAddReply,
 }: CommentItemProps) {
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmitReply = async () => {
-    if (!replyBody.trim()) return;
+    if (
+      isSubmitting ||
+      uploads.isBlocked() ||
+      (!replyBody.trim() && !uploads.paths.length)
+    )
+      return;
     setIsSubmitting(true);
     try {
-      await onAddReply(replyBody.trim());
+      await onAddReply(replyBody.trim(), uploads.paths);
+      uploads.clear({ preserveUploaded: true });
       setReplyBody("");
       setShowReplyForm(false);
     } catch (e) {
@@ -311,7 +394,10 @@ function CommentItem({
 
   return (
     <Card>
-      <CardContent className="space-y-2 p-3">
+      <CardContent
+        id={`highlight-comment-${comment.id}`}
+        className="space-y-2 p-3 scroll-mt-4"
+      >
         <div className="space-y-0.5">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
             <UserAvatar
@@ -324,6 +410,7 @@ function CommentItem({
           <p className="whitespace-pre-wrap text-sm text-slate-600">
             <LinkedText text={comment.body} />
           </p>
+          <CommentImages paths={comment.imagePaths} />
           <p className="text-xs text-slate-400">
             <LocalizedDate
               value={comment.createdAt}
@@ -342,7 +429,11 @@ function CommentItem({
         {comment.replies.length > 0 && (
           <div className="ml-3 space-y-2 border-l-2 border-slate-100 pl-3">
             {comment.replies.map((reply) => (
-              <div key={reply.id} className="space-y-0.5">
+              <div
+                key={reply.id}
+                id={`highlight-reply-${reply.id}`}
+                className="space-y-0.5 scroll-mt-4"
+              >
                 <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
                   <UserAvatar
                     imageUrl={reply.authorImageUrl}
@@ -354,6 +445,7 @@ function CommentItem({
                 <p className="whitespace-pre-wrap text-xs text-slate-600">
                   <LinkedText text={reply.body} />
                 </p>
+                <CommentImages paths={reply.imagePaths} />
                 <p className="text-xs text-slate-400">
                   <LocalizedDate
                     value={reply.createdAt}
@@ -369,19 +461,30 @@ function CommentItem({
           <div>
             {showReplyForm ? (
               <div className="mt-2 space-y-1.5">
-                <Textarea
-                  placeholder="답글을 입력하세요"
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  className="text-xs"
-                  rows={2}
-                />
+                <ImageAttachments
+                  uploads={uploads}
+                  disabled={isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
+                >
+                  <Textarea
+                    placeholder="답글을 입력하세요"
+                    disabled={isSubmitting}
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    className="text-xs"
+                    rows={2}
+                  />
+                </ImageAttachments>
                 <div className="flex gap-1">
                   <Button
                     size="sm"
                     className="h-6 px-2 text-xs"
                     onClick={handleSubmitReply}
-                    disabled={isSubmitting || !replyBody.trim()}
+                    disabled={
+                      isSubmitting ||
+                      uploads.blocked ||
+                      (!replyBody.trim() && !uploads.paths.length)
+                    }
                   >
                     등록
                   </Button>
@@ -390,6 +493,7 @@ function CommentItem({
                     variant="ghost"
                     className="h-6 px-2 text-xs"
                     onClick={() => {
+                      uploads.clear();
                       setShowReplyForm(false);
                       setReplyBody("");
                     }}

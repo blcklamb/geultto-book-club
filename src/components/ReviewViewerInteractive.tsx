@@ -14,6 +14,7 @@ import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
 import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
 import { createClient } from "@supabase/client";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 type SelectionPopup = {
@@ -41,6 +42,7 @@ export function ReviewViewerInteractive({
   currentUserNickname,
   currentUserId,
 }: ReviewViewerInteractiveProps) {
+  const searchParams = useSearchParams();
   const [highlights, setHighlights] =
     useState<HighlightWithComments[]>(initialHighlights);
   const [selectionPopup, setSelectionPopup] = useState<SelectionPopup | null>(
@@ -52,7 +54,9 @@ export function ReviewViewerInteractive({
   const [isPending, setIsPending] = useState(false);
   const editorWrapRef = useRef<HTMLDivElement>(null);
   // 에디터에 실제로 mark가 적용된 하이라이트 ID → {startPos, endPos} 맵
-  const appliedMarkMap = useRef<Map<string, { startPos: number; endPos: number }>>(new Map());
+  const appliedMarkMap = useRef<
+    Map<string, { startPos: number; endPos: number }>
+  >(new Map());
   // Supabase 클라이언트는 컴포넌트 수명 동안 하나만 생성
   const supabase = useMemo(() => createClient(), []);
 
@@ -93,13 +97,15 @@ export function ReviewViewerInteractive({
     },
   });
 
+  const fetchGeneration = useRef(0);
   // 하이라이트 목록을 API에서 재조회하고 에디터 마크를 갱신한다.
   const refetchHighlights = useCallback(async () => {
+    const ticket = ++fetchGeneration.current;
     try {
       const res = await fetch(`/api/reviews/${reviewId}/highlights`);
       if (!res.ok) return;
       const updated: HighlightWithComments[] = await res.json();
-      setHighlights(updated);
+      if (ticket === fetchGeneration.current) setHighlights(updated);
     } catch {
       // 재조회 실패는 조용히 무시 — 기존 데이터를 유지
     }
@@ -125,9 +131,15 @@ export function ReviewViewerInteractive({
         newTr.addMark(
           h.startPos,
           h.endPos,
-          markType.create({ highlightId: h.id, color: highlightColorFor(h.id) }),
+          markType.create({
+            highlightId: h.id,
+            color: highlightColorFor(h.id),
+          }),
         );
-        appliedMarkMap.current.set(h.id, { startPos: h.startPos, endPos: h.endPos });
+        appliedMarkMap.current.set(h.id, {
+          startPos: h.startPos,
+          endPos: h.endPos,
+        });
         changed = true;
       } catch {
         // 유효하지 않은 position은 건너뜀
@@ -166,31 +178,94 @@ export function ReviewViewerInteractive({
           table: "review_highlights",
           filter: `review_id=eq.${reviewId}`,
         },
-        () => { refetchHighlights(); },
+        () => {
+          refetchHighlights();
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "highlight_comments" },
-        () => { refetchHighlights(); },
+        () => {
+          refetchHighlights();
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "highlight_comment_replies" },
-        () => { refetchHighlights(); },
+        () => {
+          refetchHighlights();
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "highlight_comment_reactions" },
-        () => { refetchHighlights(); },
+        () => {
+          refetchHighlights();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "highlight_reactions" },
+        () => {
+          refetchHighlights();
+        },
       )
       .subscribe((status, err) => {
-        if (err) console.error("[Realtime] highlights subscription error:", err);
+        if (status === "SUBSCRIBED") refetchHighlights();
+        if (err)
+          console.error("[Realtime] highlights subscription error:", err);
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [reviewId, refetchHighlights, supabase]);
+
+  // Deep links from saved notifications work on navigation and on the same page.
+  const requestedTarget = useRef<string | null>(null);
+  useEffect(() => {
+    const highlightId = searchParams.get("highlight");
+    if (!highlightId) return;
+    const key = searchParams.toString();
+    if (requestedTarget.current === key) return;
+    requestedTarget.current = key;
+    setActiveHighlightId(highlightId);
+    void refetchHighlights();
+  }, [searchParams, refetchHighlights]);
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.reviewId === reviewId) {
+        setActiveHighlightId(detail.highlightId);
+        void refetchHighlights();
+      }
+    };
+    window.addEventListener("open-highlight-notification", open);
+    return () =>
+      window.removeEventListener("open-highlight-notification", open);
+  }, [reviewId, refetchHighlights]);
+  useEffect(() => {
+    if (
+      !activeHighlightId ||
+      !highlights.some((h) => h.id === activeHighlightId)
+    )
+      return;
+    const highlightId = searchParams.get("highlight");
+    if (highlightId !== activeHighlightId) return;
+    const timer = window.setTimeout(() => {
+      const replyId = searchParams.get("reply");
+      const commentId = searchParams.get("comment");
+      const target = replyId
+        ? document.getElementById(`highlight-reply-${replyId}`)
+        : commentId
+          ? document.getElementById(`highlight-comment-${commentId}`)
+          : editorWrapRef.current?.querySelector(
+              `[data-highlight-id="${CSS.escape(activeHighlightId)}"]`,
+            );
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [activeHighlightId, highlights, searchParams]);
 
   // 패널이 열릴 때 최신 프로필 사진 반영을 위해 재조회
   useEffect(() => {
@@ -365,11 +440,13 @@ export function ReviewViewerInteractive({
 
   const handleCommentsUpdated = useCallback(
     (updated: HighlightWithComments) => {
+      fetchGeneration.current++;
       setHighlights((prev) =>
         prev.map((h) => (h.id === updated.id ? updated : h)),
       );
+      void refetchHighlights();
     },
-    [],
+    [refetchHighlights],
   );
 
   const activeHighlight = highlights.find((h) => h.id === activeHighlightId);
@@ -405,6 +482,7 @@ export function ReviewViewerInteractive({
 
       {activeHighlight && (
         <HighlightCommentPanel
+          key={activeHighlight.id}
           highlight={activeHighlight}
           disabled={disabled}
           currentUserNickname={currentUserNickname}

@@ -88,7 +88,7 @@ export function ReviewDetailActions({
                 <span className="text-slate-600">제목</span>
                 <Input name="title" defaultValue={initialTitle} required />
               </label>
-              <label className="space-y-1 block">
+              <div className="space-y-1 block">
                 <span className="text-slate-600">본문</span>
                 <div className="rounded-md border p-2">
                   <ReviewEditor
@@ -96,7 +96,7 @@ export function ReviewDetailActions({
                     defaultContent={initialContent}
                   />
                 </div>
-              </label>
+              </div>
             </div>
             <DialogFooter>
               <Button

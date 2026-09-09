@@ -2,6 +2,7 @@
 import "@/styles/tiptap.css";
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import type { SelectionBookmark } from "@tiptap/pm/state";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -32,6 +33,9 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { MIN_RICH_TEXT_CHARS, richTextMinCharsMessage } from "@/lib/rich-text";
+import { ImageAttachments } from "./ImageAttachments";
+import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_POST_IMAGE_COUNT } from "@/lib/content-images";
 import { cn } from "@/lib/utils";
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
@@ -238,10 +242,66 @@ export function ReviewEditor({
     [initialContent],
   );
   const [charCount, setCharCount] = useState(0);
+  const [imageCount, setImageCount] = useState(0);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const effectiveMinChars =
     typeof minChars === "number" && minChars > 0 ? minChars : null;
   const latestEditorRef = useRef<Editor | null>(null);
+  const imageBookmarks = useRef(new Map<string, SelectionBookmark>());
+  const uploads = useImageUploads({
+    maxItems: (items) => {
+      let imageCount = 0;
+      latestEditorRef.current?.state.doc.descendants((node) => {
+        if (node.type.name === "image") imageCount += 1;
+      });
+      const uploadedCount = items.filter(
+        (item) => item.status === "done",
+      ).length;
+      return Math.max(0, MAX_POST_IMAGE_COUNT - imageCount + uploadedCount);
+    },
+    onAdded: (id) => {
+      const selection = latestEditorRef.current?.state.selection;
+      if (selection) imageBookmarks.current.set(id, selection.getBookmark());
+    },
+    onRemoved: (item) => {
+      imageBookmarks.current.delete(item.id);
+      const activeEditor = latestEditorRef.current;
+      if (!item.url || !activeEditor || activeEditor.isDestroyed) return;
+      let imagePosition: number | null = null;
+      let imageNodeSize = 0;
+      activeEditor.state.doc.descendants((node, position) => {
+        if (node.type.name === "image" && node.attrs.src === item.url) {
+          imagePosition = position;
+          imageNodeSize = node.nodeSize;
+          return false;
+        }
+      });
+      if (imagePosition === null) return;
+      activeEditor.view.dispatch(
+        activeEditor.state.tr.delete(
+          imagePosition,
+          imagePosition + imageNodeSize,
+        ),
+      );
+      flushSerializedContent(activeEditor);
+    },
+    onUploaded: ({ url }, id) => {
+      const activeEditor = latestEditorRef.current;
+      if (!activeEditor || activeEditor.isDestroyed) return;
+      const bookmark = imageBookmarks.current.get(id);
+      imageBookmarks.current.delete(id);
+      if (bookmark) {
+        const selection = bookmark.resolve(activeEditor.state.doc);
+        activeEditor.view.dispatch(
+          activeEditor.state.tr.setSelection(selection),
+        );
+      }
+      activeEditor.chain().focus().setImage({ src: url }).run();
+      flushSerializedContent(activeEditor);
+    },
+  });
+  const uploadBlockedRef = useRef(uploads.isBlocked);
+  uploadBlockedRef.current = uploads.isBlocked;
   const serializeTimerRef = useRef<number | null>(null);
 
   const flushSerializedContent = (editorInstance?: Editor | null) => {
@@ -262,6 +322,11 @@ export function ReviewEditor({
   };
 
   const syncEditorMetadata = (editorInstance: Editor) => {
+    let nextImageCount = 0;
+    editorInstance.state.doc.descendants((node) => {
+      if (node.type.name === "image") nextImageCount += 1;
+    });
+    setImageCount(nextImageCount);
     const nextCharCount = editorInstance.getText().length;
     startTransition(() => {
       setCharCount((prev) => (prev === nextCharCount ? prev : nextCharCount));
@@ -303,7 +368,15 @@ export function ReviewEditor({
     editorProps: {
       attributes: {
         class: "tiptap-editor tiptap-editor-editable",
+        role: "textbox",
+        "aria-label": `${entityName} 본문`,
+        "aria-multiline": "true",
       },
+    },
+    onTransaction({ transaction }) {
+      for (const [id, bookmark] of imageBookmarks.current) {
+        imageBookmarks.current.set(id, bookmark.map(transaction.mapping));
+      }
     },
     onUpdate({ editor }) {
       syncEditorMetadata(editor);
@@ -323,10 +396,24 @@ export function ReviewEditor({
 
     const handleSubmit = (event: SubmitEvent) => {
       flushSerializedContent(editor);
-      if (effectiveMinChars === null) return;
+      let count = 0;
+      editor.state.doc.descendants((node) => {
+        if (node.type.name === "image") count += 1;
+      });
+      if (count > MAX_POST_IMAGE_COUNT || uploadBlockedRef.current()) {
+        event.preventDefault();
+        return;
+      }
+      if (effectiveMinChars === null) {
+        uploads.clear({ preserveUploaded: true });
+        return;
+      }
 
       const latestCharCount = editor.getText().length;
-      if (latestCharCount >= effectiveMinChars) return;
+      if (latestCharCount >= effectiveMinChars) {
+        uploads.clear({ preserveUploaded: true });
+        return;
+      }
 
       event.preventDefault();
       hiddenInputRef.current?.setCustomValidity(
@@ -369,11 +456,14 @@ export function ReviewEditor({
     );
   }, [charCount, effectiveMinChars, entityName]);
 
-  const isUnder = effectiveMinChars !== null && charCount < effectiveMinChars;
+  const isUnder =
+    imageCount > MAX_POST_IMAGE_COUNT ||
+    uploads.blocked ||
+    (effectiveMinChars !== null && charCount < effectiveMinChars);
 
   useEffect(() => {
     const form = hiddenInputRef.current?.form;
-    if (!form || effectiveMinChars === null) return;
+    if (!form) return;
 
     const submitControls = Array.from(
       form.querySelectorAll<SubmitControl>(
@@ -411,7 +501,25 @@ export function ReviewEditor({
     <>
       <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200">
         <EditorToolbar editor={editor} />
-        <EditorContent editor={editor} className="prose max-w-none" />
+        {imageCount > MAX_POST_IMAGE_COUNT ? (
+          <p role="alert" className="px-3 py-2 text-sm text-red-600">
+            본문 이미지는 최대 3개까지 첨부할 수 있습니다. 초과한 이미지를 제거해주세요.
+          </p>
+        ) : null}
+        <ImageAttachments
+          uploads={uploads}
+          maxImages={MAX_POST_IMAGE_COUNT}
+          onFileDrop={(event) => {
+            if (!editor) return;
+            const position = editor.view.posAtCoords({
+              left: event.clientX,
+              top: event.clientY,
+            });
+            if (position) editor.commands.setTextSelection(position.pos);
+          }}
+        >
+          <EditorContent editor={editor} className="prose max-w-none" />
+        </ImageAttachments>
         {effectiveMinChars !== null ? (
           <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
             <p

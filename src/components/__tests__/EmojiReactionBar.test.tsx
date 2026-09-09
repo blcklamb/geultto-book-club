@@ -52,6 +52,14 @@ describe("EmojiReactionBar", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
+  it("updates counts after a realtime summary arrives without remounting", () => {
+    const toggleAction = vi.fn();
+    const { rerender } = render(<EmojiReactionBar initialReactions={makeReactions([{ count: 1 }])} toggleAction={toggleAction} />);
+    rerender(<EmojiReactionBar initialReactions={makeReactions([{ count: 2, nicknames: ["새 사용자"] }])} toggleAction={toggleAction} />);
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "새 사용자 님의 반응" })).toBeInTheDocument();
+  });
+
   it("disabled=true일 때 반응 버튼이 비활성화된다", () => {
     const reactions = makeReactions([
       { emoji: "👍", count: 2, reactedByUser: false, nicknames: [] },

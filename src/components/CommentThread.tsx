@@ -12,6 +12,9 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
 import { LinkedText } from "@/components/LinkedText";
 import type { ReactionSummary } from "@/lib/reactions";
+import { ImageAttachments, CommentImages } from "./ImageAttachments";
+import { useImageUploads } from "@/hooks/useImageUploads";
+import { MAX_COMMENT_IMAGE_COUNT } from "@/lib/content-images";
 import { toast } from "sonner";
 
 export type CommentReply = {
@@ -20,6 +23,7 @@ export type CommentReply = {
   authorImageUrl?: string | null;
   authorDecoration?: string | null;
   body: string;
+  imagePaths?: string[];
   createdAt: string | null | undefined;
   reactions?: ReactionSummary[];
 };
@@ -31,12 +35,17 @@ export type CommentThreadProps = {
     authorImageUrl?: string | null;
     authorDecoration?: string | null;
     body: string;
+    imagePaths?: string[];
     createdAt: string | null | undefined;
     replies?: CommentReply[];
     reactions?: ReactionSummary[];
   }>;
-  submitAction: (body: string) => Promise<void>;
-  submitReplyAction?: (commentId: string, body: string) => Promise<void>;
+  submitAction: (body: string, imagePaths?: string[]) => Promise<void>;
+  submitReplyAction?: (
+    commentId: string,
+    body: string,
+    imagePaths?: string[],
+  ) => Promise<void>;
   toggleReactionAction?: (
     commentId: string,
     emoji: string,
@@ -59,6 +68,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   disabled,
 }) => {
   const router = useRouter();
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [value, setValue] = useState("");
   const [feedback, setFeedback] = useState<{
     type: "error" | "success";
@@ -67,11 +77,17 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!value.trim()) return;
+    if (
+      isSubmitting ||
+      uploads.isBlocked() ||
+      (!value.trim() && !uploads.paths.length)
+    )
+      return;
     setIsSubmitting(true);
     setFeedback(null);
     try {
-      await submitAction(value);
+      await submitAction(value, uploads.paths);
+      uploads.clear({ preserveUploaded: true });
       router.refresh();
       setValue("");
       setFeedback({ type: "success", message: "댓글이 등록되었습니다." });
@@ -105,13 +121,23 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
               <AlertDescription>{feedback.message}</AlertDescription>
             </Alert>
           ) : null}
-          <Textarea
-            placeholder="느낀 점을 남겨보세요"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+          <ImageAttachments
+            uploads={uploads}
             disabled={disabled || isSubmitting}
-          />
-          <Button onClick={handleSubmit} disabled={disabled || isSubmitting}>
+            maxImages={MAX_COMMENT_IMAGE_COUNT}
+          >
+            <Textarea
+              placeholder="느낀 점을 남겨보세요"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              disabled={disabled || isSubmitting}
+            />
+          </ImageAttachments>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={disabled || isSubmitting || uploads.blocked}
+          >
             댓글 등록
           </Button>
         </CardContent>
@@ -124,7 +150,8 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             disabled={disabled}
             onAddReply={
               submitReplyAction
-                ? (body) => submitReplyAction(comment.id, body)
+                ? (body, imagePaths) =>
+                    submitReplyAction(comment.id, body, imagePaths)
                 : undefined
             }
             onToggleReaction={
@@ -144,7 +171,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
 type CommentItemProps = {
   comment: CommentThreadProps["comments"][number];
   disabled?: boolean;
-  onAddReply?: (body: string) => Promise<void>;
+  onAddReply?: (body: string, imagePaths?: string[]) => Promise<void>;
   onToggleReaction?: (emoji: string) => Promise<ReactionSummary[]>;
   onToggleReplyReaction?: (
     replyId: string,
@@ -163,14 +190,22 @@ function CommentItem({
 }: CommentItemProps) {
   const router = useRouter();
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const uploads = useImageUploads({ maxItems: MAX_COMMENT_IMAGE_COUNT });
   const [replyBody, setReplyBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmitReply = async () => {
-    if (!replyBody.trim() || !onAddReply) return;
+    if (
+      !onAddReply ||
+      isSubmitting ||
+      uploads.isBlocked() ||
+      (!replyBody.trim() && !uploads.paths.length)
+    )
+      return;
     setIsSubmitting(true);
     try {
-      await onAddReply(replyBody.trim());
+      await onAddReply(replyBody.trim(), uploads.paths);
+      uploads.clear({ preserveUploaded: true });
       router.refresh();
       setReplyBody("");
       setShowReplyForm(false);
@@ -183,8 +218,7 @@ function CommentItem({
   };
 
   const showCommentReactions =
-    onToggleReaction !== undefined ||
-    (comment.reactions ?? []).length > 0;
+    onToggleReaction !== undefined || (comment.reactions ?? []).length > 0;
 
   return (
     <Card>
@@ -200,6 +234,7 @@ function CommentItem({
         <p className="whitespace-pre-wrap text-slate-600">
           <LinkedText text={comment.body} />
         </p>
+        <CommentImages paths={comment.imagePaths} />
         <p className="text-xs text-slate-400">
           <LocalizedDate
             value={comment.createdAt}
@@ -236,6 +271,7 @@ function CommentItem({
                   <p className="whitespace-pre-wrap text-xs text-slate-600">
                     <LinkedText text={reply.body} />
                   </p>
+                  <CommentImages paths={reply.imagePaths} />
                   <p className="text-xs text-slate-400">
                     <LocalizedDate
                       value={reply.createdAt}
@@ -264,19 +300,30 @@ function CommentItem({
           <div className="pt-1">
             {showReplyForm ? (
               <div className="mt-2 space-y-1.5">
-                <Textarea
-                  placeholder="답글을 입력하세요"
-                  value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
-                  className="text-xs"
-                  rows={2}
-                />
+                <ImageAttachments
+                  uploads={uploads}
+                  disabled={disabled || isSubmitting}
+                  maxImages={MAX_COMMENT_IMAGE_COUNT}
+                >
+                  <Textarea
+                    placeholder="답글을 입력하세요"
+                    disabled={isSubmitting}
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    className="text-xs"
+                    rows={2}
+                  />
+                </ImageAttachments>
                 <div className="flex gap-1">
                   <Button
                     size="sm"
                     className="h-6 px-2 text-xs"
                     onClick={handleSubmitReply}
-                    disabled={isSubmitting || !replyBody.trim()}
+                    disabled={
+                      isSubmitting ||
+                      uploads.blocked ||
+                      (!replyBody.trim() && !uploads.paths.length)
+                    }
                   >
                     등록
                   </Button>
@@ -285,6 +332,7 @@ function CommentItem({
                     variant="ghost"
                     className="h-6 px-2 text-xs"
                     onClick={() => {
+                      uploads.clear();
                       setShowReplyForm(false);
                       setReplyBody("");
                     }}

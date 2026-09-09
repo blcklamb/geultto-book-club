@@ -1,7 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CommentThread } from "../CommentThread";
+import {
+  CommentThread as CommentThreadComponent,
+  type CommentThreadProps,
+} from "../CommentThread";
+const CommentThread = (
+  props: Omit<CommentThreadProps, "submitAction"> &
+    Partial<Pick<CommentThreadProps, "submitAction">>,
+) => <CommentThreadComponent submitAction={vi.fn()} {...props} />;
 import type { ReactionSummary } from "@/lib/reactions";
 
 vi.mock("next/navigation", () => ({
@@ -93,7 +100,12 @@ const sampleCommentsWithReplyReactions = [
         body: "저도 동의해요!",
         createdAt: "2024-01-16",
         reactions: [
-          { emoji: "🔥", count: 3, reactedByUser: true, nicknames: ["A", "B", "C"] },
+          {
+            emoji: "🔥",
+            count: 3,
+            reactedByUser: true,
+            nicknames: ["A", "B", "C"],
+          },
         ],
       },
       {
@@ -175,7 +187,7 @@ describe("CommentThread", () => {
     await user.click(screen.getByRole("button", { name: "댓글 등록" }));
 
     await waitFor(() => {
-      expect(submitAction).toHaveBeenCalledWith("새 댓글");
+      expect(submitAction).toHaveBeenCalledWith("새 댓글", []);
     });
   });
 
@@ -231,9 +243,9 @@ describe("CommentThread", () => {
           submitReplyAction={submitReplyAction}
         />,
       );
-      expect(
-        screen.getAllByRole("button", { name: "답글 달기" }),
-      ).toHaveLength(2);
+      expect(screen.getAllByRole("button", { name: "답글 달기" })).toHaveLength(
+        2,
+      );
     });
 
     it("submitReplyAction이 없으면 '답글 달기' 버튼을 렌더링하지 않는다", () => {
@@ -296,6 +308,7 @@ describe("CommentThread", () => {
         expect(submitReplyAction).toHaveBeenCalledWith(
           "c-1",
           "첫 번째 댓글에 대한 답글",
+          [],
         );
       });
     });
@@ -357,10 +370,7 @@ describe("CommentThread", () => {
       );
 
       await user.click(screen.getAllByRole("button", { name: "답글 달기" })[0]);
-      await user.type(
-        screen.getByPlaceholderText("답글을 입력하세요"),
-        "   ",
-      );
+      await user.type(screen.getByPlaceholderText("답글을 입력하세요"), "   ");
 
       expect(screen.getByRole("button", { name: "등록" })).toBeDisabled();
     });

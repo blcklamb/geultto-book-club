@@ -7,6 +7,7 @@ import {
   MIN_RICH_TEXT_CHARS,
   richTextMinCharsMessage,
 } from "@/lib/rich-text";
+import { parsePostImagePaths } from "@/lib/content-images";
 
 export async function POST(req: NextRequest) {
   const sessionUser = await getSessionUser();
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const parsed = JSON.parse(contentRich);
     const plainText = extractPlainText(parsed);
+    parsePostImagePaths(parsed, sessionUser.id);
     if (plainText.length < MIN_RICH_TEXT_CHARS) {
       const url = new URL("/reviews/new", req.url);
       url.searchParams.set(
