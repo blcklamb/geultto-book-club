@@ -51,6 +51,7 @@ import {
 } from "@/lib/spellcheck";
 import {
   SpellcheckDecorations,
+  getSpellcheckDecorationRange,
   type SpellcheckDecorationIssue,
 } from "./editor-extension/spellcheck";
 
@@ -279,7 +280,7 @@ type EditorSpellcheckIssue = Omit<SpellcheckIssue, "from" | "to"> & {
 
 type ActiveSpellcheckIssue = {
   id: string;
-  anchor: DOMRect;
+  anchor: HTMLElement;
 };
 
 function buildSpellcheckSegments(editor: Editor): SpellcheckSegmentMapping[] {
@@ -376,12 +377,17 @@ function SpellcheckPopover({
   onClose,
 }: {
   issue: EditorSpellcheckIssue;
-  anchor: DOMRect;
+  anchor: HTMLElement;
   onApply: () => void;
   onIgnore: () => void;
   onClose: () => void;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -389,10 +395,10 @@ function SpellcheckPopover({
       if (!(target instanceof Node) || contentRef.current?.contains(target)) {
         return;
       }
-      onClose();
+      onCloseRef.current();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
     };
 
     document.addEventListener("mousedown", handlePointerDown);
@@ -401,7 +407,37 @@ function SpellcheckPopover({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, []);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (!anchor.isConnected || !contentRef.current) {
+        onCloseRef.current();
+        return;
+      }
+      const padding = 8;
+      const gap = 8;
+      const anchorRect = anchor.getBoundingClientRect();
+      const popoverRect = contentRef.current.getBoundingClientRect();
+      const maxLeft = Math.max(padding, window.innerWidth - popoverRect.width - padding);
+      const left = Math.min(Math.max(padding, anchorRect.left), maxLeft);
+      const below = anchorRect.bottom + gap;
+      const above = anchorRect.top - popoverRect.height - gap;
+      const top =
+        below + popoverRect.height <= window.innerHeight - padding
+          ? below
+          : Math.max(padding, above);
+      setPosition({ left, top });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchor]);
 
   if (typeof document === "undefined") return null;
 
@@ -411,7 +447,11 @@ function SpellcheckPopover({
       role="dialog"
       aria-label="맞춤법 변경 제안"
       className="fixed z-50 w-72 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-xl"
-      style={{ left: Math.max(8, anchor.left), top: anchor.bottom + 8 }}
+      style={{
+        left: position?.left ?? 0,
+        top: position?.top ?? 0,
+        visibility: position ? "visible" : "hidden",
+      }}
     >
       <p className="text-xs font-medium text-slate-500">{issue.category}</p>
       <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
@@ -623,6 +663,7 @@ export function ReviewEditor({
     }
 
     const mappings = buildSpellcheckSegments(editor);
+    const requestDocument = editor.state.doc;
     if (mappings.length === 0) {
       editor.commands.clearSpellcheckIssues();
       setSpellcheckIssues([]);
@@ -662,6 +703,9 @@ export function ReviewEditor({
       if (!responseIssues) {
         throw new Error("맞춤법 검사 결과를 읽지 못했습니다. 다시 시도해주세요.");
       }
+      if (!editor.state.doc.eq(requestDocument)) {
+        throw new Error("검사 중 본문이 변경되어 결과를 표시하지 않았습니다.");
+      }
 
       const mappedIssues = mapSpellcheckIssues(mappings, responseIssues);
       editor.commands.setSpellcheckIssues(
@@ -697,7 +741,7 @@ export function ReviewEditor({
     const id = marker?.dataset.spellcheckId;
     if (!marker || !id) return;
     if (!spellcheckIssues.some((issue) => issue.id === id)) return;
-    setActiveSpellcheckIssue({ id, anchor: marker.getBoundingClientRect() });
+    setActiveSpellcheckIssue({ id, anchor: marker });
   };
 
   const activeIssue = activeSpellcheckIssue
@@ -713,15 +757,46 @@ export function ReviewEditor({
 
   const applySpellcheckIssue = (issue: EditorSpellcheckIssue) => {
     if (!editor) return;
-    const currentText = editor.state.doc.textBetween(issue.from, issue.to, "");
+    const range = getSpellcheckDecorationRange(editor.state, issue.id);
+    if (!range) {
+      setSpellcheckIssues((issues) =>
+        issues.filter((candidate) => candidate.id !== issue.id),
+      );
+      setActiveSpellcheckIssue(null);
+      return;
+    }
+    const currentText = editor.state.doc.textBetween(range.from, range.to, "");
     if (currentText !== issue.original) {
       ignoreSpellcheckIssue(issue.id);
       setSpellcheckMessage("본문이 변경되어 이 제안을 적용할 수 없습니다. 다시 검사해주세요.");
       return;
     }
 
+    let prefixLength = 0;
+    while (
+      prefixLength < issue.original.length &&
+      prefixLength < issue.suggestion.length &&
+      issue.original[prefixLength] === issue.suggestion[prefixLength]
+    ) {
+      prefixLength += 1;
+    }
+    let suffixLength = 0;
+    while (
+      suffixLength < issue.original.length - prefixLength &&
+      suffixLength < issue.suggestion.length - prefixLength &&
+      issue.original[issue.original.length - 1 - suffixLength] ===
+        issue.suggestion[issue.suggestion.length - 1 - suffixLength]
+    ) {
+      suffixLength += 1;
+    }
+    const replaceFrom = range.from + prefixLength;
+    const replaceTo = range.to - suffixLength;
+    const replacement = issue.suggestion.slice(
+      prefixLength,
+      issue.suggestion.length - suffixLength,
+    );
     editor.view.dispatch(
-      editor.state.tr.insertText(issue.suggestion, issue.from, issue.to),
+      editor.state.tr.insertText(replacement, replaceFrom, replaceTo),
     );
     ignoreSpellcheckIssue(issue.id);
   };

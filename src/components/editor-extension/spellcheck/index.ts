@@ -1,5 +1,10 @@
 import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey, type Transaction } from "prosemirror-state";
+import {
+  Plugin,
+  PluginKey,
+  type EditorState,
+  type Transaction,
+} from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 export type SpellcheckDecorationIssue = {
@@ -17,6 +22,14 @@ type SpellcheckMeta =
 export const spellcheckPluginKey = new PluginKey<DecorationSet>(
   "spellcheckDecorations",
 );
+
+export function getSpellcheckDecorationRange(state: EditorState, id: string) {
+  const decoration = spellcheckPluginKey
+    .getState(state)
+    ?.find()
+    .find((candidate) => candidate.spec.id === id);
+  return decoration ? { from: decoration.from, to: decoration.to } : null;
+}
 
 function toDecorations(issues: SpellcheckDecorationIssue[]) {
   return issues.map((issue) =>
