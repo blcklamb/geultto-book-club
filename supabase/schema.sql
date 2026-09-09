@@ -81,6 +81,29 @@ CREATE TABLE IF NOT EXISTS public.review_spellcheck_uses (
   PRIMARY KEY (review_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.review_spellcheck_drafts (
+  review_id uuid PRIMARY KEY,
+  user_id uuid NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE OR REPLACE FUNCTION public.remove_submitted_review_spellcheck_draft()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  DELETE FROM public.review_spellcheck_drafts
+  WHERE review_id = NEW.id AND user_id = NEW.author_id;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.remove_submitted_review_spellcheck_draft() FROM PUBLIC;
+CREATE TRIGGER remove_submitted_review_spellcheck_draft
+AFTER INSERT ON public.reviews
+FOR EACH ROW EXECUTE FUNCTION public.remove_submitted_review_spellcheck_draft();
+
 CREATE TABLE IF NOT EXISTS public.review_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   review_id uuid REFERENCES public.reviews(id) ON DELETE CASCADE,
@@ -256,6 +279,7 @@ ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schedule_timetable_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_spellcheck_uses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_spellcheck_drafts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.review_highlights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.highlight_comments ENABLE ROW LEVEL SECURITY;
@@ -285,13 +309,6 @@ CREATE POLICY "Users can update their own profile"
   ON public.users FOR UPDATE
   USING ((SELECT auth.uid()) = id)
   WITH CHECK ((SELECT auth.uid()) = id);
-
-CREATE POLICY "users can record their own review spellcheck use"
-  ON public.review_spellcheck_uses FOR INSERT TO authenticated
-  WITH CHECK ((SELECT auth.uid()) = user_id);
-CREATE POLICY "users can remove their own failed review spellcheck use"
-  ON public.review_spellcheck_uses FOR DELETE TO authenticated
-  USING ((SELECT auth.uid()) = user_id);
 
 CREATE POLICY "Users can read their own summer palette board"
   ON public.summer_palette_boards FOR SELECT TO authenticated
@@ -563,7 +580,10 @@ CREATE POLICY "members can delete their topic comment reply reactions"
 GRANT SELECT ON public.schedule_timetable_items TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.schedule_timetable_items TO authenticated;
 
-GRANT INSERT, DELETE ON public.review_spellcheck_uses TO authenticated;
+REVOKE ALL ON public.review_spellcheck_uses FROM anon, authenticated;
+GRANT ALL ON public.review_spellcheck_uses TO service_role;
+REVOKE ALL ON public.review_spellcheck_drafts FROM anon, authenticated;
+GRANT ALL ON public.review_spellcheck_drafts TO service_role;
 
 GRANT SELECT ON public.review_comment_replies TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.review_comment_replies TO authenticated;

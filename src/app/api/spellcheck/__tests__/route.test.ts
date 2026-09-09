@@ -4,14 +4,25 @@ import { POST } from "../route";
 import libraryReview from "@/lib/__tests__/fixtures/bareun-library-review.json";
 
 const mocks = vi.hoisted(() => ({
-  user: vi.fn(), review: vi.fn(), reserve: vi.fn(), release: vi.fn(),
+  user: vi.fn(), review: vi.fn(), draft: vi.fn(), reserve: vi.fn(), release: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ getSessionUser: mocks.user }));
 vi.mock("@supabase/server", () => ({
   createSupabaseServerClient: async () => ({
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: mocks.review }) }),
+    }),
+  }),
+}));
+vi.mock("@supabase/admin", () => ({
+  createSupabaseAdminClient: () => ({
     from: (table: string) => {
-      if (table === "reviews") {
-        return { select: () => ({ eq: () => ({ maybeSingle: mocks.review }) }) };
+      if (table === "review_spellcheck_drafts") {
+        return {
+          select: () => ({
+            eq: () => ({ eq: () => ({ maybeSingle: mocks.draft }) }),
+          }),
+        };
       }
       return {
         insert: mocks.reserve,
@@ -37,6 +48,7 @@ beforeEach(() => {
   vi.stubEnv("SPELLCHECK_UNLIMITED_USER_IDS", "");
   mocks.user.mockResolvedValue({ id: userId, role: "member", isDeactivated: false });
   mocks.review.mockResolvedValue({ data: { author_id: userId }, error: null });
+  mocks.draft.mockResolvedValue({ data: { review_id: reviewId }, error: null });
   mocks.reserve.mockResolvedValue({ error: null });
   mocks.release.mockResolvedValue({ error: null });
 });
@@ -46,6 +58,39 @@ afterEach(() => {
 });
 
 describe("spellcheck provider response handling", () => {
+  it("rejects a caller-generated ID that is not bound to the user's draft", async () => {
+    mocks.review.mockResolvedValue({ data: null, error: null });
+    mocks.draft.mockResolvedValue({ data: null, error: null });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: "독후감 초안 식별 정보가 올바르지 않습니다.",
+    });
+    expect(mocks.reserve).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts the server-bound ID for a new review draft", async () => {
+    mocks.review.mockResolvedValue({ data: null, error: null });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      origin: libraryReview.source,
+      revised: libraryReview.source,
+      revisedBlocks: [],
+    })));
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(mocks.reserve).toHaveBeenCalledWith({
+      review_id: reviewId,
+      user_id: userId,
+    });
+  });
+
   it("returns corrections from the captured camelCase response instead of an empty list", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(libraryReview.response));
     vi.stubGlobal("fetch", fetchMock);

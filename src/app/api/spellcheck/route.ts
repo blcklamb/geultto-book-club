@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@supabase/admin";
+import { isSpellcheckLimitExempt } from "@/lib/spellcheck-limit";
 import {
   toSpellcheckIssues,
   type SpellcheckIssue,
@@ -50,17 +52,6 @@ function parseSegments(value: unknown): SpellcheckSegment[] | null {
   }
 
   return segments;
-}
-
-function isSpellcheckLimitExempt(userId: string) {
-  // Local development is intentionally unrestricted for the active tester.
-  if (process.env.NODE_ENV === "development") return true;
-
-  return (process.env.SPELLCHECK_UNLIMITED_USER_IDS ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean)
-    .includes(userId);
 }
 
 async function checkSegment(
@@ -149,6 +140,7 @@ export async function POST(request: NextRequest) {
 
   const isExempt = isSpellcheckLimitExempt(user.id);
   const supabase = await createSupabaseServerClient();
+  let spellcheckAdmin: ReturnType<typeof createSupabaseAdminClient> | null = null;
   let reservationCreated = false;
 
   if (!isExempt) {
@@ -162,11 +154,34 @@ export async function POST(request: NextRequest) {
     if (reviewError) {
       return jsonError("맞춤법 검사 횟수를 확인하지 못했습니다.", 500);
     }
-    if (review?.author_id && review.author_id !== user.id) {
+    if (review && review.author_id !== user.id) {
       return jsonError("다른 회원의 독후감은 검사할 수 없습니다.", 403);
     }
 
-    const { error: reservationError } = await supabase
+    try {
+      spellcheckAdmin = createSupabaseAdminClient(
+        "맞춤법 검사 사용 기록 서버 설정이 필요합니다.",
+      );
+    } catch {
+      return jsonError("맞춤법 검사 횟수를 확인하지 못했습니다.", 500);
+    }
+
+    if (!review) {
+      const draft = await spellcheckAdmin
+        .from("review_spellcheck_drafts")
+        .select("review_id")
+        .eq("review_id", reviewId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (draft.error) {
+        return jsonError("맞춤법 검사 횟수를 확인하지 못했습니다.", 500);
+      }
+      if (!draft.data) {
+        return jsonError("독후감 초안 식별 정보가 올바르지 않습니다.", 403);
+      }
+    }
+
+    const { error: reservationError } = await spellcheckAdmin
       .from("review_spellcheck_uses")
       .insert({ review_id: reviewId, user_id: user.id });
     if (reservationError?.code === "23505") {
@@ -184,8 +199,8 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ issues: results.flat() });
   } catch (error) {
-    if (reservationCreated) {
-      await supabase
+    if (reservationCreated && spellcheckAdmin) {
+      await spellcheckAdmin
         .from("review_spellcheck_uses")
         .delete()
         .eq("review_id", reviewId)

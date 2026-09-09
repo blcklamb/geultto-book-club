@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import DetailHeader from "@/components/DetailHeader";
 import { ScheduleDate } from "@/components/ScheduleDate";
+import { getOrCreateReviewSpellcheckDraft } from "@/lib/review-spellcheck-draft";
+import { isSpellcheckLimitExempt } from "@/lib/spellcheck-limit";
 
 // Review creation page (member/admin only)
 // Props: none
@@ -21,7 +23,9 @@ import { ScheduleDate } from "@/components/ScheduleDate";
 // Access control: enforced by ensureRole in server component and AuthGuard in client if needed
 export default async function ReviewCreatePage() {
   const user = await ensureRole(["member", "admin"]);
-  const reviewId = randomUUID();
+  const reviewId = isSpellcheckLimitExempt(user.id)
+    ? randomUUID()
+    : await getOrCreateReviewSpellcheckDraft(user.id);
   const supabase = await createSupabaseServerClient();
   const { data: schedules } = await supabase
     .from("schedules")
