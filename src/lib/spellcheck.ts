@@ -14,31 +14,14 @@ export type SpellcheckIssue = {
   explanation: string | null;
 };
 
-type BareunRevision = {
-  revised?: unknown;
-  category?: unknown;
-  help_id?: unknown;
-};
-
-type BareunRevisedBlock = {
-  origin?: {
-    content?: unknown;
-    begin_offset?: unknown;
-    length?: unknown;
-  };
-  revised?: unknown;
-  revisions?: unknown;
-};
-
-type BareunResponse = {
-  revised_blocks?: unknown;
-  helps?: unknown;
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function invalidResponse(): never {
+  throw new Error("provider_invalid_response");
 }
 
 function readHelpComment(helps: unknown, helpId: unknown): string | null {
@@ -50,27 +33,45 @@ function readHelpComment(helps: unknown, helpId: unknown): string | null {
 
 /**
  * Convert Bareun's provider-shaped response into the small, client-safe shape
- * used by the editor. Invalid offsets are intentionally discarded instead of
- * risking an edit at a wrong position.
+ * used by the editor. Connect's JSON uses camelCase; accept the documented
+ * protobuf snake_case spelling too. Invalid results must not mean "no errors".
  */
 export function toSpellcheckIssues(
   blockId: string,
   source: string,
-  response: BareunResponse,
+  value: unknown,
 ): SpellcheckIssue[] {
-  if (!Array.isArray(response.revised_blocks)) return [];
+  const response = asRecord(value);
+  if (!response) return invalidResponse();
+  if (response.origin !== undefined && response.origin !== source) {
+    return invalidResponse();
+  }
+  const blocks = response.revisedBlocks ?? response.revised_blocks;
+  if (blocks === undefined) {
+    // Protobuf JSON may omit an empty repeated field. Only treat that as a
+    // clean result when the provider explicitly returns the unchanged text.
+    if (response.origin === source && response.revised === source) return [];
+    return invalidResponse();
+  }
+  if (!Array.isArray(blocks)) return invalidResponse();
+  if (blocks.length === 0 && response.revised !== undefined && response.revised !== source) {
+    return invalidResponse();
+  }
 
-  const candidates = response.revised_blocks
+  const candidates = blocks
     .map((value, index) => {
-      const block = value as BareunRevisedBlock;
+      const block = asRecord(value);
+      if (!block) return invalidResponse();
       const origin = asRecord(block.origin);
       const original = origin?.content;
-      const from = origin?.begin_offset;
+      // Zero-valued protobuf scalar fields may also be omitted.
+      const from = origin?.beginOffset ?? origin?.begin_offset ?? 0;
       const rawLength = origin?.length;
-      const revisions = Array.isArray(block.revisions)
-        ? (block.revisions as BareunRevision[])
-        : [];
-      const firstRevision = revisions[0];
+      if (block.revisions !== undefined && !Array.isArray(block.revisions)) {
+        return invalidResponse();
+      }
+      const revisions = Array.isArray(block.revisions) ? block.revisions : [];
+      const firstRevision = asRecord(revisions[0]);
       const suggestion =
         typeof block.revised === "string"
           ? block.revised
@@ -80,13 +81,18 @@ export function toSpellcheckIssues(
 
       if (
         typeof original !== "string" ||
+        original.length === 0 ||
         typeof from !== "number" ||
         !Number.isInteger(from) ||
         typeof suggestion !== "string" ||
-        !suggestion ||
         from < 0
       ) {
-        return null;
+        return invalidResponse();
+      }
+
+      if (rawLength !== undefined &&
+        (typeof rawLength !== "number" || !Number.isInteger(rawLength) || rawLength < 0)) {
+        return invalidResponse();
       }
 
       const length =
@@ -100,8 +106,9 @@ export function toSpellcheckIssues(
         to > source.length ||
         source.slice(from, to) !== original
       ) {
-        return null;
+        return invalidResponse();
       }
+      if (original === suggestion) return null;
 
       const category =
         typeof firstRevision?.category === "string"
@@ -116,7 +123,10 @@ export function toSpellcheckIssues(
         original,
         suggestion,
         category,
-        explanation: readHelpComment(response.helps, firstRevision?.help_id),
+        explanation: readHelpComment(
+          response.helps,
+          firstRevision?.helpId ?? firstRevision?.help_id,
+        ),
       } satisfies SpellcheckIssue;
     })
     .filter((issue): issue is SpellcheckIssue => issue !== null)
