@@ -4,8 +4,8 @@ import {
   PluginKey,
   type EditorState,
   type Transaction,
-} from "prosemirror-state";
-import { Decoration, DecorationSet } from "prosemirror-view";
+} from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 export type SpellcheckDecorationIssue = {
   id: string;
