@@ -6,6 +6,7 @@ export type ImageUpload = {
   id: string;
   file: File;
   uploadId?: string;
+  storageUploadStarted?: boolean;
   removalFailed?: boolean;
   preview: string;
   status: "uploading" | "removing" | "error" | "done";
@@ -50,7 +51,9 @@ export function useImageUploads(options: UploadOptions = {}) {
     controllers.current.set(item.id, controller);
     update(
       itemsRef.current.map((i) =>
-        i.id === item.id ? { ...i, status: "uploading", error: undefined, uploadId } : i,
+        i.id === item.id
+          ? { ...i, status: "uploading", error: undefined, uploadId, storageUploadStarted: false }
+          : i,
       ),
     );
     try {
@@ -64,6 +67,10 @@ export function useImageUploads(options: UploadOptions = {}) {
       const preparation = await prepared.json();
       if (!prepared.ok) throw new Error(preparation.message ?? "이미지 업로드 실패");
       if (controller.signal.aborted) return;
+      // From this point a failed/aborted request may still have stored the file.
+      update(itemsRef.current.map((i) =>
+        i.id === item.id ? { ...i, storageUploadStarted: true } : i,
+      ));
       const uploaded = await fetch(preparation.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": item.file.type, "x-upsert": "false" },
@@ -148,7 +155,7 @@ export function useImageUploads(options: UploadOptions = {}) {
     const item = itemsRef.current.find((i) => i.id === id);
     if (!item || item.status === "removing") return;
     controllers.current.get(id)?.abort();
-    if (item.uploadId || item.path) {
+    if (item.storageUploadStarted || item.path) {
       update(
         itemsRef.current.map((current) =>
           current.id === id
@@ -184,6 +191,10 @@ export function useImageUploads(options: UploadOptions = {}) {
         );
         return;
       }
+    } else if (item.uploadId) {
+      // Preparing only creates a draft and signed URL. No bytes have been sent,
+      // so unavailable draft cleanup must not trap a failed attachment in the UI.
+      void cancelUpload(item.uploadId);
     }
     optionsRef.current.onRemoved?.(item);
     URL.revokeObjectURL(item.preview);

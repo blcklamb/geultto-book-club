@@ -129,4 +129,31 @@ describe("comment image attachments", () => {
       method: "DELETE", body: expect.stringContaining('"id":'),
     }));
   });
+  it("lets users remove a failed preparation and submit their text when cancellation fails", async () => {
+    vi.mocked(fetch).mockImplementation(async (_url, options) => ({
+      ok: false,
+      json: async () => ({
+        message: options?.method === "DELETE"
+          ? "업로드 취소에 실패했습니다."
+          : "이미지 저장소 서버 설정이 필요합니다.",
+      }),
+    }) as Response);
+    const submit = vi.fn().mockResolvedValue(undefined);
+    render(<CommentThread comments={[]} submitAction={submit} />);
+    fireEvent.change(screen.getByPlaceholderText("느낀 점을 남겨보세요"), {
+      target: { value: "보존할 내용" },
+    });
+    fireEvent.change(screen.getByLabelText("첨부할 이미지 선택"), {
+      target: { files: [upload()] },
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("이미지 저장소 서버 설정이 필요합니다.");
+
+    fireEvent.click(screen.getByRole("button", { name: "image.png 첨부 제거" }));
+
+    await waitFor(() => expect(screen.queryByAltText("image.png")).toBeNull());
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "댓글 등록" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+    await waitFor(() => expect(submit).toHaveBeenCalledWith("보존할 내용", []));
+  });
 });
