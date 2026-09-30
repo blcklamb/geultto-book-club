@@ -14,7 +14,7 @@ describe("SummerPaletteViewerCard", () => {
     expect(container.textContent).toContain("미시작");
     expect(container.textContent).toContain("아직 저장한 팔레트가 없습니다");
     expect(container.textContent).toContain("아직 저장된 기록 없음");
-    expect(container.textContent).toContain("팔레트 시작하기");
+    expect(container.textContent).toContain("팔레트 채우기");
     expect(container.querySelectorAll("img")).toHaveLength(0);
     expect(container.querySelectorAll("button")).toHaveLength(0);
     expect(container.querySelector("a")?.getAttribute("href")).toBe(
@@ -34,7 +34,7 @@ describe("SummerPaletteViewerCard", () => {
     expect(container.textContent).toContain("저장됨");
     expect(container.textContent).toContain("저장한 팔레트가 있습니다");
     expect(container.textContent).toContain("07.04 19:05");
-    expect(container.textContent).toContain("팔레트 보러가기");
+    expect(container.textContent).toContain("내 팔레트 보기");
     expect(container.querySelectorAll("img")).toHaveLength(0);
 
     unmount();

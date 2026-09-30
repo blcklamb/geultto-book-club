@@ -107,7 +107,7 @@ const makeHighlight = (
   id: "h1",
   highlightText: "선택된 텍스트",
   authorId: "author-1",
-  authorNickname: "홍길동",
+  authorNickname: "윤서진",
   startPos: 1,
   endPos: 10,
   comments: [],

@@ -45,7 +45,7 @@ describe("sortReactions", () => {
 
   it("단일 요소 배열을 그대로 반환한다", () => {
     const reactions: ReactionSummary[] = [
-      { emoji: "👍", count: 3, reactedByUser: true, nicknames: ["홍길동"] },
+      { emoji: "👍", count: 3, reactedByUser: true, nicknames: ["윤서진"] },
     ];
     expect(sortReactions(reactions)).toEqual(reactions);
   });
@@ -54,9 +54,9 @@ describe("sortReactions", () => {
 describe("summarizeReactions", () => {
   it("같은 이모지의 반응을 집계한다", () => {
     const rows = [
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "👍", user_id: "user-2", user: { nickname: "김철수" } },
-      { emoji: "❤️", user_id: "user-1", user: { nickname: "홍길동" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "👍", user_id: "user-2", user: { nickname: "박도윤" } },
+      { emoji: "❤️", user_id: "user-1", user: { nickname: "윤서진" } },
     ];
 
     const result = summarizeReactions(rows, null);
@@ -69,8 +69,8 @@ describe("summarizeReactions", () => {
 
   it("현재 사용자가 반응한 이모지에 reactedByUser를 true로 설정한다", () => {
     const rows = [
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "❤️", user_id: "user-2", user: { nickname: "김철수" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "❤️", user_id: "user-2", user: { nickname: "박도윤" } },
     ];
 
     const result = summarizeReactions(rows, "user-1");
@@ -83,7 +83,7 @@ describe("summarizeReactions", () => {
 
   it("userId가 null이면 모든 reactedByUser가 false이다", () => {
     const rows = [
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
     ];
 
     const result = summarizeReactions(rows, null);
@@ -92,27 +92,27 @@ describe("summarizeReactions", () => {
 
   it("닉네임 목록을 수집한다", () => {
     const rows = [
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "👍", user_id: "user-2", user: { nickname: "김철수" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "👍", user_id: "user-2", user: { nickname: "박도윤" } },
     ];
 
     const result = summarizeReactions(rows, null);
     const thumbsUp = result.find((r) => r.emoji === "👍");
 
-    expect(thumbsUp?.nicknames).toContain("홍길동");
-    expect(thumbsUp?.nicknames).toContain("김철수");
+    expect(thumbsUp?.nicknames).toContain("윤서진");
+    expect(thumbsUp?.nicknames).toContain("박도윤");
   });
 
   it("닉네임이 null인 경우 nicknames에 포함하지 않는다", () => {
     const rows = [
       { emoji: "👍", user_id: "user-1", user: { nickname: null } },
-      { emoji: "👍", user_id: "user-2", user: { nickname: "김철수" } },
+      { emoji: "👍", user_id: "user-2", user: { nickname: "박도윤" } },
     ];
 
     const result = summarizeReactions(rows, null);
     const thumbsUp = result.find((r) => r.emoji === "👍");
 
-    expect(thumbsUp?.nicknames).toEqual(["김철수"]);
+    expect(thumbsUp?.nicknames).toEqual(["박도윤"]);
     expect(thumbsUp?.count).toBe(2);
   });
 
@@ -128,13 +128,13 @@ describe("summarizeReactions", () => {
 
   it("같은 사용자가 동일 이모지를 중복 반응해도 닉네임을 한 번만 수집한다", () => {
     const rows = [
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "👍", user_id: "user-1", user: { nickname: "홍길동" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "👍", user_id: "user-1", user: { nickname: "윤서진" } },
     ];
 
     const result = summarizeReactions(rows, null);
     const thumbsUp = result.find((r) => r.emoji === "👍");
-    expect(thumbsUp?.nicknames.filter((n) => n === "홍길동")).toHaveLength(1);
+    expect(thumbsUp?.nicknames.filter((n) => n === "윤서진")).toHaveLength(1);
   });
 
   it("빈 배열을 입력하면 빈 배열을 반환한다", () => {
@@ -143,10 +143,10 @@ describe("summarizeReactions", () => {
 
   it("count가 높은 순서로 정렬된 결과를 반환한다", () => {
     const rows = [
-      { emoji: "😂", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "❤️", user_id: "user-1", user: { nickname: "홍길동" } },
-      { emoji: "❤️", user_id: "user-2", user: { nickname: "김철수" } },
-      { emoji: "❤️", user_id: "user-3", user: { nickname: "이영희" } },
+      { emoji: "😂", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "❤️", user_id: "user-1", user: { nickname: "윤서진" } },
+      { emoji: "❤️", user_id: "user-2", user: { nickname: "박도윤" } },
+      { emoji: "❤️", user_id: "user-3", user: { nickname: "최하은" } },
     ];
 
     const result = summarizeReactions(rows, null);

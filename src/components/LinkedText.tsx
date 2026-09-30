@@ -23,7 +23,7 @@ export function LinkedText({ text }: { text: string }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="break-all text-blue-600 underline"
+              className="break-all text-primary underline underline-offset-4 hover:text-primary/80"
             >
               {href}
             </a>

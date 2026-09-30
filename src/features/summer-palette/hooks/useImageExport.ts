@@ -89,26 +89,31 @@ export function downloadBlob(blob: Blob, fileName = EXPORT_FILE_NAME) {
   }, 30_000);
 }
 
-async function drawBoard(ctx: CanvasRenderingContext2D, board: PaletteBoard) {
-  const pageGradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  pageGradient.addColorStop(0, "#dff7ff");
-  pageGradient.addColorStop(0.48, "#f3fbff");
-  pageGradient.addColorStop(1, "#e7fff0");
+// PNG 로 그리는 색이라 CSS 토큰 대신 globals.css 토큰과 맞춘 값을 둔다.
+const EXPORT_COLORS = {
+  page: "#f4f1eb",
+  card: "#fbfaf7",
+  text: "#1f1c18",
+  textSecondary: "#4a443c",
+  textMuted: "#7a7166",
+  cellBackground: "#fbfaf7",
+  cellBorder: "#e3ddd3",
+  titleBar: "rgba(31, 28, 24, 0.6)",
+  onPhoto: "#fbfaf7",
+  success: "#2f8f5f",
+} as const;
 
-  ctx.fillStyle = pageGradient;
+async function drawBoard(ctx: CanvasRenderingContext2D, board: PaletteBoard) {
+  ctx.fillStyle = EXPORT_COLORS.page;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  drawRoundedRect(ctx, 52, 48, CANVAS_WIDTH - 104, CANVAS_HEIGHT - 96, 42);
-  const cardGradient = ctx.createLinearGradient(52, 48, 52, CANVAS_HEIGHT - 48);
-  cardGradient.addColorStop(0, "#ffffff");
-  cardGradient.addColorStop(0.5, "#ebfbff");
-  cardGradient.addColorStop(1, "#f1fff5");
-  ctx.fillStyle = cardGradient;
+  drawRoundedRect(ctx, 52, 48, CANVAS_WIDTH - 104, CANVAS_HEIGHT - 96, 32);
+  ctx.fillStyle = EXPORT_COLORS.card;
   ctx.fill();
 
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = EXPORT_COLORS.text;
   ctx.font =
-    "800 76px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
+    "600 76px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
   ctx.textBaseline = "top";
   ctx.fillText(board.title, 92, 88);
 
@@ -120,14 +125,14 @@ async function drawBoard(ctx: CanvasRenderingContext2D, board: PaletteBoard) {
     await drawCell(ctx, cell, x, y);
   }
 
-  ctx.fillStyle = "#334155";
+  ctx.fillStyle = EXPORT_COLORS.textSecondary;
   ctx.font =
-    "700 32px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
+    "600 32px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
   ctx.fillText("글또 북클럽", 92, 1348);
 
-  ctx.fillStyle = "#64748b";
+  ctx.fillStyle = EXPORT_COLORS.textMuted;
   ctx.font =
-    "500 26px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
+    "400 26px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
   ctx.fillText("여름 독서 기록", 92, 1394);
 }
 
@@ -146,26 +151,27 @@ async function drawCell(
 
   if (image) {
     drawImageCover(ctx, image, x, y, CELL_SIZE, CELL_SIZE);
-    const overlay = ctx.createLinearGradient(x, y + CELL_SIZE * 0.45, x, y + CELL_SIZE);
-    overlay.addColorStop(0, "rgba(15, 23, 42, 0)");
-    overlay.addColorStop(1, "rgba(15, 23, 42, 0.78)");
-    ctx.fillStyle = overlay;
-    ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
   } else {
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = EXPORT_COLORS.cellBackground;
     ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
     ctx.fillStyle = `${accent}22`;
     ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
   }
 
-  ctx.fillStyle = isCellFilled(cell) ? "#ffffff" : "#0f172a";
   ctx.font =
-    "800 30px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
+    "600 30px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
   ctx.textBaseline = "top";
   const titleLines = buildLines(ctx, cell.title, CELL_SIZE - 56, 4);
   const titleY = isCellFilled(cell)
     ? y + CELL_SIZE - 44 - titleLines.length * 37
     : y + 96;
+  if (image) {
+    // 사진 위 제목은 그라데이션 대신 단색 반투명 띠로 가독성을 확보한다.
+    const barTop = titleY - 20;
+    ctx.fillStyle = EXPORT_COLORS.titleBar;
+    ctx.fillRect(x, barTop, CELL_SIZE, y + CELL_SIZE - barTop);
+  }
+  ctx.fillStyle = image ? EXPORT_COLORS.onPhoto : EXPORT_COLORS.text;
   titleLines.forEach((line, index) => {
     ctx.fillText(line, x + 28, titleY + index * 37);
   });
@@ -176,9 +182,9 @@ async function drawCell(
   if (isCellFilled(cell)) {
     ctx.beginPath();
     ctx.arc(x + CELL_SIZE - 52, y + 52, 30, 0, Math.PI * 2);
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = EXPORT_COLORS.success;
     ctx.fill();
-    ctx.strokeStyle = "#ffffff";
+    ctx.strokeStyle = EXPORT_COLORS.onPhoto;
     ctx.lineWidth = 8;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -192,8 +198,8 @@ async function drawCell(
   ctx.restore();
 
   drawRoundedRect(ctx, x, y, CELL_SIZE, CELL_SIZE, CELL_RADIUS);
-  ctx.strokeStyle = isCellFilled(cell) ? "#fdba74" : "#fed7aa";
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = EXPORT_COLORS.cellBorder;
+  ctx.lineWidth = 4;
   ctx.stroke();
 
   if (isCellFilled(cell)) {
@@ -237,23 +243,20 @@ function drawBoardTimestampBadge(
 
   ctx.save();
   ctx.font =
-    `800 ${fontSize}px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif`;
+    `600 ${fontSize}px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif`;
   ctx.textBaseline = "middle";
 
   const width = Math.ceil(ctx.measureText(timestamp).width) + paddingX * 2;
-  ctx.shadowColor = "rgba(15, 23, 42, 0.18)";
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
-  drawRoundedRect(ctx, timestampX, timestampY, width, height, height / 2);
+  ctx.fillStyle = EXPORT_COLORS.card;
+  drawRoundedRect(ctx, timestampX, timestampY, width, height, 8);
   ctx.fill();
 
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = "rgba(251, 146, 60, 0.9)";
+  ctx.strokeStyle = EXPORT_COLORS.cellBorder;
   ctx.lineWidth = 2;
-  drawRoundedRect(ctx, timestampX, timestampY, width, height, height / 2);
+  drawRoundedRect(ctx, timestampX, timestampY, width, height, 8);
   ctx.stroke();
 
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = EXPORT_COLORS.text;
   ctx.fillText(timestamp, timestampX + paddingX, timestampY + height / 2);
   ctx.restore();
 }

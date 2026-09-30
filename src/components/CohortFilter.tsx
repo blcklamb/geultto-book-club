@@ -23,10 +23,15 @@ export const CohortFilter: React.FC<{
   };
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1">
+    <div
+      role="group"
+      aria-label="기수 필터"
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1"
+    >
       <Button
         size="sm"
         variant={selected === null ? "default" : "ghost"}
+        aria-pressed={selected === null}
         onClick={() => handleSelect(null)}
       >
         전체
@@ -36,6 +41,7 @@ export const CohortFilter: React.FC<{
           key={c}
           size="sm"
           variant={selected === c ? "default" : "ghost"}
+          aria-pressed={selected === c}
           onClick={() => handleSelect(c)}
         >
           {c}기

@@ -34,7 +34,7 @@ const makeHighlight = (
   id: "h1",
   highlightText: "인상 깊은 구절입니다",
   authorId: "author-1",
-  authorNickname: "홍길동",
+  authorNickname: "윤서진",
   startPos: 10,
   endPos: 25,
   comments: [],
@@ -44,7 +44,7 @@ const makeHighlight = (
 const makeComment = (overrides?: object) => ({
   id: "c1",
   body: "좋은 구절이에요",
-  author: "김철수",
+  author: "박도윤",
   createdAt: "2024-01-01 12:00:00",
   reactions: [] as ReactionSummary[],
   replies: [],
@@ -85,7 +85,7 @@ describe("HighlightCommentPanel", () => {
         onCommentsUpdated={vi.fn()}
       />,
     );
-    expect(screen.getByText(/홍길동 님이 하이라이트함/)).toBeInTheDocument();
+    expect(screen.getByText(/윤서진 님이 하이라이트함/)).toBeInTheDocument();
   });
 
   it("댓글이 없을 때 안내 문구를 표시한다", () => {
@@ -97,14 +97,14 @@ describe("HighlightCommentPanel", () => {
         onCommentsUpdated={vi.fn()}
       />,
     );
-    expect(screen.getByText("첫 댓글을 남겨보세요")).toBeInTheDocument();
+    expect(screen.getByText("아직 댓글이 없어요. 이 문장에 대한 생각을 남겨 보세요.")).toBeInTheDocument();
   });
 
   it("기존 댓글 목록을 렌더링한다", () => {
     const highlight = makeHighlight({
       comments: [
-        makeComment({ id: "c1", author: "김철수", body: "좋은 구절이에요" }),
-        makeComment({ id: "c2", author: "이영희", body: "저도 좋아요" }),
+        makeComment({ id: "c1", author: "박도윤", body: "좋은 구절이에요" }),
+        makeComment({ id: "c2", author: "최하은", body: "저도 좋아요" }),
       ],
     });
     render(
@@ -117,8 +117,8 @@ describe("HighlightCommentPanel", () => {
     );
     expect(screen.getByText("좋은 구절이에요")).toBeInTheDocument();
     expect(screen.getByText("저도 좋아요")).toBeInTheDocument();
-    expect(screen.getByText("김철수")).toBeInTheDocument();
-    expect(screen.getByText("이영희")).toBeInTheDocument();
+    expect(screen.getByText("박도윤")).toBeInTheDocument();
+    expect(screen.getByText("최하은")).toBeInTheDocument();
   });
 
   it("disabled=true일 때 댓글 입력폼을 표시하지 않는다", () => {

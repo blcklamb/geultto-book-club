@@ -6,7 +6,6 @@ import { CircleAlert, CircleCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { EmojiReactionBar } from "@/components/EmojiReactionBar";
@@ -103,12 +102,11 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">댓글</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+    <section className="space-y-4" aria-label="댓글">
+      <h2 className="text-base font-semibold text-foreground">
+        댓글 <span className="text-muted-foreground">{comments.length}</span>
+      </h2>
+      <div className="space-y-2">
           {feedback?.type === "error" ? (
             <Alert variant="destructive">
               <CircleAlert className="h-4 w-4" />
@@ -116,8 +114,8 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             </Alert>
           ) : null}
           {feedback?.type === "success" ? (
-            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800">
-              <CircleCheck className="h-4 w-4 text-emerald-600" />
+            <Alert className="border-success/30 bg-success/10 text-success">
+              <CircleCheck className="h-4 w-4 text-success" />
               <AlertDescription>{feedback.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -127,6 +125,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             maxImages={MAX_COMMENT_IMAGE_COUNT}
           >
             <Textarea
+              aria-label="댓글 입력"
               placeholder="느낀 점을 남겨보세요"
               value={value}
               onChange={(e) => setValue(e.target.value)}
@@ -140,9 +139,13 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           >
             댓글 등록
           </Button>
-        </CardContent>
-      </Card>
-      <div className="space-y-3">
+      </div>
+      {comments.length === 0 ? (
+        <p className="border-t border-border pt-4 text-sm text-muted-foreground">
+          아직 댓글이 없어요. 읽고 느낀 점을 첫 댓글로 남겨 보세요.
+        </p>
+      ) : null}
+      <ul className="divide-y divide-border border-t border-border">
         {comments.map((comment) => (
           <CommentItem
             key={comment.id}
@@ -163,8 +166,8 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             currentUserNickname={currentUserNickname}
           />
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 };
 
@@ -221,9 +224,8 @@ function CommentItem({
     onToggleReaction !== undefined || (comment.reactions ?? []).length > 0;
 
   return (
-    <Card>
-      <CardContent className="space-y-1 text-sm p-4">
-        <div className="flex items-center gap-2 font-medium text-slate-700">
+    <li className="space-y-1 py-4 text-sm">
+        <div className="flex items-center gap-2 font-semibold text-foreground">
           <UserAvatar
             imageUrl={comment.authorImageUrl}
             decoration={comment.authorDecoration}
@@ -231,11 +233,11 @@ function CommentItem({
           />
           <span>{comment.author}</span>
         </div>
-        <p className="whitespace-pre-wrap text-slate-600">
+        <p className="whitespace-pre-wrap text-foreground">
           <LinkedText text={comment.body} />
         </p>
         <CommentImages paths={comment.imagePaths} />
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-muted-foreground">
           <LocalizedDate
             value={comment.createdAt}
             options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -252,15 +254,15 @@ function CommentItem({
         )}
 
         {(comment.replies ?? []).length > 0 && (
-          <div className="ml-3 mt-2 space-y-2 border-l-2 border-slate-100 pl-3">
+          <div className="ml-3 mt-2 space-y-2 border-l-2 border-border pl-3">
             {(comment.replies ?? []).map((reply) => {
               const showReplyReactions =
                 onToggleReplyReaction !== undefined ||
                 (reply.reactions ?? []).length > 0;
 
               return (
-                <div key={reply.id} className="space-y-0.5">
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                <div key={reply.id} className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <UserAvatar
                       imageUrl={reply.authorImageUrl}
                       decoration={reply.authorDecoration}
@@ -268,11 +270,11 @@ function CommentItem({
                     />
                     <span>{reply.author}</span>
                   </div>
-                  <p className="whitespace-pre-wrap text-xs text-slate-600">
+                  <p className="whitespace-pre-wrap text-sm text-foreground">
                     <LinkedText text={reply.body} />
                   </p>
                   <CommentImages paths={reply.imagePaths} />
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     <LocalizedDate
                       value={reply.createdAt}
                       options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -299,25 +301,24 @@ function CommentItem({
         {!disabled && onAddReply && (
           <div className="pt-1">
             {showReplyForm ? (
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-2">
                 <ImageAttachments
                   uploads={uploads}
                   disabled={disabled || isSubmitting}
                   maxImages={MAX_COMMENT_IMAGE_COUNT}
                 >
                   <Textarea
+                    aria-label="답글 입력"
                     placeholder="답글을 입력하세요"
                     disabled={isSubmitting}
                     value={replyBody}
                     onChange={(e) => setReplyBody(e.target.value)}
-                    className="text-xs"
                     rows={2}
                   />
                 </ImageAttachments>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   <Button
                     size="sm"
-                    className="h-6 px-2 text-xs"
                     onClick={handleSubmitReply}
                     disabled={
                       isSubmitting ||
@@ -330,7 +331,6 @@ function CommentItem({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 text-xs"
                     onClick={() => {
                       uploads.clear();
                       setShowReplyForm(false);
@@ -345,7 +345,7 @@ function CommentItem({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-xs text-slate-500"
+                className="-ml-3 text-xs text-muted-foreground"
                 onClick={() => setShowReplyForm(true)}
               >
                 답글 달기
@@ -353,7 +353,6 @@ function CommentItem({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </li>
   );
 }

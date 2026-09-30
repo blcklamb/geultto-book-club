@@ -19,10 +19,23 @@ const SPINE_COLOR = new THREE.Color("#6B3A1A");
 const PAGE_COLOR = new THREE.Color("#F5EDD8");
 const FRONT_COLOR_PLAIN = new THREE.Color("#C8782A");
 
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(query.matches);
+    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
+}
+
 function useBookAnimation() {
   const groupRef = useRef<THREE.Group>(null);
+  const reducedMotion = usePrefersReducedMotion();
   useFrame(({ clock }) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || reducedMotion) return;
     const t = clock.getElapsedTime();
     groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.35 - 0.1;
     groupRef.current.rotation.x = Math.sin(t * 0.25) * 0.04;
@@ -52,10 +65,8 @@ function BookMeshPlain({ bookTitle }: { bookTitle?: string }) {
       </mesh>
       <Html center position={[0, 0, 0.12]}>
         <div className="pointer-events-none flex w-36 flex-col items-center gap-1 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-100/70">
-            다음 독서
-          </p>
-          <p className="text-xs font-bold leading-snug text-white drop-shadow">
+          <p className="text-xs text-primary-foreground/70">다음 독서</p>
+          <p className="text-xs font-semibold leading-snug text-primary-foreground">
             {bookTitle ?? "일정 없음"}
           </p>
         </div>
@@ -144,7 +155,15 @@ export function HomeScene3D({ nextSchedule, bookCoverUrl }: HomeScene3DProps) {
     : undefined;
 
   return (
-    <div className="h-64 w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 ring-1 ring-amber-200">
+    <div
+      className="h-64 w-full overflow-hidden rounded-lg border border-border bg-muted"
+      role="img"
+      aria-label={
+        nextSchedule?.book
+          ? `다음 모임 책 ${nextSchedule.book}의 3D 표지`
+          : "다음 모임 책 3D 표지"
+      }
+    >
       <Canvas camera={{ position: [0, 0.4, 4], fov: 40 }} shadows>
         <ambientLight intensity={0.9} />
         <directionalLight position={[3, 4, 3]} intensity={1.3} castShadow />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useSession } from "@/components/SessionProvider";
 import { UserAvatar } from "@/components/UserAvatar";
 import { getParentPathname } from "@/lib/navigation";
@@ -85,20 +86,22 @@ export default function DetailHeader({
 
   return (
     <>
-      <header className="flex items-center justify-between px-4 py-3 border-b">
+      <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <button
+          type="button"
           onClick={handleBack}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent"
           aria-label="뒤로가기"
         >
-          ←
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        <h1 className="text-lg font-semibold">{title}</h1>
+        <h1 className="text-base font-semibold">{title}</h1>
 
         <button
+          type="button"
           onClick={handleProfileClick}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent disabled:opacity-50"
           aria-label="프로필로 이동"
           disabled={pathname === "/profile"}
         >

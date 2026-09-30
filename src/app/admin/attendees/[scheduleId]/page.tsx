@@ -36,12 +36,11 @@ export default async function AdminAttendeesPage({
     .eq("schedule_id", scheduleId);
 
   return (
-    <Card className="m-8">
+    <Card>
       <CardHeader>
         <CardTitle>{schedule?.book_title ?? "모임"} 참석자 관리</CardTitle>
-        <p className="text-xs text-slate-500">
-          참석 여부나 회비 상태 변경 시 아래 폼을 제출하면 PATCH
-          /api/admin/attendees 로 전달됩니다.
+        <p className="text-xs text-muted-foreground">
+          체크 상태를 바꾼 뒤 참석자 상태 저장을 눌러야 반영됩니다.
         </p>
       </CardHeader>
       <CardContent>
@@ -70,6 +69,8 @@ export default async function AdminAttendeesPage({
                   <TableCell>
                     <input
                       type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      aria-label={`${attendee.user?.nickname ?? attendee.user_id} 참석 신청`}
                       name={`attending_${attendee.user_id}`}
                       defaultChecked={
                         attendee.requested_attending ??
@@ -81,6 +82,8 @@ export default async function AdminAttendeesPage({
                   <TableCell>
                     <input
                       type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      aria-label={`${attendee.user?.nickname ?? attendee.user_id} 실제 참석`}
                       name={`actual_${attendee.user_id}`}
                       defaultChecked={!!attendee.actual_attended}
                     />
@@ -88,6 +91,8 @@ export default async function AdminAttendeesPage({
                   <TableCell>
                     <input
                       type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      aria-label={`${attendee.user?.nickname ?? attendee.user_id} 회비 납부`}
                       name={`fee_${attendee.user_id}`}
                       defaultChecked={!!attendee.fee_paid}
                     />

@@ -17,7 +17,7 @@ export function SummerPaletteViewerCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-3 text-lg">
+        <CardTitle className="flex items-center justify-between gap-3 text-base">
           <span>나의 여름 팔레트</span>
           <Badge variant={hasSavedBoard ? "secondary" : "outline"}>
             {hasSavedBoard ? "저장됨" : "미시작"}
@@ -25,16 +25,16 @@ export function SummerPaletteViewerCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-sm font-medium text-slate-900">
+        <p className="text-sm text-foreground">
           {hasSavedBoard ? "저장한 팔레트가 있습니다" : "아직 저장한 팔레트가 없습니다"}
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           {formatUpdatedAt(updatedAt)}
         </p>
 
         <Button asChild variant="outline" className="w-full">
           <Link href="/summer-palette">
-            {hasSavedBoard ? "팔레트 보러가기" : "팔레트 시작하기"}
+            {hasSavedBoard ? "내 팔레트 보기" : "팔레트 채우기"}
           </Link>
         </Button>
       </CardContent>

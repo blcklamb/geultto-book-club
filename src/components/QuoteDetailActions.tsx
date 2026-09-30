@@ -64,7 +64,7 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
             수정
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="text-rose-600 focus:bg-rose-50"
+            className="text-destructive focus:bg-destructive/10"
             onSelect={() => setIsDeleteOpen(true)}
           >
             삭제
@@ -84,7 +84,7 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
             <input type="hidden" name="quoteId" value={quoteId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1">
-                <span className="text-slate-600">인상 깊은 구절</span>
+                <span className="text-muted-foreground">인상 깊은 구절</span>
                 <Textarea
                   name="text"
                   defaultValue={initialText}
@@ -93,7 +93,7 @@ export const QuoteDetailActions: React.FC<QuoteDetailActionsProps> = ({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-slate-600">쪽수</span>
+                <span className="text-muted-foreground">쪽수</span>
                 <Input
                   name="pageNumber"
                   defaultValue={initialPageNumber}

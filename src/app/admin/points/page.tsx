@@ -94,19 +94,23 @@ export default async function AdminPointsPage({
     <div className="space-y-6 p-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-semibold text-foreground">
             포인트 대시보드
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             {CURRENT_POINT_COHORT}기 포인트 현황 조회, 수동 입력, 비활성
             사용자를 관리합니다.
           </p>
         </div>
         <div className="flex gap-3 text-sm">
-          <Link className="text-sky-600" href="/admin/schedule">
+          <Link
+            className="rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href="/admin/schedule">
             일정 관리
           </Link>
-          <Link className="text-sky-600" href="/admin/users">
+          <Link
+            className="rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href="/admin/users">
             회원 승인
           </Link>
         </div>
@@ -128,7 +132,7 @@ export default async function AdminPointsPage({
                 id="manual-user"
                 name="userId"
                 required
-                className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm"
+                className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">선택</option>
                 {users?.map((user) => (
@@ -145,7 +149,7 @@ export default async function AdminPointsPage({
                 id="manual-source"
                 name="sourceType"
                 required
-                className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm"
+                className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">선택</option>
                 {MANUAL_POINT_OPTIONS.map((option) => (
@@ -162,7 +166,7 @@ export default async function AdminPointsPage({
               <select
                 id="manual-schedule"
                 name="scheduleId"
-                className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm"
+                className="h-9 w-full rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">일정 없음</option>
                 {schedules?.map((schedule) => (
@@ -202,8 +206,8 @@ export default async function AdminPointsPage({
               {users?.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    <div className="font-medium">{user.nickname}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="font-semibold">{user.nickname}</div>
+                    <div className="text-xs text-muted-foreground">
                       {user.real_name}
                     </div>
                   </TableCell>
@@ -247,7 +251,7 @@ export default async function AdminPointsPage({
             <select
               name="userId"
               defaultValue={filters.userId ?? ""}
-              className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">전체 사용자</option>
               {users?.map((user) => (
@@ -259,7 +263,7 @@ export default async function AdminPointsPage({
             <select
               name="scheduleId"
               defaultValue={filters.scheduleId ?? ""}
-              className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">전체 일정</option>
               {schedules?.map((schedule) => (
@@ -271,7 +275,7 @@ export default async function AdminPointsPage({
             <select
               name="sourceType"
               defaultValue={filters.sourceType ?? ""}
-              className="h-9 rounded-md border border-slate-200 px-3 text-sm"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">전체 항목</option>
               {filterSourceTypes.map((sourceType) => (
@@ -299,7 +303,7 @@ export default async function AdminPointsPage({
             <TableBody>
               {transactions?.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell className="text-xs text-slate-500">
+                  <TableCell className="text-xs text-muted-foreground">
                     <LocalizedDate
                       value={transaction.created_at}
                       options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -317,14 +321,14 @@ export default async function AdminPointsPage({
                   <TableCell
                     className={
                       transaction.points >= 0
-                        ? "font-semibold text-emerald-600"
-                        : "font-semibold text-rose-600"
+                        ? "font-semibold text-success"
+                        : "font-semibold text-destructive"
                     }
                   >
                     {transaction.points > 0 ? "+" : ""}
                     {transaction.points}
                   </TableCell>
-                  <TableCell className="text-sm text-slate-500">
+                  <TableCell className="text-sm text-muted-foreground">
                     {transaction.memo ?? "-"}
                   </TableCell>
                 </TableRow>

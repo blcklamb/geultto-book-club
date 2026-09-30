@@ -8,10 +8,11 @@ describe("UserAvatar", () => {
     expect(screen.getByText("📚")).toBeInTheDocument();
   });
 
-  it("기본 배경색이 #F1F5F9이다", () => {
+  it("bgColor가 없으면 인라인 배경색 없이 muted 토큰 배경을 쓴다", () => {
     render(<UserAvatar emoji="📚" />);
     const avatar = screen.getByTestId("profile-avatar-circle");
-    expect(avatar).toHaveStyle({ backgroundColor: "#F1F5F9" });
+    expect(avatar.className).toContain("bg-muted");
+    expect(avatar.style.backgroundColor).toBe("");
   });
 
   it("bgColor prop으로 배경색을 지정할 수 있다", () => {

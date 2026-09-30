@@ -27,6 +27,19 @@ describe("QuoteListToggle", () => {
     expect(btn3d?.className).not.toContain("bg-primary");
   });
 
+  it("선택 상태를 aria-pressed로 보조기기에 알린다", () => {
+    render(<QuoteListToggle mode="list" onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "리스트" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "3D 뷰" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("group", { name: "보기 방식" })).toBeInTheDocument();
+  });
+
   it("'3D 뷰' 버튼 클릭 시 onChange('3d')를 호출한다", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

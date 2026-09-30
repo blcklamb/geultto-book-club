@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -92,14 +93,12 @@ export default async function ScheduleDetailPage({
   return (
     <>
       <DetailHeader title={schedule.book_title} />
-      <div className="space-y-8 p-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold">
-              {schedule.book_title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600">
+      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-8">
+        <section className="space-y-2 border-b border-border pb-6">
+          <h2 className="text-2xl font-semibold text-foreground">
+            {schedule.book_title}
+          </h2>
+          <div className="space-y-1 text-sm text-muted-foreground">
             <p>
               <ScheduleDate
                 value={schedule.date}
@@ -109,16 +108,16 @@ export default async function ScheduleDetailPage({
             <p>{schedule.place}</p>
             {schedule.book_link ? (
               <a
-                className="text-slate-500 underline"
+                className="inline-block rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 href={schedule.book_link}
                 target="_blank"
                 rel="noreferrer"
               >
-                도서 정보 바로가기
+                도서 정보 보기
               </a>
             ) : null}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         <ScheduleTimetableEditor
           scheduleId={schedule.id}
@@ -138,9 +137,9 @@ export default async function ScheduleDetailPage({
         !sessionUser.isDeactivated ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">참석 여부</CardTitle>
+              <CardTitle className="text-base">참석 여부</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
               <form
                 action={`/api/schedule/${schedule.id}/attendees`}
                 method="post"
@@ -148,10 +147,12 @@ export default async function ScheduleDetailPage({
               >
                 <input type="hidden" name="scheduleId" value={schedule.id} />
                 <input type="hidden" name="userId" value={sessionUser.id} />
-                <div className="flex items-center gap-3">
+                <fieldset className="flex flex-wrap items-center gap-4 text-foreground">
+                  <legend className="sr-only">참석 여부</legend>
                   <label className="flex items-center gap-2">
                     <input
                       type="radio"
+                      className="h-4 w-4 accent-primary"
                       name="isAttending"
                       value="true"
                       defaultChecked={
@@ -165,6 +166,7 @@ export default async function ScheduleDetailPage({
                   <label className="flex items-center gap-2">
                     <input
                       type="radio"
+                      className="h-4 w-4 accent-primary"
                       name="isAttending"
                       value="false"
                       defaultChecked={
@@ -177,62 +179,59 @@ export default async function ScheduleDetailPage({
                     />
                     참석이 어려워요
                   </label>
-                </div>
+                </fieldset>
                 <Button type="submit" size="sm">
                   참석 상태 저장
                 </Button>
               </form>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {myAttendance?.fee_paid ? (
-                  <span className="text-xs text-emerald-600">
-                    회비를 납부하셨습니다.
+                  <span className="font-semibold text-success">
+                    회비 납부 완료
                   </span>
                 ) : (
-                  <span className="text-xs text-rose-600">
-                    회비 미납 상태입니다.
+                  <span className="font-semibold text-warning">
+                    회비 미납
                   </span>
-                )}{" "}
-                <span className="text-xs text-slate-400">
-                  회비 납부 현황은 관리자만 수정할 수 있습니다.
-                </span>
+                )}
+                {" · "}
+                납부 현황은 운영진이 확인 후 수정해요.
               </p>
             </CardContent>
           </Card>
         ) : (
           <Card>
-            <CardContent className="text-sm text-slate-500">
-              참석 여부 체크는 승인된 멤버만 가능합니다.
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              참석 여부는 관리자 승인을 받은 멤버만 표시할 수 있어요.
             </CardContent>
           </Card>
         )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h2 className="text-xl font-semibold text-foreground">
               인상 깊은 구절
             </h2>
           </div>
           {sessionUser &&
           sessionUser.role !== "pending" &&
           !sessionUser.isDeactivated ? (
-            <form
-              action="/api/quotes"
-              method="post"
-              className="space-y-2 rounded-lg border border-slate-200 p-4"
-            >
+            <form action="/api/quotes" method="post">
               <input type="hidden" name="scheduleId" value={schedule.id} />
-              <div className="flex gap-2 text-sm">
-                <label className="flex items-center gap-1">
+              <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center">
+                <label className="flex items-center gap-2 text-muted-foreground">
                   쪽수
-                  <input
+                  <Input
                     name="pageNumber"
-                    className="h-9 w-24 rounded-md border border-slate-200 px-2"
-                    placeholder="123"
+                    inputMode="numeric"
+                    className="w-24"
+                    placeholder="128"
                   />
                 </label>
-                <input
+                <Input
                   name="text"
-                  className="flex-1 rounded-md border border-slate-200 px-3 py-2"
+                  aria-label="인상 깊은 구절"
+                  className="flex-1"
                   placeholder="인상 깊은 문장을 입력하세요"
                   required
                 />
@@ -242,19 +241,19 @@ export default async function ScheduleDetailPage({
               </div>
             </form>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               승인된 멤버만 구절을 등록할 수 있습니다.
             </p>
           )}
-          <div className="space-y-3">
-            {quotes?.map((quote) => (
-              <Card key={quote.id}>
-                <CardContent className="pt-6 space-y-1 text-sm text-slate-600">
-                  <p className="text-xs text-slate-400">
+          {quotes && quotes.length > 0 ? (
+            <ul className="divide-y divide-border border-y border-border">
+              {quotes.map((quote) => (
+                <li key={quote.id} className="space-y-1 py-4 text-sm">
+                  <p className="text-xs text-muted-foreground">
                     p.{quote.page_number}
                   </p>
-                  <p>“{quote.text}”</p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <p className="text-foreground">“{quote.text}”</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <UserAvatar
                       imageUrl={
                         quote.author_id
@@ -272,18 +271,21 @@ export default async function ScheduleDetailPage({
                     />
                     <span>{quote.author?.nickname}</span>
                   </div>
-                </CardContent>
-              </Card>
-            )) ?? (
-              <p className="text-sm text-slate-500">등록된 구절이 없습니다.</p>
-            )}
-          </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              이 모임에 등록된 구절이 아직 없어요. 기억에 남는 문장을 첫 번째로
+              남겨 보세요.
+            </p>
+          )}
         </div>
 
         {sessionUser?.role === "admin" ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">참석자 및 회비 관리</CardTitle>
+              <CardTitle className="text-base">참석자 및 회비 관리</CardTitle>
             </CardHeader>
             <CardContent>
               <form action="/api/admin/attendees" method="post">
@@ -311,6 +313,8 @@ export default async function ScheduleDetailPage({
                         <TableCell>
                           <input
                             type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            aria-label={`${attendee.user?.nickname ?? attendee.user_id} 참석 신청`}
                             name={`attending_${attendee.user_id}`}
                             defaultChecked={
                               attendee.requested_attending ??
@@ -322,6 +326,8 @@ export default async function ScheduleDetailPage({
                         <TableCell>
                           <input
                             type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            aria-label={`${attendee.user?.nickname ?? attendee.user_id} 실제 참석`}
                             name={`actual_${attendee.user_id}`}
                             defaultChecked={!!attendee.actual_attended}
                           />
@@ -329,6 +335,8 @@ export default async function ScheduleDetailPage({
                         <TableCell>
                           <input
                             type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            aria-label={`${attendee.user?.nickname ?? attendee.user_id} 회비 납부`}
                             name={`fee_${attendee.user_id}`}
                             defaultChecked={!!attendee.fee_paid}
                           />

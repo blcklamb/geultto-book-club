@@ -69,7 +69,7 @@ export default async function ReviewsPage({
   return (
     <>
       <DetailHeader title="독후감" />
-      <div className="space-y-6 p-8">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div className="flex flex-wrap items-center gap-4">
             {cohorts.length > 0 ? (
@@ -78,16 +78,17 @@ export default async function ReviewsPage({
             {sessionUser &&
             sessionUser.role !== "pending" &&
             !sessionUser.isDeactivated ? (
-              <Link href="/reviews/new">
-                <Button>독후감 작성</Button>
-              </Link>
+              <Button asChild>
+                <Link href="/reviews/new">독후감 작성</Link>
+              </Button>
             ) : null}
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {reviews && reviews.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              아직 작성된 독후감이 없어요.
+            <p className="text-sm text-muted-foreground md:col-span-2">
+              이 기수에 작성된 독후감이 아직 없어요. 다른 기수를 선택하거나 첫
+              독후감을 작성해 보세요.
             </p>
           ) : null}
           {reviews?.map((review) => (

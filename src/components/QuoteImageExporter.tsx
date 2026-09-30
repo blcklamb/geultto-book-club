@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2, Palette } from "lucide-react";
+import { Download, ImageDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -21,47 +21,45 @@ type QuoteImageExporterProps = {
   author?: string | null;
 };
 
+// 내보내는 PNG 에 그려지는 색이라 CSS 토큰을 쓸 수 없어 값을 직접 둔다.
+// 배경은 단색, 포인트는 서비스 브랜드 컬러(앰버) 계열 한 가지만 쓴다.
 type QuoteTheme = {
   id: string;
   name: string;
   description: string;
-  gradient: string[];
+  background: string;
   text: string;
   muted: string;
   accent: string;
-  highlight: string;
 };
 
 const QUOTE_THEMES: QuoteTheme[] = [
   {
-    id: "sunrise",
-    name: "Sunrise",
-    description: "따뜻한 노란빛 그라데이션",
-    gradient: ["#fff7ed", "#fde68a", "#f59e0b"],
-    text: "#111827",
-    muted: "#4b5563",
-    accent: "#f97316",
-    highlight: "rgba(249, 115, 22, 0.12)",
+    id: "paper",
+    name: "종이",
+    description: "밝은 미색 배경",
+    background: "#f7f4ee",
+    text: "#1f1c18",
+    muted: "#6b645b",
+    accent: "#c27a1a",
   },
   {
-    id: "midnight",
-    name: "Midnight",
-    description: "짙은 남색과 청록 포인트",
-    gradient: ["#0f172a", "#111827", "#0ea5e9"],
-    text: "#e2e8f0",
-    muted: "#cbd5e1",
-    accent: "#38bdf8",
-    highlight: "rgba(56, 189, 248, 0.16)",
+    id: "sand",
+    name: "모래",
+    description: "차분한 베이지 배경",
+    background: "#ebe3d6",
+    text: "#2a241d",
+    muted: "#6e6254",
+    accent: "#a8660f",
   },
   {
-    id: "forest",
-    name: "Forest",
-    description: "잔잔한 초록 톤",
-    gradient: ["#ecfdf3", "#a7f3d0", "#10b981"],
-    text: "#064e3b",
-    muted: "#065f46",
-    accent: "#0f766e",
-    highlight: "rgba(16, 185, 129, 0.12)",
+    id: "ink",
+    name: "먹색",
+    description: "어두운 배경에 밝은 글자",
+    background: "#24211d",
+    text: "#f2eee6",
+    muted: "#b3aa9d",
+    accent: "#d9a441",
   },
 ];
 
@@ -101,31 +99,8 @@ export function QuoteImageExporter({
         throw new Error("캔버스를 초기화할 수 없습니다.");
       }
 
-      // Background gradient
-      const gradient = ctx.createLinearGradient(
-        0,
-        0,
-        canvasSize,
-        canvasSize
-      );
-      selectedTheme.gradient.forEach((color, index) => {
-        const stop =
-          selectedTheme.gradient.length === 1
-            ? 1
-            : index / (selectedTheme.gradient.length - 1);
-        gradient.addColorStop(stop, color);
-      });
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = selectedTheme.background;
       ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-      // Soft highlight
-      ctx.fillStyle = selectedTheme.highlight;
-      ctx.beginPath();
-      ctx.arc(canvasSize - 180, canvasSize - 180, 160, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(180, 220, 140, 0, Math.PI * 2);
-      ctx.fill();
 
       // Typography setup
       ctx.textBaseline = "top";
@@ -135,7 +110,7 @@ export function QuoteImageExporter({
       const metaFont =
         "600 28px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
       const quoteFont =
-        "700 46px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
+        "600 46px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
       const authorFont =
         "600 32px 'Pretendard', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif";
       const lineHeight = 64;
@@ -212,10 +187,11 @@ export function QuoteImageExporter({
       <DialogTrigger asChild>
         <Button
           type="button"
-          variant="link"
-          className="px-0 text-indigo-700 hover:text-indigo-800"
+          variant="ghost"
+          size="sm"
+          className="-ml-3 text-foreground"
         >
-          <Palette className="mr-1 h-4 w-4" />
+          <ImageDown aria-hidden="true" />
           이미지로 저장
         </Button>
       </DialogTrigger>
@@ -234,38 +210,44 @@ export function QuoteImageExporter({
               type="button"
               onClick={() => setSelectedTheme(theme)}
               className={cn(
-                "flex flex-col rounded-md border p-[1px] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400",
+                "flex flex-col gap-2 rounded-md border p-1 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring",
                 selectedTheme.id === theme.id
-                  ? "border-slate-900 shadow"
-                  : "border-transparent bg-slate-50"
+                  ? "border-foreground"
+                  : "border-border"
               )}
               aria-pressed={selectedTheme.id === theme.id}
             >
               <div
-                className="h-16 w-full rounded-md"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.gradient.join(
-                    ", "
-                  )})`,
-                }}
-              />
-              <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-slate-900">
+                className="flex h-16 w-full items-center rounded-sm border border-border px-3"
+                style={{ backgroundColor: theme.background }}
+                aria-hidden="true"
+              >
+                <span
+                  className="h-8 w-1 rounded-sm"
+                  style={{ backgroundColor: theme.accent }}
+                />
+                <span
+                  className="ml-2 h-2 w-12 rounded-sm"
+                  style={{ backgroundColor: theme.text }}
+                />
+              </div>
+              <div className="px-2 pb-1">
+                <p className="text-sm font-semibold text-foreground">
                   {theme.name}
                 </p>
-                <p className="text-xs text-slate-600">{theme.description}</p>
+                <p className="text-xs text-muted-foreground">{theme.description}</p>
               </div>
             </button>
           ))}
         </div>
 
-        <p className="text-xs text-slate-600">
-          긴 문장은 자동으로 줄바꿈되고, 배경 테마는 세 가지 중 하나를 고를 수
-          있습니다.
+        <p className="text-xs text-muted-foreground">
+          긴 문장은 자동으로 줄바꿈되고, 12줄을 넘으면 말줄임표로
+          끝납니다.
         </p>
 
         {error ? (
-          <p className="text-xs text-rose-600" role="alert">
+          <p className="text-xs text-destructive" role="alert">
             {error}
           </p>
         ) : null}
@@ -275,12 +257,12 @@ export function QuoteImageExporter({
             {isSaving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                생성 중...
+                이미지 만드는 중
               </>
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                이미지 저장하기
+                PNG로 저장
               </>
             )}
           </Button>
