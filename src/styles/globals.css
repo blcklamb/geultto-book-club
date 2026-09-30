@@ -6,7 +6,7 @@
 
 /*
  * 디자인 토큰
- * - 포인트 컬러는 --primary(앰버) 하나만 쓴다. 나머지는 옅은 웜 그레이 스케일.
+ * - 포인트 컬러는 --primary(가을 톤의 러스트 브라운) 하나만 쓴다. 나머지는 옅은 웜 그레이 스케일.
  * - success / warning / destructive 는 상태 표시에만 쓴다.
  * - 순수 검정·흰색 대신 톤이 있는 값을 쓴다.
  */
@@ -17,7 +17,7 @@
   --card-foreground: oklch(0.22 0.01 60);
   --popover: oklch(0.995 0.002 80);
   --popover-foreground: oklch(0.22 0.01 60);
-  --primary: oklch(0.55 0.14 60);
+  --primary: oklch(0.48 0.11 40);
   --primary-foreground: oklch(0.99 0.004 80);
   --secondary: oklch(0.955 0.004 80);
   --secondary-foreground: oklch(0.3 0.01 60);
@@ -33,7 +33,7 @@
   --warning-foreground: oklch(0.99 0.004 80);
   --border: oklch(0.9 0.005 80);
   --input: oklch(0.88 0.006 80);
-  --ring: oklch(0.55 0.14 60);
+  --ring: oklch(0.48 0.11 40);
   --radius: 0.5rem;
 }
 

@@ -22,7 +22,7 @@ type QuoteImageExporterProps = {
 };
 
 // 내보내는 PNG 에 그려지는 색이라 CSS 토큰을 쓸 수 없어 값을 직접 둔다.
-// 배경은 단색, 포인트는 서비스 브랜드 컬러(앰버) 계열 한 가지만 쓴다.
+// 배경은 단색, 포인트는 서비스 브랜드 컬러(러스트 브라운) 계열 한 가지만 쓴다.
 type QuoteTheme = {
   id: string;
   name: string;
@@ -41,7 +41,7 @@ const QUOTE_THEMES: QuoteTheme[] = [
     background: "#f7f4ee",
     text: "#1f1c18",
     muted: "#6b645b",
-    accent: "#c27a1a",
+    accent: "#904529",
   },
   {
     id: "sand",
@@ -50,7 +50,7 @@ const QUOTE_THEMES: QuoteTheme[] = [
     background: "#ebe3d6",
     text: "#2a241d",
     muted: "#6e6254",
-    accent: "#a8660f",
+    accent: "#79371e",
   },
   {
     id: "ink",
@@ -59,7 +59,7 @@ const QUOTE_THEMES: QuoteTheme[] = [
     background: "#24211d",
     text: "#f2eee6",
     muted: "#b3aa9d",
-    accent: "#d9a441",
+    accent: "#d9906f",
   },
 ];
 
