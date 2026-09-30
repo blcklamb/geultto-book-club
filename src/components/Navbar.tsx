@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 import { UserAvatar } from "./UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,15 +40,6 @@ const mobileLinkClass = (active: boolean) =>
       : "text-muted-foreground hover:bg-muted hover:text-foreground",
   );
 
-const BrandMark = () => (
-  <span
-    className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground"
-    aria-hidden="true"
-  >
-    <BookOpen className="h-4 w-4" />
-  </span>
-);
-
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
@@ -63,7 +55,7 @@ export const Navbar: React.FC = () => {
           href="/"
           className="flex items-center gap-2 rounded-md text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
         >
-          <BrandMark />
+          <BrandLogo />
           <span>글또 북클럽</span>
         </Link>
 
@@ -133,7 +125,7 @@ export const Navbar: React.FC = () => {
             <SheetContent side="right" className="w-72">
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex items-center gap-2 text-left">
-                  <BrandMark />
+                  <BrandLogo />
                   글또 북클럽
                 </SheetTitle>
               </SheetHeader>
