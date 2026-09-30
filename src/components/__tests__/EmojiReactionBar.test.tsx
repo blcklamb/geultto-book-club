@@ -35,7 +35,7 @@ describe("EmojiReactionBar", () => {
         emoji: "👍",
         count: 3,
         reactedByUser: false,
-        nicknames: ["홍길동", "김철수", "이영희"],
+        nicknames: ["윤서진", "박도윤", "최하은"],
       },
       { emoji: "❤️", count: 1, reactedByUser: true, nicknames: ["나"] },
     ]);
@@ -50,6 +50,24 @@ describe("EmojiReactionBar", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("❤️")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("반응 추가 버튼은 '+' 문자 대신 접근 가능한 이름을 가진다", () => {
+    render(
+      <EmojiReactionBar initialReactions={[]} toggleAction={vi.fn()} />,
+    );
+    const addButton = screen.getByRole("button", { name: "이모지 반응 추가" });
+    expect(addButton).toBeInTheDocument();
+    expect(addButton).not.toHaveTextContent("+");
+  });
+
+  it("비활성 상태에서는 반응 추가 버튼도 비활성화된다", () => {
+    render(
+      <EmojiReactionBar initialReactions={[]} toggleAction={vi.fn()} disabled />,
+    );
+    expect(
+      screen.getByRole("button", { name: "이모지 반응 추가" }),
+    ).toBeDisabled();
   });
 
   it("updates counts after a realtime summary arrives without remounting", () => {
@@ -152,12 +170,12 @@ describe("EmojiReactionBar", () => {
         emoji: "👍",
         count: 2,
         reactedByUser: true,
-        nicknames: ["홍길동", "나"],
+        nicknames: ["윤서진", "나"],
       },
     ];
     const toggleAction = vi.fn().mockResolvedValue(updatedReactions);
     const reactions = makeReactions([
-      { emoji: "👍", count: 1, reactedByUser: false, nicknames: ["홍길동"] },
+      { emoji: "👍", count: 1, reactedByUser: false, nicknames: ["윤서진"] },
     ]);
 
     render(
@@ -181,7 +199,7 @@ describe("EmojiReactionBar", () => {
         emoji: "👍",
         count: 2,
         reactedByUser: false,
-        nicknames: ["홍길동", "김철수"],
+        nicknames: ["윤서진", "박도윤"],
       },
     ];
 
@@ -190,7 +208,7 @@ describe("EmojiReactionBar", () => {
     );
 
     const btn = screen.getByRole("button", {
-      name: /홍길동.*김철수|김철수.*홍길동/,
+      name: /윤서진.*박도윤|박도윤.*윤서진/,
     });
     expect(btn).toBeInTheDocument();
   });

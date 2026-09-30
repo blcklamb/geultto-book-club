@@ -198,10 +198,10 @@ export default async function QuoteDetailPage({
   return (
     <>
       <DetailHeader title="인상 깊은 구절" />
-      <div className="space-y-6 p-8 max-w-3xl mx-auto">
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-8">
         <Card>
           <CardHeader className="flex flex-row items-start justify-between">
-            <CardTitle className="text-xl font-semibold text-slate-900">
+            <CardTitle className="text-xl font-semibold text-foreground">
               {quote.schedule?.book_title ?? "모임"}
             </CardTitle>
             {canEdit ? (
@@ -214,12 +214,12 @@ export default async function QuoteDetailPage({
               />
             ) : null}
           </CardHeader>
-          <CardContent className="space-y-3 text-slate-700">
-            <p className="text-sm text-slate-500">
+          <CardContent className="space-y-3 text-foreground">
+            <p className="text-sm text-muted-foreground">
               p.{quote.page_number ?? "-"}
             </p>
-            <p className="text-lg leading-relaxed italic">“{quote.text}”</p>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <p className="text-xl leading-relaxed">“{quote.text}”</p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <UserAvatar
                 imageUrl={authorImageUrl}
                 decoration={authorDecoration}
@@ -227,11 +227,11 @@ export default async function QuoteDetailPage({
               />
               <span>by {quote.author?.nickname ?? "익명"}</span>
             </div>
-            <div className="flex flex-row items-center gap-4 text-xs text-slate-400">
+            <div className="flex flex-row items-center gap-4 text-xs text-muted-foreground">
               {quote.schedule_id ? (
                 <Link
                   href={`/schedule/${quote.schedule_id}`}
-                  className="text-sm text-indigo-600 underline underline-offset-4 hover:text-indigo-700"
+                  className="rounded-sm text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   관련 모임 상세 보기
                 </Link>

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 import type { EmojiClickData } from "emoji-picker-react";
+import { SmilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import { sortReactions } from "@/lib/reactions";
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,
   loading: () => (
-    <div className="p-4 text-sm text-slate-500">이모지를 불러오는 중...</div>
+    <div className="p-4 text-sm text-muted-foreground">이모지를 불러오는 중...</div>
   ),
 });
 
@@ -129,8 +130,8 @@ export function EmojiReactionBar({
                       : "이모지 반응"
                   }
                 >
-                  <span className="text-lg leading-none">{reaction.emoji}</span>
-                  <span className="text-xs font-medium text-slate-700">
+                  <span className="text-base leading-none">{reaction.emoji}</span>
+                  <span className="text-xs font-semibold text-foreground">
                     {reaction.count}
                   </span>
                 </Button>
@@ -148,9 +149,10 @@ export function EmojiReactionBar({
                 size="sm"
                 variant="ghost"
                 disabled={disabled || isPending}
-                className="border border-dashed border-slate-200"
+                aria-label="이모지 반응 추가"
+                className="border border-dashed border-input text-muted-foreground"
               >
-                +
+                <SmilePlus aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -173,12 +175,12 @@ export function EmojiReactionBar({
         </div>
       </TooltipProvider>
       {disabled ? (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           로그인하면 이모지로 반응을 남길 수 있어요.
         </p>
       ) : null}
       {error ? (
-        <p className="mt-2 text-xs text-red-600" role="alert">
+        <p className="mt-2 text-xs text-destructive" role="alert">
           {error}
         </p>
       ) : null}

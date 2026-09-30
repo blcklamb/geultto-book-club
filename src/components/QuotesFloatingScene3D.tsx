@@ -61,10 +61,9 @@ const FloatingQuote: React.FC<{
     <group ref={group} position={basePosition.toArray()}>
       <mesh ref={mesh}>
         <planeGeometry args={[2.2, 1.2]} />
-        <meshStandardMaterial
-          color={`hsl(${index * 40}, 70%, 80%)`}
-          transparent
-          opacity={0.85}
+        {/* 한 가지 웜 톤의 명도만 바꿔 카드 뒤판을 구분한다 */}
+        <meshBasicMaterial
+          color={`hsl(35, 20%, ${92 - (index % 3) * 4}%)`}
         />
       </mesh>
       <Html center>
@@ -78,12 +77,13 @@ const FloatingQuote: React.FC<{
               handleOpenQuote();
             }
           }}
-          className="flex w-40 cursor-pointer flex-col gap-1 rounded-lg bg-white/80 p-3 text-xs text-slate-700 shadow transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+          aria-label={`${quote.scheduleTitle} ${quote.page}쪽 구절 보기`}
+          className="flex w-40 cursor-pointer flex-col gap-1 rounded-lg border border-border bg-card p-3 text-xs text-foreground transition-colors hover:border-input hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <p className="">{quote.scheduleTitle}</p>
+          <p className="text-muted-foreground">{quote.scheduleTitle}</p>
           <p className="font-semibold">p.{quote.page}</p>
-          <p className="line-clamp-3 italic">{quote.text}</p>
-          <div className="flex items-center justify-end gap-1 text-xs text-slate-400">
+          <p className="line-clamp-3">{quote.text}</p>
+          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
             <UserAvatar
               imageUrl={quote.authorImageUrl}
               decoration={quote.authorDecoration}
@@ -102,7 +102,7 @@ export const QuotesFloatingScene3D: React.FC<QuotesFloatingScene3DProps> = ({
 }) => {
   const data = useMemo(() => quotes.slice(0, 6), [quotes]);
   return (
-    <div className="h-[340px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-900/95">
+    <div className="h-[340px] w-full overflow-hidden rounded-lg border border-border bg-muted">
       <Canvas camera={{ position: [0, 1.5, 5], fov: 45 }}>
         <ambientLight intensity={0.6} />
         <pointLight position={[2, 3, 2]} intensity={1} />

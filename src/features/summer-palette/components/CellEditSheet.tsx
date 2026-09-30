@@ -35,7 +35,7 @@ export function CellEditSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="mx-auto max-h-[92vh] max-w-2xl overflow-y-auto rounded-t-xl"
+        className="mx-auto max-h-[92vh] max-w-2xl overflow-y-auto rounded-t-lg"
       >
         {cell ? (
           <>
@@ -46,8 +46,8 @@ export function CellEditSheet({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="space-y-5">
-              <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+            <div className="space-y-6">
+              <div className="overflow-hidden rounded-lg border border-border bg-muted">
                 {cell.photo ? (
                   <img
                     src={cell.photo.dataUrl}
@@ -55,9 +55,9 @@ export function CellEditSheet({
                     className="h-64 w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-48 flex-col items-center justify-center gap-2 text-slate-500">
+                  <div className="flex h-48 flex-col items-center justify-center gap-2 text-muted-foreground">
                     <ImageOff className="h-8 w-8" />
-                    <span className="text-sm font-medium">사진 없음</span>
+                    <span className="text-sm font-semibold">사진 없음</span>
                   </div>
                 )}
               </div>

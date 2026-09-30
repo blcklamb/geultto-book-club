@@ -117,7 +117,7 @@ export function PhotoUploader({
           </div>
         )}
         {error ? (
-          <p className="text-xs text-rose-600" role="alert">
+          <p className="text-xs text-destructive" role="alert">
             {error}
           </p>
         ) : null}

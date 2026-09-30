@@ -38,8 +38,7 @@ function NoOverlaySheetContent({
     <SheetPortal>
       <SheetPrimitive.Content
         className={cn(
-          "fixed z-50 bg-background shadow-lg transition ease-in-out",
-          "data-[state=closed]:duration-300 data-[state=open]:duration-500",
+          "fixed z-50 bg-background shadow-sm transition ease-out duration-200",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           side === "right"
             ? [
@@ -47,7 +46,7 @@ function NoOverlaySheetContent({
                 "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
               ]
             : [
-                "inset-x-0 bottom-0 h-[80vh] border-t rounded-t-xl",
+                "inset-x-0 bottom-0 h-[80vh] border-t rounded-t-lg",
                 "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
               ],
           className,
@@ -229,7 +228,7 @@ export function HighlightCommentPanel({
         className="flex flex-col p-0"
       >
         {/* 헤더: 스크롤 밖 고정 — 닫기 버튼을 항상 접근 가능하게 유지 */}
-        <div className="sticky top-0 z-10 shrink-0 border-b bg-white px-6 pb-4 pt-6">
+        <div className="sticky top-0 z-10 shrink-0 border-b bg-card px-6 pb-4 pt-6">
           <div className="flex items-start justify-between gap-2">
             <SheetPrimitive.Title className="text-sm font-semibold">
               하이라이트 댓글
@@ -238,17 +237,17 @@ export function HighlightCommentPanel({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 shrink-0 p-0"
+                className="h-8 w-8 shrink-0 p-0"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">닫기</span>
               </Button>
             </SheetPrimitive.Close>
           </div>
-          <blockquote className="mt-2 whitespace-pre-wrap border-l-4 border-yellow-400 bg-yellow-50 py-2 pl-3 pr-2 text-sm italic text-slate-700">
+          <blockquote className="mt-2 whitespace-pre-wrap border-l-4 border-primary bg-primary/10 py-2 pl-3 pr-2 text-sm text-foreground">
             &ldquo;{highlight.highlightText}&rdquo;
           </blockquote>
-          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
             <UserAvatar
               imageUrl={highlight.authorImageUrl}
               decoration={highlight.authorDecoration}
@@ -283,7 +282,7 @@ export function HighlightCommentPanel({
             <Button
               size="sm"
               variant="ghost"
-              className="mt-1 h-6 w-fit px-2 text-xs text-red-500 hover:text-red-700"
+              className="mt-1 w-fit px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={handleDeleteHighlight}
             >
               하이라이트 삭제
@@ -295,8 +294,8 @@ export function HighlightCommentPanel({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="space-y-4">
             {comments.length === 0 ? (
-              <p className="text-center text-xs text-slate-400">
-                첫 댓글을 남겨보세요
+              <p className="text-sm text-muted-foreground">
+                아직 댓글이 없어요. 이 문장에 대한 생각을 남겨 보세요.
               </p>
             ) : (
               comments.map((comment) => (
@@ -398,8 +397,8 @@ function CommentItem({
         id={`highlight-comment-${comment.id}`}
         className="space-y-2 p-3 scroll-mt-4"
       >
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <UserAvatar
               imageUrl={comment.authorImageUrl}
               decoration={comment.authorDecoration}
@@ -407,11 +406,11 @@ function CommentItem({
             />
             <span>{comment.author}</span>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-slate-600">
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             <LinkedText text={comment.body} />
           </p>
           <CommentImages paths={comment.imagePaths} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             <LocalizedDate
               value={comment.createdAt}
               options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -427,14 +426,14 @@ function CommentItem({
         />
 
         {comment.replies.length > 0 && (
-          <div className="ml-3 space-y-2 border-l-2 border-slate-100 pl-3">
+          <div className="ml-3 space-y-2 border-l-2 border-border pl-3">
             {comment.replies.map((reply) => (
               <div
                 key={reply.id}
                 id={`highlight-reply-${reply.id}`}
-                className="space-y-0.5 scroll-mt-4"
+                className="space-y-1 scroll-mt-4"
               >
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                   <UserAvatar
                     imageUrl={reply.authorImageUrl}
                     decoration={reply.authorDecoration}
@@ -442,11 +441,11 @@ function CommentItem({
                   />
                   <span>{reply.author}</span>
                 </div>
-                <p className="whitespace-pre-wrap text-xs text-slate-600">
+                <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                   <LinkedText text={reply.body} />
                 </p>
                 <CommentImages paths={reply.imagePaths} />
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   <LocalizedDate
                     value={reply.createdAt}
                     options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -460,7 +459,7 @@ function CommentItem({
         {!disabled && (
           <div>
             {showReplyForm ? (
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-2">
                 <ImageAttachments
                   uploads={uploads}
                   disabled={isSubmitting}
@@ -506,7 +505,7 @@ function CommentItem({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-xs text-slate-500"
+                className="h-6 px-2 text-xs text-muted-foreground"
                 onClick={() => setShowReplyForm(true)}
               >
                 답글 달기

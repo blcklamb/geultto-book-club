@@ -58,13 +58,13 @@ vi.mock("../EmojiReactionBar", () => ({
 const sampleComments = [
   {
     id: "c-1",
-    author: "홍길동",
+    author: "윤서진",
     body: "좋은 리뷰 감사합니다.",
     createdAt: "2024-01-15",
   },
   {
     id: "c-2",
-    author: "김철수",
+    author: "박도윤",
     body: "저도 이 책 읽었는데 공감해요.",
     createdAt: "2024-01-16",
   },
@@ -73,13 +73,13 @@ const sampleComments = [
 const sampleCommentsWithReplies = [
   {
     id: "c-1",
-    author: "홍길동",
+    author: "윤서진",
     body: "좋은 리뷰 감사합니다.",
     createdAt: "2024-01-15",
     replies: [
       {
         id: "r-1",
-        author: "이영희",
+        author: "최하은",
         body: "저도 동의해요!",
         createdAt: "2024-01-16",
       },
@@ -90,13 +90,13 @@ const sampleCommentsWithReplies = [
 const sampleCommentsWithReplyReactions = [
   {
     id: "c-1",
-    author: "홍길동",
+    author: "윤서진",
     body: "좋은 리뷰 감사합니다.",
     createdAt: "2024-01-15",
     replies: [
       {
         id: "r-1",
-        author: "이영희",
+        author: "최하은",
         body: "저도 동의해요!",
         createdAt: "2024-01-16",
         reactions: [
@@ -122,17 +122,17 @@ const sampleCommentsWithReplyReactions = [
 const sampleCommentsWithReactions = [
   {
     id: "c-1",
-    author: "홍길동",
+    author: "윤서진",
     body: "좋은 리뷰 감사합니다.",
     createdAt: "2024-01-15",
     reactions: [
       { emoji: "👍", count: 2, reactedByUser: false, nicknames: ["A", "B"] },
-      { emoji: "❤️", count: 1, reactedByUser: true, nicknames: ["홍길동"] },
+      { emoji: "❤️", count: 1, reactedByUser: true, nicknames: ["윤서진"] },
     ],
   },
   {
     id: "c-2",
-    author: "김철수",
+    author: "박도윤",
     body: "저도 이 책 읽었는데 공감해요.",
     createdAt: "2024-01-16",
     reactions: [],
@@ -142,9 +142,9 @@ const sampleCommentsWithReactions = [
 describe("CommentThread", () => {
   it("댓글 목록을 렌더링한다", () => {
     render(<CommentThread comments={sampleComments} />);
-    expect(screen.getByText("홍길동")).toBeInTheDocument();
+    expect(screen.getByText("윤서진")).toBeInTheDocument();
     expect(screen.getByText("좋은 리뷰 감사합니다.")).toBeInTheDocument();
-    expect(screen.getByText("김철수")).toBeInTheDocument();
+    expect(screen.getByText("박도윤")).toBeInTheDocument();
     expect(
       screen.getByText("저도 이 책 읽었는데 공감해요."),
     ).toBeInTheDocument();
@@ -231,7 +231,7 @@ describe("CommentThread", () => {
   describe("답글 기능", () => {
     it("replies 데이터가 있으면 답글을 렌더링한다", () => {
       render(<CommentThread comments={sampleCommentsWithReplies} />);
-      expect(screen.getByText("이영희")).toBeInTheDocument();
+      expect(screen.getByText("최하은")).toBeInTheDocument();
       expect(screen.getByText("저도 동의해요!")).toBeInTheDocument();
     });
 
@@ -531,7 +531,7 @@ describe("CommentThread", () => {
         <CommentThread
           comments={sampleCommentsWithReactions}
           toggleReactionAction={toggleReactionAction}
-          currentUserNickname="홍길동"
+          currentUserNickname="윤서진"
         />,
       );
       expect(screen.getAllByTestId("emoji-reaction-bar")).toHaveLength(2);

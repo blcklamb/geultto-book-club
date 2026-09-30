@@ -184,14 +184,14 @@ function EditorToolbar({
   return (
     <TooltipProvider delayDuration={120}>
       <div
-        className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-2"
+        className="flex flex-wrap items-center gap-1 border-b border-border bg-muted px-2 py-2"
         role="toolbar"
         aria-label="에디터 도구 모음"
       >
         {toolbarGroups.map((group, groupIndex) => (
           <div
             key={groupIndex}
-            className="flex items-center gap-1 border-r border-slate-200 pr-1 last:border-r-0 last:pr-0"
+            className="flex items-center gap-1 border-r border-border pr-1 last:border-r-0 last:pr-0"
           >
             {group.map((item) => {
               const Icon = item.icon;
@@ -206,9 +206,9 @@ function EditorToolbar({
                       variant="ghost"
                       size="icon"
                       className={cn(
-                        "h-8 w-8 rounded-md text-slate-600 hover:bg-white hover:text-slate-900",
+                        "h-8 w-8 rounded-md text-muted-foreground hover:bg-card hover:text-foreground",
                         active &&
-                          "bg-slate-900 text-white hover:bg-slate-800 hover:text-white",
+                          "bg-foreground text-background hover:bg-foreground/90 hover:text-background",
                       )}
                       aria-label={item.label}
                       aria-pressed={item.isActive ? active : undefined}
@@ -229,7 +229,7 @@ function EditorToolbar({
             type="button"
             variant="outline"
             size="sm"
-            className="ml-1 h-8 gap-1.5 bg-white text-slate-700"
+            className="ml-1 h-8 gap-2 text-foreground"
             disabled={isSpellchecking}
             onClick={onSpellcheck}
           >
@@ -446,26 +446,26 @@ function SpellcheckPopover({
       ref={contentRef}
       role="dialog"
       aria-label="맞춤법 변경 제안"
-      className="fixed z-50 w-72 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-xl"
+      className="fixed z-50 w-72 rounded-lg border border-border bg-card p-3 text-sm text-foreground shadow-sm"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
         visibility: position ? "visible" : "hidden",
       }}
     >
-      <p className="text-xs font-medium text-slate-500">{issue.category}</p>
+      <p className="text-xs font-semibold text-muted-foreground">{issue.category}</p>
       <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
-        <span className="text-slate-400">원문</span>
-        <span className="break-words line-through decoration-rose-400">
+        <span className="text-muted-foreground">원문</span>
+        <span className="break-words line-through decoration-destructive">
           {issue.original}
         </span>
-        <span className="text-slate-400">제안</span>
-        <span className="break-words font-medium text-emerald-700">
+        <span className="text-muted-foreground">제안</span>
+        <span className="break-words font-semibold text-success">
           {issue.suggestion}
         </span>
       </div>
       {issue.explanation ? (
-        <p className="mt-2 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">
+        <p className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
           {issue.explanation}
         </p>
       ) : null}
@@ -914,7 +914,7 @@ export function ReviewEditor({
 
   return (
     <>
-      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200">
+      <div className="overflow-hidden rounded-md border border-input bg-card transition-colors focus-within:ring-2 focus-within:ring-ring">
         <EditorToolbar
           editor={editor}
           spellcheckEnabled={spellcheckEnabled}
@@ -922,7 +922,7 @@ export function ReviewEditor({
           onSpellcheck={runSpellcheck}
         />
         {imageCount > MAX_POST_IMAGE_COUNT ? (
-          <p role="alert" className="px-3 py-2 text-sm text-red-600">
+          <p role="alert" className="px-3 py-2 text-sm text-destructive">
             본문 이미지는 최대 3개까지 첨부할 수 있습니다. 초과한 이미지를 제거해주세요.
           </p>
         ) : null}
@@ -953,9 +953,9 @@ export function ReviewEditor({
           />
         </ImageAttachments>
         {effectiveMinChars !== null ? (
-          <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
+          <div className="border-t border-border bg-muted px-3 py-2">
             <p
-              className={`text-right text-xs ${isUnder ? "text-slate-400" : "text-emerald-600"}`}
+              className={`text-right text-xs ${isUnder ? "text-muted-foreground" : "text-success"}`}
             >
               {charCount.toLocaleString()} /{" "}
               {effectiveMinChars.toLocaleString()}자 이상
@@ -965,7 +965,7 @@ export function ReviewEditor({
       </div>
       {spellcheckEnabled && spellcheckMessage ? (
         <p
-          className="mt-2 text-xs text-slate-500"
+          className="mt-2 text-xs text-muted-foreground"
           role="status"
           aria-live="polite"
         >

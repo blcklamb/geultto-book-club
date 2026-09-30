@@ -37,7 +37,7 @@ export function SaveBoardButton({
       className={cn(
         "w-full",
         !canSave &&
-          "bg-slate-300 text-slate-700 shadow-none hover:bg-slate-300",
+          "bg-muted text-muted-foreground hover:bg-muted",
       )}
       aria-disabled={!canSave || isExporting}
       disabled={isExporting}

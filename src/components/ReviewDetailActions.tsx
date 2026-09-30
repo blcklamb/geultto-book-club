@@ -65,7 +65,7 @@ export function ReviewDetailActions({
             수정
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="text-rose-600 focus:bg-rose-50"
+            className="text-destructive focus:bg-destructive/10"
             onSelect={() => setIsDeleteOpen(true)}
           >
             삭제
@@ -85,11 +85,11 @@ export function ReviewDetailActions({
             <input type="hidden" name="reviewId" value={reviewId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1 block">
-                <span className="text-slate-600">제목</span>
+                <span className="text-muted-foreground">제목</span>
                 <Input name="title" defaultValue={initialTitle} required />
               </label>
               <div className="space-y-1 block">
-                <span className="text-slate-600">본문</span>
+                <span className="text-muted-foreground">본문</span>
                 <div className="rounded-md border p-2">
                   <ReviewEditor
                     name="contentRich"

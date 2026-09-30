@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 import { UserAvatar } from "./UserAvatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -23,6 +26,20 @@ const adminItems = [
   { href: "/admin/users", label: "회원 승인" },
 ];
 
+const desktopLinkClass = (active: boolean) =>
+  cn(
+    "rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4",
+    active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+  );
+
+const mobileLinkClass = (active: boolean) =>
+  cn(
+    "rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    active
+      ? "bg-muted font-semibold text-foreground"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+  );
+
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { session, signOut } = useSession();
@@ -32,29 +49,27 @@ export const Navbar: React.FC = () => {
   const visibleNavItems = getVisibleNavItems(!!session.user);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg font-semibold"
+          className="flex items-center gap-2 rounded-md text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
         >
-          <span className="inline-block h-8 w-8 rounded-lg bg-slate-900 text-center text-white py-1">
-            📚
-          </span>
+          <BrandLogo />
           <span>글또 북클럽</span>
         </Link>
 
         {/* 데스크톱 네비게이션 */}
-        <nav className="hidden gap-5 text-sm font-medium text-slate-600 md:flex">
+        <nav
+          aria-label="주요 메뉴"
+          className="hidden gap-6 text-sm font-semibold md:flex"
+        >
           {visibleNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={
-                pathname.startsWith(item.href)
-                  ? "text-slate-900"
-                  : "transition hover:text-slate-900"
-              }
+              aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+              className={desktopLinkClass(pathname.startsWith(item.href))}
             >
               {item.label}
             </Link>
@@ -64,11 +79,10 @@ export const Navbar: React.FC = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={
-                    pathname.startsWith(item.href)
-                      ? "text-slate-900"
-                      : "transition hover:text-slate-900"
+                  aria-current={
+                    pathname.startsWith(item.href) ? "page" : undefined
                   }
+                  className={desktopLinkClass(pathname.startsWith(item.href))}
                 >
                   {item.label}
                 </Link>
@@ -79,21 +93,20 @@ export const Navbar: React.FC = () => {
         {/* 데스크톱 유저 영역 */}
         <div className="hidden items-center gap-3 md:flex">
           {!session.user ? (
-            <Link href="/auth/login">
-              <Button variant="outline">카카오로 로그인</Button>
-            </Link>
+            <Button asChild variant="outline">
+              <Link href="/auth/login">카카오로 로그인</Link>
+            </Button>
           ) : (
             <div className="flex items-center gap-2">
               <UserAvatar
-                emoji={isAdmin ? "🔧" : undefined}
-                imageUrl={isAdmin ? undefined : profileImage.imageUrl}
-                decoration={isAdmin ? "none" : profileImage.decoration}
-                bgColor="#E2E8F0"
+                imageUrl={profileImage.imageUrl}
+                decoration={profileImage.decoration}
                 size="sm"
               />
-              <span className="text-sm font-medium text-slate-600">
+              <span className="text-sm text-muted-foreground">
                 {session.user.nickname}
               </span>
+              {isAdmin ? <Badge variant="secondary">관리자</Badge> : null}
               <Button size="sm" variant="ghost" onClick={signOut}>
                 로그아웃
               </Button>
@@ -112,40 +125,36 @@ export const Navbar: React.FC = () => {
             <SheetContent side="right" className="w-72">
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex items-center gap-2 text-left">
-                  <span className="inline-block h-7 w-7 rounded-lg bg-slate-900 text-center text-white py-0.5 text-sm">
-                    📚
-                  </span>
+                  <BrandLogo />
                   글또 북클럽
                 </SheetTitle>
               </SheetHeader>
 
               {/* 유저 정보 */}
               {session.user && (
-                <div className="mb-6 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-3">
+                <div className="mb-6 flex items-center gap-3 border-b border-border pb-6">
                   <UserAvatar
-                    emoji={isAdmin ? "🔧" : undefined}
-                    imageUrl={isAdmin ? undefined : profileImage.imageUrl}
-                    decoration={isAdmin ? "none" : profileImage.decoration}
-                    bgColor="#E2E8F0"
+                    imageUrl={profileImage.imageUrl}
+                    decoration={profileImage.decoration}
                     size="sm"
                   />
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm text-foreground">
                     {session.user.nickname}
                   </span>
+                  {isAdmin ? <Badge variant="secondary">관리자</Badge> : null}
                 </div>
               )}
 
               {/* 메뉴 항목 */}
-              <nav className="flex flex-col gap-1">
+              <nav aria-label="주요 메뉴" className="flex flex-col gap-1">
                 {visibleNavItems.map((item) => (
                   <SheetClose asChild key={item.href}>
                     <Link
                       href={item.href}
-                      className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                        pathname.startsWith(item.href)
-                          ? "bg-slate-100 text-slate-900"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      }`}
+                      aria-current={
+                        pathname.startsWith(item.href) ? "page" : undefined
+                      }
+                      className={mobileLinkClass(pathname.startsWith(item.href))}
                     >
                       {item.label}
                     </Link>
@@ -156,11 +165,12 @@ export const Navbar: React.FC = () => {
                       <SheetClose asChild key={item.href}>
                         <Link
                           href={item.href}
-                          className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                            pathname.startsWith(item.href)
-                              ? "bg-slate-100 text-slate-900"
-                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                          }`}
+                          aria-current={
+                            pathname.startsWith(item.href) ? "page" : undefined
+                          }
+                          className={mobileLinkClass(
+                            pathname.startsWith(item.href),
+                          )}
                         >
                           {item.label}
                         </Link>
@@ -170,19 +180,17 @@ export const Navbar: React.FC = () => {
               </nav>
 
               {/* 로그인/로그아웃 */}
-              <div className="mt-6 border-t border-slate-200 pt-6">
+              <div className="mt-6 border-t border-border pt-6">
                 {!session.user ? (
                   <SheetClose asChild>
-                    <Link href="/auth/login" className="block">
-                      <Button variant="outline" className="w-full">
-                        카카오로 로그인
-                      </Button>
-                    </Link>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href="/auth/login">카카오로 로그인</Link>
+                    </Button>
                   </SheetClose>
                 ) : (
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-slate-600"
+                    className="w-full justify-start text-muted-foreground"
                     onClick={signOut}
                   >
                     로그아웃

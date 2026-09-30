@@ -24,7 +24,7 @@ export const ReviewHighlightSidebar: React.FC<ReviewHighlightSidebarProps> = ({
           <CardHeader>
             <CardTitle className="text-sm">하이라이트가 아직 없어요</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-slate-500">
+          <CardContent className="text-xs text-muted-foreground">
             본문을 드래그하면 인상 깊은 구절을 하이라이트 할 수 있습니다.
           </CardContent>
         </Card>
@@ -35,7 +35,7 @@ export const ReviewHighlightSidebar: React.FC<ReviewHighlightSidebarProps> = ({
               <CardTitle className="text-sm">{highlight.text}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex flex-wrap gap-1 text-lg">
+              <div className="flex flex-wrap gap-1 text-base">
                 {highlight.reactions.map((reaction) => (
                   <span key={reaction}>{reaction}</span>
                 ))}
@@ -48,7 +48,7 @@ export const ReviewHighlightSidebar: React.FC<ReviewHighlightSidebarProps> = ({
                 </Button>
               </div>
               {highlight.comment ? (
-                <p className="text-xs text-slate-500">{highlight.comment}</p>
+                <p className="text-xs text-muted-foreground">{highlight.comment}</p>
               ) : null}
             </CardContent>
           </Card>

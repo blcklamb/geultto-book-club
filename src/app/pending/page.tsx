@@ -22,7 +22,7 @@ export default async function PendingPage({
               : "관리자 승인 대기중입니다"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-slate-600">
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
           {isPermissionFeedback ? (
             <p>관리자 권한이 필요한 작업입니다.</p>
           ) : (
@@ -31,14 +31,14 @@ export default async function PendingPage({
                 카카오 인증은 완료되었지만 아직 관리자의 승인이 필요합니다.
                 승인되면 독후감, 토론, 구절 등록 기능이 활성화됩니다.
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 문의 사항이 있다면 운영진에게 연락해 주세요.
               </p>
             </>
           )}
-          <Link href="/">
-            <Button variant="outline">홈으로 돌아가기</Button>
-          </Link>
+          <Button asChild variant="outline">
+            <Link href="/">홈으로 돌아가기</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

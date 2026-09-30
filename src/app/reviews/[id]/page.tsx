@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { CommentThread } from "@/components/CommentThread";
-import { Card, CardContent } from "@/components/ui/card";
 import { ViewCountPinger } from "./view-count-pinger";
 import { PageRealtime } from "@/components/PageRealtime";
 import {
@@ -641,7 +640,7 @@ export default async function ReviewDetailPage({
   return (
     <>
       <DetailHeader title="독후감 상세" />
-      <div className="max-w-3xl mx-auto py-8">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
         {sessionUser && !sessionUser.isDeactivated && (
           <HighlightNotifications
             key={sessionUser.id}
@@ -651,10 +650,10 @@ export default async function ReviewDetailPage({
         <article className="space-y-6">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold text-slate-900">
+              <h1 className="text-2xl font-semibold text-foreground">
                 {review.title}
               </h1>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <UserAvatar
                   imageUrl={
                     review.author_id
@@ -693,8 +692,7 @@ export default async function ReviewDetailPage({
               />
             ) : null}
           </header>
-          <Card>
-            <CardContent className="prose prose-slate max-w-none p-4">
+          <div className="border-y border-border py-6">
               <ReviewViewerInteractive
                 key={`viewer:${reviewContentKey}`}
                 content={reviewContent}
@@ -708,8 +706,7 @@ export default async function ReviewDetailPage({
                 currentUserNickname={sessionUser?.nickname}
                 currentUserId={sessionUser?.id}
               />
-            </CardContent>
-          </Card>
+            </div>
           <EmojiReactionBar
             initialReactions={reviewReactions}
             toggleAction={handleToggleReviewReaction}

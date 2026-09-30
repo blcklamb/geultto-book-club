@@ -23,7 +23,7 @@ const defaultQuote = {
   scheduleTitle: "2024년 2월 독서모임",
   page: "42",
   text: "글쓰기는 생각을 정제하는 과정이다.",
-  author: "김철수",
+  author: "박도윤",
 };
 
 describe("QuoteCard", () => {
@@ -47,7 +47,7 @@ describe("QuoteCard", () => {
 
   it("작성자를 'by 작성자' 형식으로 렌더링한다", () => {
     render(<QuoteCard quote={defaultQuote} />);
-    expect(screen.getByText("by 김철수")).toBeInTheDocument();
+    expect(screen.getByText("by 박도윤")).toBeInTheDocument();
   });
 
   it("작성자 왼쪽에 아바타를 렌더링한다", () => {

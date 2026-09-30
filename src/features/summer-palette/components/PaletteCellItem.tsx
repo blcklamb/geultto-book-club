@@ -27,13 +27,10 @@ export function PaletteCellItem({
       type="button"
       onClick={() => onSelect(cell)}
       className={cn(
-        "group relative z-10 aspect-square overflow-hidden border bg-white text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
-        filled
-          ? "border-orange-200"
-          : "border-slate-200 hover:border-orange-300 hover:bg-orange-50",
+        "group relative z-10 aspect-square overflow-hidden border border-border bg-card text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:opacity-90",
+        !filled && "hover:bg-muted",
         // 완성된 라인(가로/세로/대각)에 속한 칸을 시각적으로 강조한다. (FR-8)
-        isHighlighted &&
-          "z-20 border-emerald-400 ring-2 ring-inset ring-emerald-400",
+        isHighlighted && "z-20 border-success ring-2 ring-inset ring-success",
       )}
       aria-label={`${cell.title} 칸 편집`}
       data-line-completed={isHighlighted ? "true" : undefined}
@@ -51,31 +48,27 @@ export function PaletteCellItem({
         />
       )}
 
-      {cell.photo ? (
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/78 via-slate-950/20 to-transparent" />
-      ) : null}
-
       {timestamp ? (
-        <span className="absolute left-2 top-2 rounded-full border border-orange-300/80 bg-white/90 px-2 py-0.5 text-[10px] font-bold leading-none text-slate-900 shadow-sm sm:text-xs">
+        <span className="absolute left-2 top-2 rounded-sm border border-border bg-card px-2 py-1 text-xs font-semibold leading-none text-foreground">
           {timestamp}
         </span>
       ) : null}
 
       <div
         className={cn(
-          "absolute left-3 h-1.5 w-10 rounded-full bg-current opacity-80",
+          "absolute left-3 h-1 w-8 rounded-sm bg-current",
           timestamp ? "top-9 sm:top-10" : "top-3",
         )}
         style={{ color: accent }}
       />
 
       {filled ? (
-        <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow">
+        <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-success text-success-foreground">
           <Check className="h-4 w-4" />
           <span className="sr-only">완료</span>
         </span>
       ) : (
-        <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm">
+        <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground">
           <ImagePlus className="h-4 w-4" />
           <span className="sr-only">사진 추가</span>
         </span>
@@ -84,10 +77,12 @@ export function PaletteCellItem({
       <div
         className={cn(
           "absolute inset-x-0 bottom-0 p-3",
-          filled ? "text-white" : "text-slate-900",
+          cell.photo
+            ? "bg-foreground/60 text-primary-foreground"
+            : "text-foreground",
         )}
       >
-        <p className="text-xs font-bold leading-snug sm:text-sm">
+        <p className="text-xs font-semibold leading-snug sm:text-sm">
           {cell.title}
         </p>
       </div>

@@ -9,10 +9,15 @@ export const QuoteListToggle: React.FC<{
   onChange: (mode: QuoteViewMode) => void;
 }> = ({ mode, onChange }) => {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1">
+    <div
+      role="group"
+      aria-label="보기 방식"
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1"
+    >
       <Button
         size="sm"
         variant={mode === "3d" ? "default" : "ghost"}
+        aria-pressed={mode === "3d"}
         onClick={() => onChange("3d")}
       >
         3D 뷰
@@ -20,6 +25,7 @@ export const QuoteListToggle: React.FC<{
       <Button
         size="sm"
         variant={mode === "list" ? "default" : "ghost"}
+        aria-pressed={mode === "list"}
         onClick={() => onChange("list")}
       >
         리스트

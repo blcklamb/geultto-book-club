@@ -35,14 +35,14 @@ export default async function ReviewCreatePage() {
   return (
     <>
       <DetailHeader title="독후감 작성하기" />
-      <div className="p-8">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
         <form action="/api/reviews" method="post" className="space-y-6">
           <input type="hidden" name="authorId" value={user.id} />
           <input type="hidden" name="reviewId" value={reviewId} />
           <div className="space-y-2">
             <Label htmlFor="scheduleId">어떤 모임인가요?</Label>
             <Select name="scheduleId" defaultValue={schedules?.[0]?.id}>
-              <SelectTrigger className="w-[300px]">
+              <SelectTrigger id="scheduleId" className="w-full sm:w-80">
                 <SelectValue placeholder="어떤 모임인가요?" />
               </SelectTrigger>
               <SelectContent>

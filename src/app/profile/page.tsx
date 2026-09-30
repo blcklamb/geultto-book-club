@@ -56,32 +56,32 @@ export default async function ProfilePage() {
   return (
     <>
       <ProfileHeader />
-      <div className="space-y-6 p-8">
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-4">
             <div>
               <CardTitle>내 포인트</CardTitle>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {CURRENT_POINT_COHORT}기 현재 총점과 최근 적립/차감 내역입니다.
               </p>
             </div>
             <PointLogDialog logs={formattedPointLogs} />
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-3xl font-semibold text-slate-900">
+            <div className="text-2xl font-semibold text-foreground">
               {pointTotal}점
             </div>
-            <div className="space-y-2">
+            <div className="divide-y divide-border border-t border-border">
               {formattedPointLogs.slice(0, 3).map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-4 py-3 text-sm"
                 >
                   <div>
-                    <p className="font-medium text-slate-700">
+                    <p className="font-semibold text-foreground">
                       {getPointSourceLabel(log.sourceType)}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       <LocalizedDate
                         value={log.createdAt}
                         options={{
@@ -96,8 +96,8 @@ export default async function ProfilePage() {
                   <span
                     className={
                       log.points >= 0
-                        ? "font-semibold text-emerald-600"
-                        : "font-semibold text-rose-600"
+                        ? "font-semibold text-success"
+                        : "font-semibold text-destructive"
                     }
                   >
                     {log.points > 0 ? "+" : ""}
@@ -106,8 +106,9 @@ export default async function ProfilePage() {
                 </div>
               ))}
               {formattedPointLogs.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  아직 포인트 로그가 없습니다.
+                <p className="pt-3 text-sm text-muted-foreground">
+                  아직 적립된 포인트가 없습니다. 모임에 참석하거나 독후감을
+                  쓰면 이곳에 기록됩니다.
                 </p>
               ) : null}
             </div>

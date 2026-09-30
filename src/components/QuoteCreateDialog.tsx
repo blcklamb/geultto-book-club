@@ -68,7 +68,7 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
           <input type="hidden" name="redirectTo" value={redirectTo} />
           <div className="space-y-2 text-sm">
             <label className="space-y-1">
-              <span className="text-slate-600">모임 선택</span>
+              <span className="text-muted-foreground">모임 선택</span>
               <Select
                 value={selectedScheduleId}
                 onValueChange={(value) => setSelectedScheduleId(value)}
@@ -87,7 +87,7 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
             </label>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr,120px]">
               <label className="space-y-1">
-                <span className="text-slate-600">인상 깊은 구절</span>
+                <span className="text-muted-foreground">인상 깊은 구절</span>
                 <Textarea
                   name="text"
                   required
@@ -96,7 +96,7 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-slate-600">쪽수</span>
+                <span className="text-muted-foreground">쪽수</span>
                 <Input
                   name="pageNumber"
                   placeholder="123"

@@ -32,22 +32,22 @@ export function PointLogDialog({ logs }: { logs: PointLogItem[] }) {
         <DialogHeader>
           <DialogTitle>포인트 적립/차감 로그</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="divide-y divide-border">
           {logs.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              아직 포인트 로그가 없습니다.
+            <p className="text-sm text-muted-foreground">
+              아직 적립된 포인트가 없습니다.
             </p>
           ) : (
             logs.map((log) => (
               <div
                 key={log.id}
-                className="grid gap-2 rounded-lg border border-slate-200 p-3 text-sm md:grid-cols-[1fr_auto]"
+                className="grid gap-2 py-3 text-sm md:grid-cols-[1fr_auto]"
               >
                 <div>
-                  <p className="font-medium text-slate-800">
+                  <p className="font-semibold text-foreground">
                     {getPointSourceLabel(log.sourceType)}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     <LocalizedDate
                       value={log.createdAt}
                       options={{ dateStyle: "medium", timeStyle: "short" }}
@@ -55,14 +55,14 @@ export function PointLogDialog({ logs }: { logs: PointLogItem[] }) {
                     {log.scheduleTitle ? ` · ${log.scheduleTitle}` : ""}
                   </p>
                   {log.memo ? (
-                    <p className="mt-1 text-xs text-slate-500">{log.memo}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{log.memo}</p>
                   ) : null}
                 </div>
                 <div
                   className={
                     log.points >= 0
-                      ? "font-semibold text-emerald-600"
-                      : "font-semibold text-rose-600"
+                      ? "font-semibold text-success"
+                      : "font-semibold text-destructive"
                   }
                 >
                   {log.points > 0 ? "+" : ""}

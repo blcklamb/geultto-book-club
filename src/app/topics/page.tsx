@@ -68,33 +68,45 @@ export default async function TopicsPage({
     <>
       <DetailHeader title="토론" />
 
-      <div className="space-y-6 p-8">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-semibold text-slate-900">토론 발제</h1>
-            <p className="text-sm text-slate-500">토론 주제를 공유해요.</p>
+            <h2 className="text-xl font-semibold text-foreground">토론 발제</h2>
+            <p className="text-sm text-muted-foreground">
+              모임에서 나눌 토론 주제를 올리고 댓글로 의견을 모아요.
+            </p>
           </div>
           {sessionUser &&
           sessionUser.role !== "pending" &&
           !sessionUser.isDeactivated ? (
-            <Link href="/topics/new">
-              <Button>발제 등록</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/topics/new">발제 등록</Link>
+            </Button>
           ) : null}
         </div>
         {cohorts.length > 0 ? (
           <CohortFilter cohorts={cohorts} selected={cohortValue} />
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
+          {topics && topics.length === 0 ? (
+            <p className="text-sm text-muted-foreground md:col-span-2">
+              이 기수에 등록된 토론 발제가 아직 없어요. 다른 기수를 선택하거나
+              발제를 등록해 보세요.
+            </p>
+          ) : null}
           {topics?.map((topic) => (
-            <Link key={topic.id} href={`/topics/${topic.id}`}>
-              <Card className="transition hover:-translate-y-1 hover:shadow-lg">
+            <Link
+              key={topic.id}
+              href={`/topics/${topic.id}`}
+              className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <Card className="h-full transition-colors group-hover:border-input group-hover:bg-muted/40">
                 <CardHeader>
-                  <CardTitle className="text-lg">{topic.title}</CardTitle>
+                  <CardTitle className="text-base">{topic.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-slate-600">
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
                   <p>{topic.schedule?.book_title}</p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <UserAvatar
                       imageUrl={
                         topic.author_id

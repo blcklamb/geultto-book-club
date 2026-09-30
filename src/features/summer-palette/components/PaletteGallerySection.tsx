@@ -18,13 +18,13 @@ export function PaletteGallerySection({ canView }: PaletteGallerySectionProps) {
   const { items, isLoading, error } = usePaletteGallery(canView);
 
   return (
-    <section className="space-y-4 border-t border-slate-200 pt-7">
+    <section className="space-y-4 border-t border-border pt-8">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-xl font-semibold text-foreground">
             다른 사람들의 팔레트
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-muted-foreground">
             완성된 팔레트는 사진까지 볼 수 있고, 미완성 팔레트는 흐린
             미리보기만 표시됩니다.
           </p>
@@ -52,7 +52,7 @@ export function PaletteGallerySection({ canView }: PaletteGallerySectionProps) {
 
 function PaletteGalleryCard({ item }: { item: PaletteGalleryItem }) {
   return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <UserAvatar
@@ -61,10 +61,10 @@ function PaletteGalleryCard({ item }: { item: PaletteGalleryItem }) {
             size="sm"
           />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">
+            <p className="truncate text-sm font-semibold text-foreground">
               {item.nickname}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {formatUpdatedAt(item.updatedAt)}
             </p>
           </div>
@@ -78,10 +78,10 @@ function PaletteGalleryCard({ item }: { item: PaletteGalleryItem }) {
       </div>
 
       <div className="px-4 pb-4">
-        <div className="relative overflow-hidden rounded-lg border border-orange-100 bg-orange-50">
+        <div className="relative overflow-hidden rounded-md border border-border bg-muted">
           <div
             className={cn(
-              "grid aspect-square grid-cols-3 gap-0 transition",
+              "grid aspect-square grid-cols-3 gap-0",
               !item.isFullClear && "blur-sm",
             )}
           >
@@ -90,8 +90,8 @@ function PaletteGalleryCard({ item }: { item: PaletteGalleryItem }) {
             ))}
           </div>
           {!item.isFullClear ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/20">
-              <span className="rounded-full border border-white/70 bg-white/85 px-3 py-1 text-xs font-bold text-slate-800 shadow-sm">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="rounded-sm border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">
                 미완성
               </span>
             </div>
@@ -99,10 +99,10 @@ function PaletteGalleryCard({ item }: { item: PaletteGalleryItem }) {
         </div>
 
         <div className="mt-3 flex items-center justify-between text-sm">
-          <span className="font-medium text-slate-900">
+          <span className="font-semibold text-foreground">
             {item.filledCount}/9칸 완료
           </span>
-          <span className="text-xs text-slate-500">여름 책 팔레트</span>
+          <span className="text-xs text-muted-foreground">여름 책 팔레트</span>
         </div>
       </div>
     </article>
@@ -114,7 +114,7 @@ function PaletteGalleryCell({ cell }: { cell: PaletteCell }) {
   const accent = SUMMER_PALETTE_CELL_ACCENTS[cell.index] ?? "#f97316";
 
   return (
-    <div className="relative aspect-square overflow-hidden border border-orange-100 bg-white">
+    <div className="relative aspect-square overflow-hidden border border-border bg-card">
       {cell.photo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -130,21 +130,21 @@ function PaletteGalleryCell({ cell }: { cell: PaletteCell }) {
         />
       )}
 
-      {cell.photo ? (
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+      {cell.photo ? null : (
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
           <ImageOff className="h-4 w-4" aria-hidden="true" />
         </div>
       )}
 
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 p-1.5",
-          cell.photo ? "text-white" : "text-slate-700",
+          "absolute inset-x-0 bottom-0 p-2",
+          cell.photo
+            ? "bg-foreground/60 text-primary-foreground"
+            : "text-foreground",
         )}
       >
-        <p className="line-clamp-2 text-[10px] font-bold leading-tight">
+        <p className="line-clamp-2 text-xs font-semibold leading-snug">
           {cell.title}
         </p>
       </div>
@@ -154,11 +154,15 @@ function PaletteGalleryCell({ cell }: { cell: PaletteCell }) {
 
 function PaletteGallerySkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
+    <div
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      role="status"
+      aria-label="다른 멤버의 팔레트를 불러오는 중"
+    >
       {[0, 1, 2].map((index) => (
         <div
           key={index}
-          className="h-80 animate-pulse rounded-lg border border-slate-200 bg-slate-100"
+          className="h-80 animate-pulse rounded-lg border border-border bg-muted"
         />
       ))}
     </div>
@@ -177,8 +181,8 @@ function PaletteGalleryNotice({
       className={cn(
         "rounded-lg border px-4 py-3 text-sm",
         tone === "error"
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-slate-200 bg-white text-slate-600",
+          ? "border-destructive/30 bg-destructive/10 text-destructive"
+          : "border-border bg-card text-muted-foreground",
       )}
       role={tone === "error" ? "alert" : undefined}
     >

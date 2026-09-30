@@ -35,7 +35,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   imageUrl,
   decoration = DEFAULT_PROFILE_DECORATION,
   emoji,
-  bgColor = "#F1F5F9",
+  bgColor,
   size = "md",
 }) => {
   const normalizedDecoration = normalizeProfileDecoration(decoration);
@@ -50,8 +50,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     >
       <div
         data-testid="profile-avatar-circle"
-        className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-slate-200 shadow-sm"
-        style={{ backgroundColor: bgColor }}
+        className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-border bg-muted"
+        style={bgColor ? { backgroundColor: bgColor } : undefined}
       >
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -64,7 +64,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         ) : emoji ? (
           <span>{emoji}</span>
         ) : (
-          <User className="h-1/2 w-1/2 text-slate-400" aria-hidden="true" />
+          <User className="h-1/2 w-1/2 text-muted-foreground" aria-hidden="true" />
         )}
       </div>
       <ProfileDecorationLayer

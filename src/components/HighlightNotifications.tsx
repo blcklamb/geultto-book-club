@@ -169,12 +169,12 @@ export function HighlightNotifications({ userId }: { userId: string }) {
           if (!open) void refresh();
         }}
       >
-        <Bell className="mr-2 h-4 w-4" />
-        알림{" "}
+        <Bell aria-hidden="true" />
+        알림
         {unreadCount > 0 && (
           <span
             aria-label={`읽지 않은 알림 ${unreadCount}개`}
-            className="ml-2 rounded-full bg-rose-600 px-2 text-white"
+            className="ml-2 rounded-sm bg-destructive px-1 text-xs leading-5 text-destructive-foreground"
           >
             {unreadCount}
           </span>
@@ -184,7 +184,7 @@ export function HighlightNotifications({ userId }: { userId: string }) {
         <section
           id="highlight-notifications"
           aria-label="하이라이트 알림"
-          className="absolute right-0 top-11 z-40 max-h-[70vh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border bg-white p-3 shadow-lg"
+          className="absolute right-0 top-11 z-40 max-h-[70vh] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border bg-card p-3 shadow-sm"
         >
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">하이라이트 알림</h2>
@@ -203,7 +203,7 @@ export function HighlightNotifications({ userId }: { userId: string }) {
             </Button>
           </div>
           {error && (
-            <div role="alert" className="py-3 text-sm">
+            <div role="alert" className="flex items-center justify-between gap-2 py-3 text-sm text-destructive">
               {error}
               <Button
                 type="button"
@@ -215,29 +215,32 @@ export function HighlightNotifications({ userId }: { userId: string }) {
             </div>
           )}
           {!error && items.length === 0 && (
-            <p className="py-6 text-center text-sm text-slate-500">
-              아직 알림이 없습니다.
+            <p className="py-4 text-sm text-muted-foreground">
+              아직 알림이 없습니다. 내 독후감에 하이라이트나 댓글이 달리면 이곳에
+              표시됩니다.
             </p>
           )}
           {items.map((item) => (
             <button
               type="button"
               key={item.id}
-              className={`my-1 block w-full rounded p-3 text-left text-sm hover:bg-slate-100 ${item.read_at ? "text-slate-500" : "bg-sky-50"}`}
+              className={`my-1 block w-full rounded-md p-3 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${item.read_at ? "text-muted-foreground" : "bg-primary/5"}`}
               onClick={() => void visit(item)}
             >
               <span>
                 {!item.read_at && (
-                  <span className="mr-1 text-sky-600" aria-label="읽지 않음">
-                    ●
-                  </span>
+                  <span
+                    className="mr-2 inline-block h-2 w-2 rounded-full bg-primary align-middle"
+                    role="img"
+                    aria-label="읽지 않음"
+                  />
                 )}
                 {notificationText(item)}
               </span>
-              <span className="mt-1 block truncate text-xs text-slate-500">
+              <span className="mt-1 block truncate text-xs text-muted-foreground">
                 {item.excerpt}
               </span>
-              <span className="block text-xs text-slate-400">
+              <span className="block text-xs text-muted-foreground">
                 <LocalizedDate
                   value={item.created_at}
                   options={{ dateStyle: "short", timeStyle: "short" }}

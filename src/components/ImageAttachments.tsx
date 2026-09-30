@@ -78,7 +78,7 @@ export function ImageAttachments({
         이미지 첨부 ({uploads.items.length}/{maxImages})
       </Button>
       {limitMessage ? (
-        <p role="alert" className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-destructive">
           {limitMessage}
         </p>
       ) : null}
@@ -86,7 +86,7 @@ export function ImageAttachments({
         {uploads.items
           .filter((item) => !hideCompleted || item.status !== "done")
           .map((item) => (
-            <div key={item.id} className="max-w-48 rounded border p-2 text-xs">
+            <div key={item.id} className="max-w-48 space-y-1 rounded-md border border-border p-2 text-xs">
               <img
                 src={item.preview}
                 alt={item.file.name}

@@ -10,6 +10,7 @@ import { Strike } from "./editor-extension/strike";
 import { ReviewHighlightMark } from "./editor-extension/highlight";
 import type { JSONContent } from "@tiptap/core";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Highlighter } from "lucide-react";
 import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
 import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
@@ -460,7 +461,7 @@ export function ReviewViewerInteractive({
       {selectionPopup && !disabled && (
         <div
           data-selection-popup
-          className="fixed z-50 flex items-center rounded-lg border border-slate-200 bg-white shadow-lg"
+          className="fixed z-50 flex items-center rounded-lg border border-border bg-card shadow-sm"
           style={{
             left: selectionPopup.x,
             top: selectionPopup.y,
@@ -470,11 +471,11 @@ export function ReviewViewerInteractive({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 gap-1.5 px-3 text-xs font-medium"
+            className="h-8 gap-2 px-3 text-xs"
             onClick={handleCreateHighlight}
             disabled={isPending}
           >
-            <span aria-hidden>💬</span>
+            <Highlighter aria-hidden="true" />
             <span>하이라이트</span>
           </Button>
         </div>

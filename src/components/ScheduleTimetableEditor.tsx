@@ -145,7 +145,7 @@ export function ScheduleTimetableEditor({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <CardTitle className="text-lg">타임테이블</CardTitle>
+        <CardTitle className="text-base">타임테이블</CardTitle>
         {canEdit ? (
           <Button
             type="button"
@@ -166,11 +166,11 @@ export function ScheduleTimetableEditor({
             className="space-y-4"
           >
             <input type="hidden" name="items" value={serializedRows} readOnly />
-            <div className="space-y-3">
+            <div className="divide-y divide-border border-y border-border">
               {rows.map((row, index) => (
                 <div
                   key={row.rowId}
-                  className="grid gap-2 rounded-md border border-slate-200 p-3 md:grid-cols-[8rem_8rem_1fr_auto]"
+                  className="grid gap-2 py-3 md:grid-cols-[8rem_8rem_1fr_auto]"
                 >
                   <div className="space-y-1">
                     <Label htmlFor={`start-${row.rowId}`}>시작 시간</Label>
@@ -250,7 +250,7 @@ export function ScheduleTimetableEditor({
             </div>
           </form>
         ) : items.length > 0 ? (
-          <Table className="border border-slate-200">
+          <Table className="border border-border">
             <TableHeader className="sr-only">
               <TableRow>
                 <TableHead>시간</TableHead>
@@ -260,10 +260,10 @@ export function ScheduleTimetableEditor({
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id} className="hover:bg-transparent">
-                  <TableCell className="w-40 border-r border-slate-200 px-4 py-4 text-lg font-medium text-slate-900">
+                  <TableCell className="w-40 border-r border-border px-4 py-4 text-base font-semibold text-foreground">
                     {displayTimeRange(item)}
                   </TableCell>
-                  <TableCell className="px-4 py-4 text-lg font-medium text-slate-900">
+                  <TableCell className="px-4 py-4 text-base text-foreground">
                     {item.detail}
                   </TableCell>
                 </TableRow>
@@ -271,8 +271,9 @@ export function ScheduleTimetableEditor({
             </TableBody>
           </Table>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             등록된 타임테이블이 없습니다.
+            {canEdit ? " 편집을 눌러 모임 순서를 추가해 보세요." : ""}
           </p>
         )}
       </CardContent>

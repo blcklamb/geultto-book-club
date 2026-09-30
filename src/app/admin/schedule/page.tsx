@@ -68,13 +68,16 @@ export default async function AdminSchedulePage() {
         <CardHeader>
           <CardTitle>등록된 일정</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-slate-600">
+        <CardContent className="divide-y divide-border text-sm text-muted-foreground">
+          {schedules?.length ? null : (
+            <p>등록된 일정이 없습니다. 위 양식으로 첫 일정을 추가해 주세요.</p>
+          )}
           {schedules?.map((schedule) => (
             <div
               key={schedule.id}
-              className="rounded-lg border border-slate-200 p-4"
+              className="py-4 first:pt-0 last:pb-0"
             >
-              <p className="font-semibold text-slate-800">
+              <p className="font-semibold text-foreground">
                 {schedule.book_title}
               </p>
               <p>
@@ -84,12 +87,12 @@ export default async function AdminSchedulePage() {
                 />
               </p>
               <p>{schedule.place}</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 장르: {schedule.genre_tag ?? "-"}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <a
-                  className="text-sky-600"
+                  className="rounded-sm text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   href={`/admin/attendees/${schedule.id}`}
                 >
                   참석자 관리
@@ -116,7 +119,7 @@ export default async function AdminSchedulePage() {
                 </form>
               </div>
             </div>
-          )) ?? <p>등록된 일정이 없습니다.</p>}
+          ))}
         </CardContent>
       </Card>
     </div>

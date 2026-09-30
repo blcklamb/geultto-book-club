@@ -32,12 +32,13 @@ export function NaverMapCopyButton({ searchValue }: NaverMapCopyButtonProps) {
   return (
     <Button
       type="button"
-      variant="link"
-      className="h-6 px-2 text-slate-500"
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 text-muted-foreground"
       onClick={handleClick}
       aria-label="네이버 지도에서 보기"
     >
-      <MapPin className="h-4 w-4 text-slate-500" />
+      <MapPin aria-hidden="true" />
     </Button>
   );
 }

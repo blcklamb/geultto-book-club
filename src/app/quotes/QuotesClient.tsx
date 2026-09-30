@@ -16,7 +16,11 @@ const QuotesFloatingScene3D = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[340px] w-full rounded-xl border border-slate-200 bg-slate-900/95" />
+      <div
+        className="h-[340px] w-full animate-pulse rounded-lg border border-border bg-muted"
+        role="status"
+        aria-label="구절 3D 뷰를 불러오는 중"
+      />
     ),
   },
 );
@@ -52,7 +56,7 @@ export const QuotesClient: React.FC<QuotesClientProps> = ({
   return (
     <>
       <DetailHeader title="인상 깊은 구절" />
-      <div className="space-y-6 p-8">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div className="flex flex-wrap items-center gap-4">
             {cohorts.length > 0 ? (
@@ -64,10 +68,15 @@ export const QuotesClient: React.FC<QuotesClientProps> = ({
             ) : null}
           </div>
         </div>
-        {mode === "3d" ? (
+        {quotes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            이 기수에 등록된 구절이 아직 없어요. 다른 기수를 선택하거나 인상 깊은
+            구절을 등록해 보세요.
+          </p>
+        ) : mode === "3d" ? (
           <QuotesFloatingScene3D quotes={quotes} />
         ) : (
-          <div className="columns-2 gap-4 sm:columns-3 sm:gap-8">
+          <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
             {quotes.map((quote) => (
               <div
                 key={quote.id}

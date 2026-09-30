@@ -5,7 +5,6 @@ import { PageRealtime } from "@/components/PageRealtime";
 import { createSupabaseServerClient } from "@supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { CommentThread } from "@/components/CommentThread";
-import { Card, CardContent } from "@/components/ui/card";
 import { ReviewViewer } from "@/components/ReviewViewer";
 import { TopicDetailActions } from "@/components/TopicDetailActions";
 import DetailHeader from "@/components/DetailHeader";
@@ -392,13 +391,13 @@ export default async function TopicDetailPage({
   return (
     <>
       <DetailHeader title="토론 발제 상세" />
-      <div className="space-y-6 p-8">
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-8">
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-foreground">
               {topic.title}
             </h1>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <UserAvatar
                 imageUrl={
                   topic.author_id
@@ -428,11 +427,9 @@ export default async function TopicDetailPage({
             />
           ) : null}
         </header>
-        <Card>
-          <CardContent className="prose prose-slate max-w-none p-4">
-            <ReviewViewer content={topicContent} />
-          </CardContent>
-        </Card>
+        <div className="border-y border-border py-6">
+          <ReviewViewer content={topicContent} />
+        </div>
         <CommentThread
           comments={
             comments?.map((comment) => ({

@@ -26,12 +26,12 @@ export default async function TopicCreatePage() {
   return (
     <>
       <DetailHeader title="토론 발제하기" />
-      <form action="/api/topics" method="post" className="space-y-6 p-8">
+      <form action="/api/topics" method="post" className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-8">
         <input type="hidden" name="authorId" value={user.id} />
         <div className="space-y-2">
           <Label htmlFor="scheduleId">모임 선택</Label>
           <Select name="scheduleId">
-            <SelectTrigger className="w-[300px]">
+            <SelectTrigger id="scheduleId" className="w-full sm:w-80">
               <SelectValue placeholder="어떤 모임인가요?" />
             </SelectTrigger>
             <SelectContent>

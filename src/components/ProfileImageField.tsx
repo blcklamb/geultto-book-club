@@ -104,58 +104,57 @@ export function ProfileImageField({
       setPreviousIndex(null);
       setAnimationDirection(null);
       animationTimeoutRef.current = null;
-    }, 260);
+    }, 200);
   };
 
   return (
-    <section className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+    <section className="space-y-4">
+      <div className="flex items-center gap-4">
         <UserAvatar imageUrl={visibleUrl} decoration={decoration} size="lg" />
-        <div className="space-y-1 text-center sm:text-left">
-          <p className="text-base font-semibold text-slate-700">
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-foreground">
             프로필 이미지
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             JPG, PNG, WebP, GIF 이미지를 업로드할 수 있어요.
           </p>
         </div>
       </div>
 
-      <label
-        htmlFor="profileImage"
-        className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-slate-500 hover:text-slate-900"
-      >
-        <ImagePlus className="h-5 w-5" />
-        이미지 선택
-      </label>
       <Input
         id="profileImage"
         name="profileImage"
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        className="sr-only"
+        className="peer sr-only"
         onChange={handleChange}
       />
+      <label
+        htmlFor="profileImage"
+        className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-card px-4 py-6 text-sm font-semibold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
+      >
+        <ImagePlus className="h-5 w-5" />
+        이미지 선택
+      </label>
       <input type="hidden" name="profileDecoration" value={decoration} />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-slate-700">장식 아이템</p>
+        <p className="text-sm font-semibold text-foreground">장식 아이템</p>
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="이전 장식"
             onClick={() => handleDecorationStep(-1)}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
+          <div className="relative flex-1 overflow-hidden rounded-lg border border-border bg-muted px-4 py-4">
             <div className="relative flex h-28 items-center justify-center">
               <UserAvatar
                 imageUrl={visibleUrl}
                 decoration="none"
                 size="lg"
-                bgColor="#F8FAFC"
               />
               {previousOption ? (
                 <div
@@ -199,22 +198,20 @@ export function ProfileImageField({
           </div>
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="다음 장식"
             onClick={() => handleDecorationStep(1)}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex justify-center gap-1.5" aria-hidden="true">
+        <div className="flex justify-center gap-2" aria-hidden="true">
           {PROFILE_DECORATION_OPTIONS.map((option) => (
             <span
               key={option.id}
               className={cn(
-                "h-2.5 w-2.5 rounded-full bg-slate-200 transition",
-                decoration === option.id
-                  ? "scale-110 bg-slate-900"
-                  : "bg-slate-300/70",
+                "h-2 w-2 rounded-full transition-colors",
+                decoration === option.id ? "bg-foreground" : "bg-input",
               )}
               data-active={decoration === option.id}
             />
@@ -267,19 +264,28 @@ export function ProfileImageField({
         }
 
         .animate-decoration-slide-in-right {
-          animation: decoration-slide-in-right 260ms ease-out both;
+          animation: decoration-slide-in-right 200ms ease-out both;
         }
 
         .animate-decoration-slide-in-left {
-          animation: decoration-slide-in-left 260ms ease-out both;
+          animation: decoration-slide-in-left 200ms ease-out both;
         }
 
         .animate-decoration-slide-out-left {
-          animation: decoration-slide-out-left 260ms ease-out both;
+          animation: decoration-slide-out-left 200ms ease-out both;
         }
 
         .animate-decoration-slide-out-right {
-          animation: decoration-slide-out-right 260ms ease-out both;
+          animation: decoration-slide-out-right 200ms ease-out both;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-decoration-slide-in-right,
+          .animate-decoration-slide-in-left,
+          .animate-decoration-slide-out-left,
+          .animate-decoration-slide-out-right {
+            animation-duration: 1ms;
+          }
         }
       `}</style>
     </section>

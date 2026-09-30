@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocalizedDate } from "@/components/LocalizedDate";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -25,14 +26,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   commentCount,
 }) => {
   return (
-    <Link href={`/reviews/${id}`}>
-      <Card className="transition hover:-translate-y-1 hover:shadow-lg">
+    <Link
+      href={`/reviews/${id}`}
+      className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
+      <Card className="h-full transition-colors group-hover:border-input group-hover:bg-muted/40">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-          <p className="text-sm text-slate-500">{scheduleTitle}</p>
+          <CardTitle className="text-base">{title}</CardTitle>
+          <p className="text-sm text-muted-foreground">{scheduleTitle}</p>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-sm text-slate-600">
+        <CardContent className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <UserAvatar
               imageUrl={authorImageUrl}
               decoration={authorDecoration}
@@ -40,7 +44,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             />
             <span>{author}</span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <LocalizedDate
               value={createdAt}
               options={{
@@ -51,7 +55,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                 minute: "2-digit",
               }}
             />
-            <span>💬 {commentCount ?? 0}</span>
+            <span
+              className="inline-flex items-center gap-1"
+              aria-label={`댓글 ${commentCount ?? 0}개`}
+            >
+              <MessageSquare className="h-3 w-3" aria-hidden="true" />
+              {commentCount ?? 0}
+            </span>
           </div>
         </CardContent>
       </Card>
