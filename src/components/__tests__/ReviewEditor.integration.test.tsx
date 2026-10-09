@@ -7,10 +7,86 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import { ReviewEditor } from "../ReviewEditor";
+import { extractPlainText, MIN_RICH_TEXT_CHARS } from "@/lib/rich-text";
 
 beforeAll(() => {
   Range.prototype.getBoundingClientRect = () => new DOMRect();
   Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+});
+
+describe("review minimum length validation", () => {
+  it.each([
+    ["multiple paragraphs", [
+      { type: "paragraph", content: [{ type: "text", text: "가".repeat(250) }] },
+      { type: "paragraph", content: [{ type: "text", text: "나".repeat(247) }] },
+    ]],
+    ["hard breaks", [
+      { type: "paragraph", content: [
+        { type: "text", text: "가".repeat(250) },
+        { type: "hardBreak" },
+        { type: "text", text: "나".repeat(248) },
+      ] },
+    ]],
+    ["empty paragraphs", [
+      { type: "paragraph", content: [{ type: "text", text: "가".repeat(495) }] },
+      { type: "paragraph" },
+      { type: "paragraph" },
+    ]],
+  ])("blocks 499 plain text characters with %s", async (_, content) => {
+    const { container } = render(
+      <form>
+        <ReviewEditor defaultContent={{ type: "doc", content }} />
+        <button type="submit">등록</button>
+      </form>,
+    );
+    await screen.findByRole("textbox", { name: "독후감 본문" });
+    await waitFor(() => expect(screen.getByText("499 / 500자 이상")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "등록" })).toBeDisabled();
+    expect(fireEvent.submit(container.querySelector("form")!)).toBe(false);
+  });
+
+  it("uses the same count as the server for formatted multi-paragraph content", async () => {
+    const content = { type: "doc", content: [
+      { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "가".repeat(250) }] },
+      { type: "paragraph", content: [
+        { type: "text", text: "나".repeat(247), marks: [{ type: "bold" }] },
+        { type: "hardBreak" },
+      ] },
+    ] };
+    const { container } = render(
+      <form>
+        <ReviewEditor defaultContent={content} />
+        <button type="submit">등록</button>
+      </form>,
+    );
+    await screen.findByRole("textbox", { name: "독후감 본문" });
+    await waitFor(() => expect(screen.getByText("500 / 500자 이상")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "등록" })).toBeEnabled();
+    expect(fireEvent.submit(container.querySelector("form")!)).toBe(true);
+    const saved = new FormData(container.querySelector("form")!).get("contentRich") as string;
+    expect(extractPlainText(JSON.parse(saved))).toHaveLength(MIN_RICH_TEXT_CHARS);
+  });
+
+  it.each([0, 499])("submits the latest 500-character document starting from %i characters", async (initialLength) => {
+    const initialText = "가".repeat(initialLength);
+    const pastedText = "나".repeat(MIN_RICH_TEXT_CHARS - initialLength);
+    const { container } = render(
+      <form>
+        <ReviewEditor defaultContent={{ type: "doc", content: [
+          { type: "paragraph", content: initialText ? [{ type: "text", text: initialText }] : [] },
+        ] }} />
+        <button type="submit">등록</button>
+      </form>,
+    );
+    const editor = await screen.findByRole("textbox", { name: "독후감 본문" });
+    await cursorAtEnd(editor.querySelector("p:last-child")!);
+    fireEvent.paste(editor, { clipboardData: { getData: (type: string) => type === "text/plain" ? pastedText : "", files: [] } });
+    await waitFor(() => expect(screen.getByRole("button", { name: "등록" })).toBeEnabled());
+    expect(fireEvent.submit(container.querySelector("form")!)).toBe(true);
+    const saved = new FormData(container.querySelector("form")!).get("contentRich") as string;
+    expect(extractPlainText(JSON.parse(saved))).toBe(initialText + pastedText);
+    expect(extractPlainText(JSON.parse(saved))).toHaveLength(MIN_RICH_TEXT_CHARS);
+  });
 });
 // Use the real editor and ProseMirror keymap, not a useEditor mock.
 function mount(

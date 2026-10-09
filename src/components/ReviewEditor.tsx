@@ -495,10 +495,6 @@ export function ReviewEditor({
     () => parseInitialContent(defaultContent),
     [defaultContent],
   );
-  const initialSerializedContent = useMemo(
-    () => JSON.stringify(initialContent),
-    [initialContent],
-  );
   const [charCount, setCharCount] = useState(0);
   const [imageCount, setImageCount] = useState(0);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
@@ -594,6 +590,7 @@ export function ReviewEditor({
       if (node.type.name === "image") nextImageCount += 1;
     });
     setImageCount(nextImageCount);
+    // Use the same text extraction as review creation and editing on the server.
     const nextCharCount = editorInstance.getText().length;
     startTransition(() => {
       setCharCount((prev) => (prev === nextCharCount ? prev : nextCharCount));
@@ -804,6 +801,7 @@ export function ReviewEditor({
   useEffect(() => {
     if (!editor) return;
     latestEditorRef.current = editor;
+    flushSerializedContent(editor);
     syncEditorMetadata(editor);
 
     const form = hiddenInputRef.current?.form;
@@ -981,11 +979,11 @@ export function ReviewEditor({
           onClose={() => setActiveSpellcheckIssue(null)}
         />
       ) : null}
+      {/* Keep this value imperative: React resets hidden inputs with defaultValue on rerender. */}
       <input
         ref={hiddenInputRef}
         type="hidden"
         name={name}
-        defaultValue={initialSerializedContent}
       />
     </>
   );

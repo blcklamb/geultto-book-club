@@ -1,13 +1,16 @@
+import { getSchema, getText, getTextSerializersFromSchema } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+
 export const MIN_RICH_TEXT_CHARS = 500;
+
+// Match ReviewEditor's node types and Tiptap's plain text serialization, including breaks.
+const textSchema = getSchema([StarterKit, Image]);
+const textSerializers = getTextSerializersFromSchema(textSchema);
 
 export function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
-  const n = node as Record<string, unknown>;
-  if (n.type === "text" && typeof n.text === "string") return n.text;
-  if (Array.isArray(n.content)) {
-    return (n.content as unknown[]).map(extractPlainText).join("");
-  }
-  return "";
+  return getText(textSchema.nodeFromJSON(node), { textSerializers });
 }
 
 export function richTextMinCharsMessage(
