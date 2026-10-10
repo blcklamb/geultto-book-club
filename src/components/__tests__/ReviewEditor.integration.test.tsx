@@ -6,6 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, vi, beforeAll } from "vitest";
+import { useState } from "react";
 import { ReviewEditor } from "../ReviewEditor";
 import { extractPlainText, MIN_RICH_TEXT_CHARS } from "@/lib/rich-text";
 
@@ -15,6 +16,29 @@ beforeAll(() => {
 });
 
 describe("review minimum length validation", () => {
+  it.each([0, 499, 500])("preserves validation with a deferred form starting at %i characters", async (initialLength) => {
+    function DeferredForm() {
+      const [ready, setReady] = useState(false);
+      const [blocked, setBlocked] = useState(true);
+      return <form>
+        <ReviewEditor
+          defaultContent={{ type: "doc", content: [{ type: "paragraph", content: initialLength ? [{ type: "text", text: "가".repeat(initialLength) }] : [] }] }}
+          onReadyChange={setReady}
+          onSubmitBlockedChange={setBlocked}
+        />
+        <button type="submit" disabled={!ready || blocked}>수정 저장</button>
+      </form>;
+    }
+    render(<DeferredForm />);
+    const editor = await screen.findByRole("textbox", { name: "독후감 본문" });
+    const save = screen.getByRole("button", { name: "수정 저장" });
+    if (initialLength < 500) {
+      await waitFor(() => expect(save).toBeDisabled());
+      await cursorAtEnd(editor.querySelector("p:last-child")!);
+      fireEvent.paste(editor, { clipboardData: { getData: (type: string) => type === "text/plain" ? "나".repeat(500 - initialLength) : "", files: [] } });
+    }
+    await waitFor(() => expect(save).toBeEnabled());
+  });
   it.each([
     ["multiple paragraphs", [
       { type: "paragraph", content: [{ type: "text", text: "가".repeat(250) }] },

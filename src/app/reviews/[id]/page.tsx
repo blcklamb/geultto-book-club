@@ -11,7 +11,7 @@ import {
   MIN_RICH_TEXT_CHARS,
   richTextMinCharsMessage,
 } from "@/lib/rich-text";
-import { ReviewViewerInteractive } from "@/components/ReviewViewerInteractive";
+import { ReviewReadView } from "@/components/ReviewReadView";
 import DetailHeader from "@/components/DetailHeader";
 import { revalidatePath } from "next/cache";
 import { ReviewDetailActions } from "@/components/ReviewDetailActions";
@@ -693,7 +693,7 @@ export default async function ReviewDetailPage({
             ) : null}
           </header>
           <div className="border-y border-border py-6">
-              <ReviewViewerInteractive
+              <ReviewReadView
                 key={`viewer:${reviewContentKey}`}
                 content={reviewContent}
                 reviewId={review.id}

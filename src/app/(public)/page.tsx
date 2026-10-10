@@ -16,41 +16,35 @@ export default async function HomePage() {
   // Fetch next schedule (nearest future date)
   const nowIso = new Date().toISOString();
 
-  const { data: schedules } = await supabase
-    .from("schedules")
-    .select("id, date, place, book_title, book_link")
-    .gte("date", nowIso)
-    .order("date", { ascending: true })
-    .limit(1);
-
-  // Fetch summaries tailored to logged-in state.
-  const { data: recentReviews } = sessionUser
-    ? await supabase
-        .from("reviews")
-        .select("id, title, schedules(book_title), created_at")
-        .eq("author_id", sessionUser.id)
-        .order("created_at", { ascending: false })
-        .limit(3)
-    : { data: [] };
-
-  const { data: recentTopics } = sessionUser
-    ? await supabase
-        .from("topics")
-        .select(
-          "id, title, schedules(book_title), created_at, topic_comments(count)",
-        )
-        .eq("author_id", sessionUser.id)
-        .order("created_at", { ascending: false })
-        .limit(3)
-    : { data: [] };
-
-  const { data: summerPaletteRow } = sessionUser
-    ? await supabase
-        .from("summer_palette_boards")
-        .select("updated_at")
-        .eq("user_id", sessionUser.id)
-        .maybeSingle()
-    : { data: null };
+  const [
+    { data: schedules },
+    { data: recentReviews },
+    { data: recentTopics },
+    { data: summerPaletteRow },
+  ] = await Promise.all([
+    supabase
+      .from("schedules")
+      .select("id, date, place, book_title, book_link")
+      .gte("date", nowIso)
+      .order("date", { ascending: true })
+      .limit(1),
+    sessionUser
+      ? supabase.from("reviews")
+          .select("id, title, schedules(book_title), created_at")
+          .eq("author_id", sessionUser.id)
+          .order("created_at", { ascending: false }).limit(3)
+      : Promise.resolve({ data: [] }),
+    sessionUser
+      ? supabase.from("topics")
+          .select("id, title, schedules(book_title), created_at, topic_comments(count)")
+          .eq("author_id", sessionUser.id)
+          .order("created_at", { ascending: false }).limit(3)
+      : Promise.resolve({ data: [] }),
+    sessionUser
+      ? supabase.from("summer_palette_boards").select("updated_at")
+          .eq("user_id", sessionUser.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const nextSchedule = schedules?.[0]
     ? {

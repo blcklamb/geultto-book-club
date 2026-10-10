@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ReviewEditor } from "@/components/ReviewEditor";
+import { ReviewEditorLazy } from "@/components/ReviewEditorLazy";
 
 type ReviewDetailActionsProps = {
   reviewId: string;
@@ -40,6 +40,8 @@ export function ReviewDetailActions({
   const router = useRouter();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [editorReady, setEditorReady] = useState(false);
+  const [editorBlocked, setEditorBlocked] = useState(true);
 
   const handleUpdateAction = async (formData: FormData) => {
     await updateAction(formData);
@@ -81,7 +83,9 @@ export function ReviewDetailActions({
               제목과 본문을 수정한 후 저장을 눌러주세요.
             </DialogDescription>
           </DialogHeader>
-          <form action={handleUpdateAction} className="space-y-4">
+          <form action={handleUpdateAction} onSubmit={event => {
+            if (!editorReady || editorBlocked) event.preventDefault();
+          }} className="space-y-4">
             <input type="hidden" name="reviewId" value={reviewId} />
             <div className="space-y-2 text-sm">
               <label className="space-y-1 block">
@@ -91,7 +95,9 @@ export function ReviewDetailActions({
               <div className="space-y-1 block">
                 <span className="text-muted-foreground">본문</span>
                 <div className="rounded-md border p-2">
-                  <ReviewEditor
+                  <ReviewEditorLazy
+                    onReadyChange={setEditorReady}
+                    onSubmitBlockedChange={setEditorBlocked}
                     name="contentRich"
                     defaultContent={initialContent}
                     spellcheckEnabled
@@ -108,7 +114,7 @@ export function ReviewDetailActions({
               >
                 취소
               </Button>
-              <Button type="submit">저장하기</Button>
+              <Button type="submit" disabled={!editorReady || editorBlocked}>저장하기</Button>
             </DialogFooter>
           </form>
         </DialogContent>
