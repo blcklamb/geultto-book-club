@@ -250,6 +250,8 @@ type ReviewEditorProps = {
   minChars?: number | null;
   spellcheckEnabled?: boolean;
   spellcheckReviewId?: string;
+  onReadyChange?: (ready: boolean) => void;
+  onSubmitBlockedChange?: (blocked: boolean) => void;
 };
 
 const EMPTY_DOC: JSONContent = {
@@ -490,6 +492,8 @@ export function ReviewEditor({
   minChars = MIN_RICH_TEXT_CHARS,
   spellcheckEnabled = false,
   spellcheckReviewId,
+  onReadyChange,
+  onSubmitBlockedChange,
 }: ReviewEditorProps) {
   const initialContent = useMemo<JSONContent>(
     () => parseInitialContent(defaultContent),
@@ -651,6 +655,11 @@ export function ReviewEditor({
       flushSerializedContent(editor);
     },
   });
+
+  useEffect(() => {
+    onReadyChange?.(!!editor);
+    return () => onReadyChange?.(false);
+  }, [editor, onReadyChange]);
 
   const runSpellcheck = async () => {
     if (!editor || isSpellchecking) return;
@@ -875,6 +884,12 @@ export function ReviewEditor({
     (effectiveMinChars !== null && charCount < effectiveMinChars);
 
   useEffect(() => {
+    if (onSubmitBlockedChange) {
+      // A deferred edit dialog owns both readiness and validation states.
+      // Avoid competing imperative writes to its React-controlled button.
+      onSubmitBlockedChange(isUnder);
+      return () => onSubmitBlockedChange(true);
+    }
     const form = hiddenInputRef.current?.form;
     if (!form) return;
 
@@ -908,7 +923,7 @@ export function ReviewEditor({
         submitControlOriginalDisabled.delete(control);
       });
     };
-  }, [effectiveMinChars, isUnder]);
+  }, [effectiveMinChars, isUnder, onSubmitBlockedChange]);
 
   return (
     <>

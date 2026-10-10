@@ -3,19 +3,15 @@
 import "@/styles/tiptap.css";
 
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { HorizontalRule } from "./editor-extension/horizontal-rule";
-import { Image } from "./editor-extension/image";
-import { Strike } from "./editor-extension/strike";
-import { ReviewHighlightMark } from "./editor-extension/highlight";
+import { reviewViewerExtensions } from "./review-viewer-extensions";
 import type { JSONContent } from "@tiptap/core";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
 import { Highlighter } from "lucide-react";
 import { Button } from "./ui/button";
 import { HighlightCommentPanel } from "./HighlightCommentPanel";
 import { highlightColorFor, type HighlightWithComments } from "@/lib/highlight";
-import { createClient } from "@supabase/client";
-import { useSearchParams } from "next/navigation";
+import { useReviewHighlights } from "@/hooks/useReviewHighlights";
+import type { ReviewActivation } from "./ReviewViewerLazy";
 import { toast } from "sonner";
 
 type SelectionPopup = {
@@ -33,19 +29,28 @@ type ReviewViewerInteractiveProps = {
   disabled?: boolean;
   currentUserNickname?: string;
   currentUserId?: string;
+  managedHighlights?: ReturnType<typeof useReviewHighlights>;
+  activation?: ReviewActivation;
+  visible?: boolean;
+  onReady?: () => void;
 };
 
-export function ReviewViewerInteractive({
-  content,
-  reviewId,
-  initialHighlights,
-  disabled = false,
-  currentUserNickname,
-  currentUserId,
-}: ReviewViewerInteractiveProps) {
-  const searchParams = useSearchParams();
-  const [highlights, setHighlights] =
-    useState<HighlightWithComments[]>(initialHighlights);
+export function ReviewViewerInteractive(props: ReviewViewerInteractiveProps) {
+  return props.managedHighlights
+    ? <InteractiveBody {...props} managedHighlights={props.managedHighlights} />
+    : <StandaloneViewer {...props} />;
+}
+
+function StandaloneViewer(props: ReviewViewerInteractiveProps) {
+  const managedHighlights = useReviewHighlights(props.reviewId, props.initialHighlights);
+  return <InteractiveBody {...props} managedHighlights={managedHighlights} />;
+}
+
+function InteractiveBody({
+  content, reviewId, disabled = false, currentUserNickname, currentUserId,
+  managedHighlights, activation, visible = true, onReady,
+}: ReviewViewerInteractiveProps & { managedHighlights: ReturnType<typeof useReviewHighlights> }) {
+  const { highlights, updateHighlights: setHighlights, requestRefresh: refetchHighlights } = managedHighlights;
   const [selectionPopup, setSelectionPopup] = useState<SelectionPopup | null>(
     null,
   );
@@ -58,38 +63,9 @@ export function ReviewViewerInteractive({
   const appliedMarkMap = useRef<
     Map<string, { startPos: number; endPos: number }>
   >(new Map());
-  // Supabase 클라이언트는 컴포넌트 수명 동안 하나만 생성
-  const supabase = useMemo(() => createClient(), []);
-
+  const extensions = useMemo(reviewViewerExtensions, []);
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        horizontalRule: false,
-        bulletList: {
-          keepMarks: true,
-          HTMLAttributes: {
-            class: "tiptap-bullet-list",
-          },
-        },
-        orderedList: {
-          keepMarks: true,
-          HTMLAttributes: {
-            class: "tiptap-ordered-list",
-          },
-        },
-        listItem: {},
-        strike: false,
-      }),
-      HorizontalRule,
-      Image,
-      Strike,
-      ReviewHighlightMark.configure({
-        multicolor: true,
-        HTMLAttributes: {
-          class: "cursor-pointer rounded-sm",
-        },
-      }),
-    ],
+    extensions,
     content,
     editable: false,
     immediatelyRender: false,
@@ -98,19 +74,34 @@ export function ReviewViewerInteractive({
     },
   });
 
-  const fetchGeneration = useRef(0);
-  // 하이라이트 목록을 API에서 재조회하고 에디터 마크를 갱신한다.
-  const refetchHighlights = useCallback(async () => {
-    const ticket = ++fetchGeneration.current;
+  useEffect(() => {
+    if (editor) onReady?.();
+  }, [editor, onReady]);
+
+  const restoredSelection = useRef<ReviewActivation["selection"]>(undefined);
+  useLayoutEffect(() => {
+    const selection = activation?.selection;
+    if (!editor || !visible || !selection || selection === restoredSelection.current) return;
+    restoredSelection.current = selection;
     try {
-      const res = await fetch(`/api/reviews/${reviewId}/highlights`);
-      if (!res.ok) return;
-      const updated: HighlightWithComments[] = await res.json();
-      if (ticket === fetchGeneration.current) setHighlights(updated);
+      const anchor = editor.view.domAtPos(selection.anchor);
+      const head = editor.view.domAtPos(selection.head);
+      const native = window.getSelection();
+      native?.setBaseAndExtent(anchor.node, anchor.offset, head.node, head.offset);
+      const range = native?.rangeCount ? native.getRangeAt(0) : null;
+      if (range) {
+        const rect = range.getBoundingClientRect();
+        setSelectionPopup({ x: rect.left + rect.width / 2, y: rect.top - 48,
+          from: Math.min(selection.anchor, selection.head), to: Math.max(selection.anchor, selection.head), text: selection.text });
+      }
     } catch {
-      // 재조회 실패는 조용히 무시 — 기존 데이터를 유지
+      // A selection superseded by navigation must not prevent reading.
     }
-  }, [reviewId]);
+  }, [activation?.selection, editor, visible]);
+
+  useEffect(() => {
+    if (activation?.highlightId) setActiveHighlightId(activation.highlightId);
+  }, [activation]);
 
   // highlights 상태가 바뀔 때(초기 로드 + Realtime 업데이트) 에디터 marks를 동기화한다.
   // appliedMarkMap을 통해 추가/삭제된 하이라이트만 처리한다.
@@ -120,9 +111,20 @@ export function ReviewViewerInteractive({
     const markType = schema.marks.highlight;
     if (!markType) return;
 
-    const currentIds = new Set(highlights.map((h) => h.id));
+    const currentPositions = new Map(highlights.map(h => [h.id, h]));
     const newTr = editor.state.tr;
     let changed = false;
+
+    // Remove deleted/moved marks first, without removing overlapping marks.
+    for (const [id, pos] of appliedMarkMap.current) {
+      const next = currentPositions.get(id);
+      if (next && next.startPos === pos.startPos && next.endPos === pos.endPos) continue;
+      try {
+        newTr.removeMark(pos.startPos, pos.endPos, markType.create({ highlightId: id, color: highlightColorFor(id) }));
+        changed = true;
+      } catch { /* Stale positions must not prevent other marks updating. */ }
+      appliedMarkMap.current.delete(id);
+    }
 
     // 새로 추가된 하이라이트에 mark 추가
     for (const h of highlights) {
@@ -147,134 +149,30 @@ export function ReviewViewerInteractive({
       }
     }
 
-    // 삭제된 하이라이트의 mark 제거
-    for (const [id, pos] of appliedMarkMap.current) {
-      if (!currentIds.has(id)) {
-        try {
-          newTr.removeMark(
-            pos.startPos,
-            pos.endPos,
-            markType.create({ highlightId: id, color: highlightColorFor(id) }),
-          );
-          appliedMarkMap.current.delete(id);
-          changed = true;
-        } catch {
-          appliedMarkMap.current.delete(id);
-        }
-      }
-    }
-
     if (changed) editor.view.dispatch(newTr);
   }, [editor, highlights]);
 
-  // Supabase Realtime — 하이라이트와 관련 댓글/반응 변경 시 자동 갱신
   useEffect(() => {
-    const channel = supabase
-      .channel(`review-highlights-${reviewId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "review_highlights",
-          filter: `review_id=eq.${reviewId}`,
-        },
-        () => {
-          refetchHighlights();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "highlight_comments" },
-        () => {
-          refetchHighlights();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "highlight_comment_replies" },
-        () => {
-          refetchHighlights();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "highlight_comment_reactions" },
-        () => {
-          refetchHighlights();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "highlight_reactions" },
-        () => {
-          refetchHighlights();
-        },
-      )
-      .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") refetchHighlights();
-        if (err)
-          console.error("[Realtime] highlights subscription error:", err);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [reviewId, refetchHighlights, supabase]);
-
-  // Deep links from saved notifications work on navigation and on the same page.
-  const requestedTarget = useRef<string | null>(null);
-  useEffect(() => {
-    const highlightId = searchParams.get("highlight");
-    if (!highlightId) return;
-    const key = searchParams.toString();
-    if (requestedTarget.current === key) return;
-    requestedTarget.current = key;
-    setActiveHighlightId(highlightId);
-    void refetchHighlights();
-  }, [searchParams, refetchHighlights]);
-  useEffect(() => {
-    const open = (event: Event) => {
-      const detail = (event as CustomEvent).detail;
-      if (detail.reviewId === reviewId) {
-        setActiveHighlightId(detail.highlightId);
-        void refetchHighlights();
-      }
-    };
-    window.addEventListener("open-highlight-notification", open);
-    return () =>
-      window.removeEventListener("open-highlight-notification", open);
-  }, [reviewId, refetchHighlights]);
-  useEffect(() => {
-    if (
-      !activeHighlightId ||
-      !highlights.some((h) => h.id === activeHighlightId)
-    )
-      return;
-    const highlightId = searchParams.get("highlight");
-    if (highlightId !== activeHighlightId) return;
+    if (!visible || !activeHighlightId || activation?.highlightId !== activeHighlightId || !highlights.some(h => h.id === activeHighlightId)) return;
     const timer = window.setTimeout(() => {
-      const replyId = searchParams.get("reply");
-      const commentId = searchParams.get("comment");
-      const target = replyId
-        ? document.getElementById(`highlight-reply-${replyId}`)
-        : commentId
-          ? document.getElementById(`highlight-comment-${commentId}`)
-          : editorWrapRef.current?.querySelector(
-              `[data-highlight-id="${CSS.escape(activeHighlightId)}"]`,
-            );
+      const target = activation?.replyId
+        ? document.getElementById(`highlight-reply-${activation.replyId}`)
+        : activation?.commentId
+          ? document.getElementById(`highlight-comment-${activation.commentId}`)
+          : activation?.highlightId === activeHighlightId
+            ? editorWrapRef.current?.querySelector(`[data-highlight-id="${CSS.escape(activeHighlightId)}"]`)
+            : null;
       target?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [activeHighlightId, highlights, searchParams]);
+  }, [activeHighlightId, highlights, activation, visible]);
 
   // 패널이 열릴 때 최신 프로필 사진 반영을 위해 재조회
   useEffect(() => {
-    if (activeHighlightId) {
+    if (activeHighlightId && activeHighlightId !== activation?.highlightId) {
       refetchHighlights();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeHighlightId]);
+  }, [activeHighlightId, activation?.highlightId, refetchHighlights]);
 
   // Click handler for highlighted spans → opens comment panel
   useEffect(() => {
@@ -441,7 +339,6 @@ export function ReviewViewerInteractive({
 
   const handleCommentsUpdated = useCallback(
     (updated: HighlightWithComments) => {
-      fetchGeneration.current++;
       setHighlights((prev) =>
         prev.map((h) => (h.id === updated.id ? updated : h)),
       );
@@ -481,7 +378,7 @@ export function ReviewViewerInteractive({
         </div>
       )}
 
-      {activeHighlight && (
+      {activeHighlight && visible && (
         <HighlightCommentPanel
           key={activeHighlight.id}
           highlight={activeHighlight}
